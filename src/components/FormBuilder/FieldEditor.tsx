@@ -4,14 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Trash2,
   GripVertical,
@@ -22,6 +14,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FieldEditorProps {
   field: FormField;
@@ -45,11 +38,29 @@ export function FieldEditor({
   onRemovePaymentField,
 }: FieldEditorProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const { t } = useLanguage();
+
+  const getFieldTypeName = (type: FormField['type']): string => {
+    const names: Record<FormField['type'], string> = {
+      text: t('field.text'),
+      textarea: t('field.textarea'),
+      number: t('field.number'),
+      email: t('field.email'),
+      phone: t('field.phone'),
+      select: t('field.select'),
+      radio: t('field.radio'),
+      checkbox: t('field.checkbox'),
+      image: t('field.image'),
+      dynamicNumber: t('field.dynamicNumber'),
+      payment: t('field.payment'),
+    };
+    return names[type];
+  };
 
   const addOption = () => {
     const newOption: FieldOption = {
       id: generateId(),
-      label: `Opcja ${(field.options?.length || 0) + 1}`,
+      label: `Option ${(field.options?.length || 0) + 1}`,
       value: 0,
     };
     onUpdate({ options: [...(field.options || []), newOption] });
@@ -75,13 +86,13 @@ export function FieldEditor({
     const newPaymentField: PaymentField = {
       id: generateId(),
       type,
-      label: `Pole ${type}`,
+      label: `${type} field`,
       multiplier: 1,
     };
     
     if (type === 'select' || type === 'radio') {
       newPaymentField.options = [
-        { id: generateId(), label: 'Opcja 1', value: 0 },
+        { id: generateId(), label: 'Option 1', value: 0 },
       ];
     }
     
@@ -109,22 +120,22 @@ export function FieldEditor({
 
       <div className="space-y-4">
         <div>
-          <Label>Etykieta pola</Label>
+          <Label>{t('editor.fieldLabel')}</Label>
           <Input
             value={field.label}
             onChange={(e) => onUpdate({ label: e.target.value })}
-            placeholder="Etykieta pola"
+            placeholder={t('editor.fieldLabel')}
             className="mt-1"
           />
         </div>
 
         {(field.type === 'text' || field.type === 'textarea' || field.type === 'number' || field.type === 'email' || field.type === 'phone') && (
           <div>
-            <Label>Placeholder</Label>
+            <Label>{t('editor.placeholder')}</Label>
             <Input
               value={field.placeholder || ''}
               onChange={(e) => onUpdate({ placeholder: e.target.value })}
-              placeholder="Tekst podpowiedzi"
+              placeholder={t('editor.placeholderText')}
               className="mt-1"
             />
           </div>
@@ -132,7 +143,7 @@ export function FieldEditor({
 
         {field.type === 'image' && (
           <div>
-            <Label>URL obrazka</Label>
+            <Label>{t('editor.imageUrl')}</Label>
             <div className="flex gap-2 mt-1">
               <Input
                 value={field.imageUrl || ''}
@@ -155,21 +166,21 @@ export function FieldEditor({
 
         {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (
           <div>
-            <Label>Opcje</Label>
+            <Label>{t('editor.options')}</Label>
             <div className="space-y-2 mt-2">
               {field.options?.map((option) => (
                 <div key={option.id} className="flex gap-2 items-center">
                   <Input
                     value={option.label}
                     onChange={(e) => updateOption(option.id, { label: e.target.value })}
-                    placeholder="Etykieta opcji"
+                    placeholder={t('editor.optionLabel')}
                     className="flex-1"
                   />
                   <Input
                     type="number"
                     value={option.value}
                     onChange={(e) => updateOption(option.id, { value: Number(e.target.value) })}
-                    placeholder="Wartość"
+                    placeholder={t('editor.value')}
                     className="w-24"
                   />
                   <Button
@@ -183,7 +194,7 @@ export function FieldEditor({
               ))}
               <Button variant="outline" size="sm" onClick={addOption}>
                 <Plus className="w-4 h-4 mr-2" />
-                Dodaj opcję
+                {t('editor.addOption')}
               </Button>
             </div>
           </div>
@@ -192,8 +203,7 @@ export function FieldEditor({
         {field.type === 'dynamicNumber' && (
           <div className="p-3 bg-secondary/50 rounded-lg">
             <p className="text-sm text-muted-foreground">
-              Użytkownik wpisze liczbę, a następnie pojawi się tyle pól tekstowych ile wpisał.
-              Wszystkie pola będą obowiązkowe.
+              {t('editor.dynamicInfo')}
             </p>
           </div>
         )}
@@ -201,7 +211,7 @@ export function FieldEditor({
         {field.type === 'payment' && (
           <div className="space-y-4">
             <div>
-              <Label>Kwota bazowa (PLN)</Label>
+              <Label>{t('editor.baseAmount')}</Label>
               <Input
                 type="number"
                 value={field.baseAmount || 0}
@@ -212,7 +222,7 @@ export function FieldEditor({
             </div>
 
             <div>
-              <Label className="mb-2 block">Pola do obliczenia sumy</Label>
+              <Label className="mb-2 block">{t('editor.fieldsForSum')}</Label>
               <div className="space-y-3">
                 {field.paymentFields?.map((pf) => (
                   <PaymentFieldEditor
@@ -230,28 +240,28 @@ export function FieldEditor({
                   size="sm"
                   onClick={() => handleAddPaymentField('number')}
                 >
-                  + Liczba
+                  {t('editor.addNumber')}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleAddPaymentField('select')}
                 >
-                  + Lista
+                  {t('editor.addList')}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleAddPaymentField('radio')}
                 >
-                  + Wybór
+                  {t('editor.addChoice')}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleAddPaymentField('dynamicNumber')}
                 >
-                  + Dynamiczne
+                  {t('editor.addDynamic')}
                 </Button>
               </div>
             </div>
@@ -264,7 +274,7 @@ export function FieldEditor({
             checked={field.required}
             onCheckedChange={(checked) => onUpdate({ required: checked })}
           />
-          <Label htmlFor={`required-${field.id}`}>Pole obowiązkowe</Label>
+          <Label htmlFor={`required-${field.id}`}>{t('editor.requiredField')}</Label>
         </div>
       </div>
     </Card>
@@ -281,11 +291,12 @@ function PaymentFieldEditor({
   onRemove: () => void;
 }) {
   const generateId = () => Math.random().toString(36).substring(2, 9);
+  const { t } = useLanguage();
 
   const addOption = () => {
     const newOption: FieldOption = {
       id: generateId(),
-      label: `Opcja ${(paymentField.options?.length || 0) + 1}`,
+      label: `Option ${(paymentField.options?.length || 0) + 1}`,
       value: 0,
     };
     onUpdate({ options: [...(paymentField.options || []), newOption] });
@@ -321,12 +332,12 @@ function PaymentFieldEditor({
         <Input
           value={paymentField.label}
           onChange={(e) => onUpdate({ label: e.target.value })}
-          placeholder="Nazwa pola"
+          placeholder={t('editor.fieldName')}
         />
 
         {paymentField.type === 'number' && (
           <div className="flex gap-2 items-center">
-            <Label className="text-sm whitespace-nowrap">Mnożnik:</Label>
+            <Label className="text-sm whitespace-nowrap">{t('editor.multiplier')}</Label>
             <Input
               type="number"
               value={paymentField.multiplier || 1}
@@ -344,7 +355,7 @@ function PaymentFieldEditor({
                 <Input
                   value={option.label}
                   onChange={(e) => updateOption(option.id, { label: e.target.value })}
-                  placeholder="Opcja"
+                  placeholder={t('editor.optionLabel')}
                   className="flex-1"
                 />
                 <Input
@@ -361,14 +372,14 @@ function PaymentFieldEditor({
             ))}
             <Button variant="outline" size="sm" onClick={addOption}>
               <Plus className="w-3 h-3 mr-1" />
-              Dodaj
+              {t('editor.add')}
             </Button>
           </div>
         )}
 
         {paymentField.type === 'dynamicNumber' && (
           <div className="flex gap-2 items-center">
-            <Label className="text-sm whitespace-nowrap">Koszt za pole:</Label>
+            <Label className="text-sm whitespace-nowrap">{t('editor.costPerField')}</Label>
             <Input
               type="number"
               value={paymentField.multiplier || 1}
@@ -381,21 +392,4 @@ function PaymentFieldEditor({
       </div>
     </div>
   );
-}
-
-function getFieldTypeName(type: FormField['type']): string {
-  const names: Record<FormField['type'], string> = {
-    text: 'Tekst',
-    textarea: 'Długi tekst',
-    number: 'Liczba',
-    email: 'Email',
-    phone: 'Telefon',
-    select: 'Lista rozwijana',
-    radio: 'Wybór jednokrotny',
-    checkbox: 'Wybór wielokrotny',
-    image: 'Obrazek',
-    dynamicNumber: 'Dynamiczne pola',
-    payment: 'Płatność',
-  };
-  return names[type];
 }

@@ -6,6 +6,7 @@ import { FormFieldComponent } from './FormField';
 import { PaymentSelector } from './PaymentSelector';
 import { ArrowRight, Check, Edit3 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FormPreviewProps {
   form: FormData;
@@ -20,6 +21,7 @@ export function FormPreview({ form, onUpdateCompletionMessage }: FormPreviewProp
   const [totalAmount, setTotalAmount] = useState(0);
   const [isEditingMessage, setIsEditingMessage] = useState(false);
   const [editedMessage, setEditedMessage] = useState(form.completionMessage);
+  const { t } = useLanguage();
 
   const handleFieldChange = (fieldId: string, value: any) => {
     setResponses((prev) => ({ ...prev, [fieldId]: value }));
@@ -77,9 +79,9 @@ export function FormPreview({ form, onUpdateCompletionMessage }: FormPreviewProp
                 />
                 <div className="flex gap-2 justify-center">
                   <Button variant="outline" onClick={() => setIsEditingMessage(false)}>
-                    Anuluj
+                    {t('complete.cancel')}
                   </Button>
-                  <Button onClick={handleSaveMessage}>Zapisz</Button>
+                  <Button onClick={handleSaveMessage}>{t('complete.save')}</Button>
                 </div>
               </div>
             ) : (
@@ -95,7 +97,7 @@ export function FormPreview({ form, onUpdateCompletionMessage }: FormPreviewProp
                     onClick={() => setIsEditingMessage(true)}
                   >
                     <Edit3 className="w-4 h-4 mr-2" />
-                    Edytuj wiadomość
+                    {t('complete.editMessage')}
                   </Button>
                 )}
               </>
@@ -144,7 +146,7 @@ export function FormPreview({ form, onUpdateCompletionMessage }: FormPreviewProp
             {form.paymentEnabled && totalAmount > 0 && (
               <div className="p-4 bg-primary/5 rounded-xl border border-primary/20">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">Suma do zapłaty:</span>
+                  <span className="font-medium">{t('preview.totalToPay')}</span>
                   <span className="text-2xl font-bold text-primary animate-pulse-soft">
                     {totalAmount.toFixed(2)} PLN
                   </span>
@@ -155,11 +157,11 @@ export function FormPreview({ form, onUpdateCompletionMessage }: FormPreviewProp
             <Button type="submit" size="lg" className="w-full" variant="formAction">
               {form.paymentEnabled && totalAmount > 0 ? (
                 <>
-                  Przejdź do płatności
+                  {t('preview.goToPayment')}
                   <ArrowRight className="w-5 h-5" />
                 </>
               ) : (
-                'Wyślij'
+                t('preview.submit')
               )}
             </Button>
           </CardContent>

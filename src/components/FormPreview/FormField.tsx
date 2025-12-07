@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FormFieldProps {
   field: FormFieldType;
@@ -23,6 +24,7 @@ interface FormFieldProps {
 export function FormFieldComponent({ field, value, onChange, onPaymentChange }: FormFieldProps) {
   const [dynamicFields, setDynamicFields] = useState<string[]>([]);
   const [paymentValues, setPaymentValues] = useState<Record<string, any>>({});
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (field.type === 'dynamicNumber' && typeof value === 'number') {
@@ -152,7 +154,7 @@ export function FormFieldComponent({ field, value, onChange, onPaymentChange }: 
           {renderLabel()}
           <Select value={value} onValueChange={onChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Wybierz opcję" />
+              <SelectValue placeholder={t('preview.selectOption')} />
             </SelectTrigger>
             <SelectContent>
               {field.options?.map((option) => (
@@ -246,20 +248,20 @@ export function FormFieldComponent({ field, value, onChange, onPaymentChange }: 
             min={0}
             value={value || 0}
             onChange={(e) => onChange(Number(e.target.value))}
-            placeholder="Wprowadź liczbę"
+            placeholder={t('preview.enterNumber')}
             required={field.required}
           />
           {dynamicFields.length > 0 && (
             <div className="space-y-2 pl-4 border-l-2 border-primary/30">
               <p className="text-sm text-muted-foreground">
-                Wypełnij poniższe pola ({dynamicFields.length}):
+                {t('preview.fillFields')} ({dynamicFields.length}):
               </p>
               {dynamicFields.map((_, index) => (
                 <Input
                   key={index}
                   value={dynamicFields[index]}
                   onChange={(e) => handleDynamicFieldChange(index, e.target.value)}
-                  placeholder={`Pole ${index + 1}`}
+                  placeholder={`${t('preview.field')} ${index + 1}`}
                   required
                 />
               ))}
@@ -275,7 +277,7 @@ export function FormFieldComponent({ field, value, onChange, onPaymentChange }: 
           <div className="space-y-4 p-4 bg-secondary/30 rounded-lg">
             {field.baseAmount && field.baseAmount > 0 && (
               <p className="text-sm">
-                Kwota bazowa: <strong>{field.baseAmount} PLN</strong>
+                {t('preview.baseAmount')} <strong>{field.baseAmount} PLN</strong>
               </p>
             )}
             
@@ -306,6 +308,7 @@ function PaymentFieldInput({
   onChange: (value: any) => void;
 }) {
   const [dynamicValues, setDynamicValues] = useState<string[]>([]);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (paymentField.type === 'dynamicNumber' && typeof value === 'number') {
@@ -338,7 +341,7 @@ function PaymentFieldInput({
           <Label className="text-sm">{paymentField.label}</Label>
           <Select value={value} onValueChange={onChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Wybierz" />
+              <SelectValue placeholder={t('preview.select')} />
             </SelectTrigger>
             <SelectContent>
               {paymentField.options?.map((option) => (
@@ -389,14 +392,14 @@ function PaymentFieldInput({
                     newVals[i] = e.target.value;
                     setDynamicValues(newVals);
                   }}
-                  placeholder={`Pole ${i + 1}`}
+                  placeholder={`${t('preview.field')} ${i + 1}`}
                   className="h-8 text-sm"
                 />
               ))}
             </div>
           )}
           <span className="text-xs text-muted-foreground">
-            × {paymentField.multiplier} PLN za każde
+            × {paymentField.multiplier} PLN {t('preview.perEach')}
           </span>
         </div>
       );

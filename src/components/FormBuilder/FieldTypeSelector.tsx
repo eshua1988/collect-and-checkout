@@ -13,29 +13,32 @@ import {
   PlusCircle,
   CreditCard,
 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FieldTypeSelectorProps {
   onAddField: (type: FieldType) => void;
 }
 
-const fieldTypes: { type: FieldType; label: string; icon: React.ReactNode }[] = [
-  { type: 'text', label: 'Tekst', icon: <Type className="w-4 h-4" /> },
-  { type: 'textarea', label: 'Długi tekst', icon: <AlignLeft className="w-4 h-4" /> },
-  { type: 'number', label: 'Liczba', icon: <Hash className="w-4 h-4" /> },
-  { type: 'email', label: 'Email', icon: <Mail className="w-4 h-4" /> },
-  { type: 'phone', label: 'Telefon', icon: <Phone className="w-4 h-4" /> },
-  { type: 'select', label: 'Lista', icon: <List className="w-4 h-4" /> },
-  { type: 'radio', label: 'Jednokrotny', icon: <Circle className="w-4 h-4" /> },
-  { type: 'checkbox', label: 'Wielokrotny', icon: <CheckSquare className="w-4 h-4" /> },
-  { type: 'image', label: 'Obrazek', icon: <Image className="w-4 h-4" /> },
-  { type: 'dynamicNumber', label: 'Dynamiczne', icon: <PlusCircle className="w-4 h-4" /> },
-  { type: 'payment', label: 'Płatność', icon: <CreditCard className="w-4 h-4" /> },
-];
-
 export function FieldTypeSelector({ onAddField }: FieldTypeSelectorProps) {
+  const { t } = useLanguage();
+
+  const fieldTypes: { type: FieldType; labelKey: string; icon: React.ReactNode }[] = [
+    { type: 'text', labelKey: 'field.text', icon: <Type className="w-4 h-4" /> },
+    { type: 'textarea', labelKey: 'field.textarea', icon: <AlignLeft className="w-4 h-4" /> },
+    { type: 'number', labelKey: 'field.number', icon: <Hash className="w-4 h-4" /> },
+    { type: 'email', labelKey: 'field.email', icon: <Mail className="w-4 h-4" /> },
+    { type: 'phone', labelKey: 'field.phone', icon: <Phone className="w-4 h-4" /> },
+    { type: 'select', labelKey: 'field.select', icon: <List className="w-4 h-4" /> },
+    { type: 'radio', labelKey: 'field.radio', icon: <Circle className="w-4 h-4" /> },
+    { type: 'checkbox', labelKey: 'field.checkbox', icon: <CheckSquare className="w-4 h-4" /> },
+    { type: 'image', labelKey: 'field.image', icon: <Image className="w-4 h-4" /> },
+    { type: 'dynamicNumber', labelKey: 'field.dynamicNumber', icon: <PlusCircle className="w-4 h-4" /> },
+    { type: 'payment', labelKey: 'field.payment', icon: <CreditCard className="w-4 h-4" /> },
+  ];
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-      {fieldTypes.map(({ type, label, icon }) => (
+      {fieldTypes.map(({ type, labelKey, icon }) => (
         <Button
           key={type}
           variant="outline"
@@ -43,7 +46,7 @@ export function FieldTypeSelector({ onAddField }: FieldTypeSelectorProps) {
           onClick={() => onAddField(type)}
         >
           <span className="text-primary">{icon}</span>
-          <span className="text-sm">{label}</span>
+          <span className="text-sm">{t(labelKey)}</span>
         </Button>
       ))}
     </div>
