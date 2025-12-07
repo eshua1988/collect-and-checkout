@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Image, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FormSettingsProps {
   form: FormData;
@@ -12,35 +13,37 @@ interface FormSettingsProps {
 }
 
 export function FormSettings({ form, onUpdate }: FormSettingsProps) {
+  const { t } = useLanguage();
+
   return (
     <Card variant="form" className="mb-6">
       <CardHeader variant="form">
-        <CardTitle>Ustawienia formularza</CardTitle>
+        <CardTitle>{t('settings.title')}</CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <div>
-          <Label>Tytuł formularza</Label>
+          <Label>{t('settings.formTitle')}</Label>
           <Input
             value={form.title}
             onChange={(e) => onUpdate({ title: e.target.value })}
-            placeholder="Tytuł formularza"
+            placeholder={t('settings.formTitlePlaceholder')}
             className="mt-1"
           />
         </div>
 
         <div>
-          <Label>Opis</Label>
+          <Label>{t('settings.description')}</Label>
           <Textarea
             value={form.description || ''}
             onChange={(e) => onUpdate({ description: e.target.value })}
-            placeholder="Opis formularza (opcjonalnie)"
+            placeholder={t('settings.descriptionPlaceholder')}
             className="mt-1"
             rows={2}
           />
         </div>
 
         <div>
-          <Label>Obrazek nagłówkowy</Label>
+          <Label>{t('settings.headerImage')}</Label>
           <div className="flex gap-2 mt-1">
             <Input
               value={form.headerImage || ''}
@@ -67,11 +70,11 @@ export function FormSettings({ form, onUpdate }: FormSettingsProps) {
         </div>
 
         <div>
-          <Label>Wiadomość po zakończeniu</Label>
+          <Label>{t('settings.completionMessage')}</Label>
           <Textarea
             value={form.completionMessage}
             onChange={(e) => onUpdate({ completionMessage: e.target.value })}
-            placeholder="Dziękujemy za wypełnienie formularza!"
+            placeholder={t('settings.completionPlaceholder')}
             className="mt-1"
             rows={3}
           />

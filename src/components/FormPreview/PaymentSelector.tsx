@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CreditCard, Smartphone, Building2, ArrowRight, Check, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PaymentSelectorProps {
   amount: number;
@@ -20,6 +21,7 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const { t } = useLanguage();
 
   const formatCardNumber = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
@@ -66,9 +68,9 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
           <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-success" />
           </div>
-          <h2 className="text-2xl font-semibold mb-2">Płatność zakończona!</h2>
+          <h2 className="text-2xl font-semibold mb-2">{t('payment.complete')}</h2>
           <p className="text-muted-foreground">
-            Twoja płatność na kwotę {amount.toFixed(2)} PLN została zrealizowana.
+            {t('payment.completeDesc')} {amount.toFixed(2)} PLN {t('payment.wasProcessed')}
           </p>
         </CardContent>
       </Card>
@@ -80,7 +82,7 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
       <Card variant="form">
         <CardHeader variant="form">
           <CardTitle className="flex items-center justify-between">
-            <span>Wybierz metodę płatności</span>
+            <span>{t('payment.selectMethod')}</span>
             <span className="text-2xl font-bold">{amount.toFixed(2)} PLN</span>
           </CardTitle>
         </CardHeader>
@@ -100,8 +102,8 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
                   <Smartphone className="w-6 h-6 text-blik" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">BLIK</h3>
-                  <p className="text-sm text-muted-foreground">Szybka płatność kodem z aplikacji bankowej</p>
+                  <h3 className="font-semibold">{t('payment.blik')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('payment.blikDesc')}</p>
                 </div>
               </div>
             </button>
@@ -120,8 +122,8 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
                   <CreditCard className="w-6 h-6 text-card-payment" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Karta płatnicza</h3>
-                  <p className="text-sm text-muted-foreground">Visa, Mastercard, Maestro</p>
+                  <h3 className="font-semibold">{t('payment.card')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('payment.cardDesc')}</p>
                 </div>
               </div>
             </button>
@@ -140,8 +142,8 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
                   <Building2 className="w-6 h-6 text-bank" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Przelew bankowy</h3>
-                  <p className="text-sm text-muted-foreground">Szybki przelew z Twojego banku</p>
+                  <h3 className="font-semibold">{t('payment.bank')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('payment.bankDesc')}</p>
                 </div>
               </div>
             </button>
@@ -153,7 +155,7 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
       {selectedMethod === 'blik' && (
         <Card variant="form" className="animate-slide-up">
           <CardContent className="pt-6">
-            <Label className="text-base mb-3 block">Kod BLIK</Label>
+            <Label className="text-base mb-3 block">{t('payment.blikCode')}</Label>
             <Input
               value={blikCode}
               onChange={(e) => setBlikCode(e.target.value.replace(/\D/g, '').substring(0, 6))}
@@ -162,7 +164,7 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
               maxLength={6}
             />
             <p className="text-sm text-muted-foreground mt-3 text-center">
-              Wprowadź 6-cyfrowy kod z aplikacji bankowej
+              {t('payment.enterBlikCode')}
             </p>
           </CardContent>
         </Card>
@@ -173,7 +175,7 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
         <Card variant="form" className="animate-slide-up">
           <CardContent className="pt-6 space-y-4">
             <div>
-              <Label>Numer karty</Label>
+              <Label>{t('payment.cardNumber')}</Label>
               <Input
                 value={cardNumber}
                 onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
@@ -183,11 +185,11 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Data ważności</Label>
+                <Label>{t('payment.expiryDate')}</Label>
                 <Input
                   value={cardExpiry}
                   onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                  placeholder="MM/RR"
+                  placeholder="MM/YY"
                   className="mt-1 font-mono"
                   maxLength={5}
                 />
@@ -212,7 +214,7 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
       {selectedMethod === 'bank' && (
         <Card variant="form" className="animate-slide-up">
           <CardContent className="pt-6">
-            <Label className="text-base mb-3 block">Wybierz swój bank</Label>
+            <Label className="text-base mb-3 block">{t('payment.selectBank')}</Label>
             <div className="grid grid-cols-2 gap-3">
               {POLISH_BANKS.map((bank) => (
                 <button
@@ -253,11 +255,11 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
           {isProcessing ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Przetwarzanie...
+              {t('payment.processing')}
             </>
           ) : (
             <>
-              Zapłać {amount.toFixed(2)} PLN
+              {t('payment.pay')} {amount.toFixed(2)} PLN
               <ArrowRight className="w-5 h-5" />
             </>
           )}

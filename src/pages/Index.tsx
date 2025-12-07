@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, Settings, Plus, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const Index = () => {
   const {
@@ -25,11 +27,11 @@ const Index = () => {
   } = useFormBuilder();
 
   const [activeTab, setActiveTab] = useState('builder');
+  const { t } = useLanguage();
 
   const handleSaveForm = () => {
-    // In a real app, this would save to a database
     localStorage.setItem('savedForm', JSON.stringify(form));
-    toast.success('Formularz zapisany!');
+    toast.success(t('form.saved'));
   };
 
   const handleLoadForm = () => {
@@ -37,7 +39,7 @@ const Index = () => {
     if (saved) {
       const parsed = JSON.parse(saved);
       updateFormMeta(parsed);
-      toast.success('Formularz wczytany!');
+      toast.success(t('form.loaded'));
     }
   };
 
@@ -51,21 +53,22 @@ const Index = () => {
               <FileText className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-semibold text-lg">FormBuilder</h1>
-              <p className="text-xs text-muted-foreground">z płatnościami</p>
+              <h1 className="font-semibold text-lg">{t('header.title')}</h1>
+              <p className="text-xs text-muted-foreground">{t('header.subtitle')}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <Button variant="outline" size="sm" onClick={handleLoadForm}>
-              Wczytaj
+              {t('header.load')}
             </Button>
             <Button variant="outline" size="sm" onClick={resetForm}>
               <Trash2 className="w-4 h-4 mr-1" />
-              Wyczyść
+              {t('header.clear')}
             </Button>
             <Button size="sm" onClick={handleSaveForm}>
-              Zapisz
+              {t('header.save')}
             </Button>
           </div>
         </div>
@@ -77,11 +80,11 @@ const Index = () => {
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
             <TabsTrigger value="builder" className="gap-2">
               <Settings className="w-4 h-4" />
-              Edytor
+              {t('tabs.editor')}
             </TabsTrigger>
             <TabsTrigger value="preview" className="gap-2">
               <Eye className="w-4 h-4" />
-              Podgląd
+              {t('tabs.preview')}
             </TabsTrigger>
           </TabsList>
 
@@ -94,7 +97,7 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Plus className="w-5 h-5" />
-                  Dodaj pole
+                  {t('editor.addField')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -107,10 +110,8 @@ const Index = () => {
               {form.fields.length === 0 ? (
                 <Card className="border-dashed">
                   <CardContent className="py-12 text-center text-muted-foreground">
-                    <p className="text-lg mb-2">Brak pól w formularzu</p>
-                    <p className="text-sm">
-                      Dodaj pola używając przycisków powyżej
-                    </p>
+                    <p className="text-lg mb-2">{t('form.noFields')}</p>
+                    <p className="text-sm">{t('form.addFieldsHint')}</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -147,12 +148,12 @@ const Index = () => {
                 <CardContent className="py-4">
                   <div className="flex items-center justify-between text-sm">
                     <span>
-                      Pól: <strong>{form.fields.length}</strong>
+                      {t('form.fields')} <strong>{form.fields.length}</strong>
                     </span>
                     <span>
-                      Płatność:{' '}
+                      {t('form.payment')}{' '}
                       <strong className={form.paymentEnabled ? 'text-success' : 'text-muted-foreground'}>
-                        {form.paymentEnabled ? 'Włączona' : 'Wyłączona'}
+                        {form.paymentEnabled ? t('form.enabled') : t('form.disabled')}
                       </strong>
                     </span>
                   </div>
