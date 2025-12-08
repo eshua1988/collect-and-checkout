@@ -19,6 +19,28 @@ const translations: Record<Language, Translations> = {
     'tabs.editor': 'Редактор',
     'tabs.preview': 'Предпросмотр',
     
+    // Home
+    'home.myForms': 'Мои формы',
+    'home.newForm': 'Новая форма',
+    'home.noForms': 'Нет форм',
+    'home.noFormsHint': 'Создайте первую форму, чтобы начать',
+    'home.createFirst': 'Создать форму',
+    'home.noDescription': 'Без описания',
+    'home.published': 'Опубликовано',
+    'home.draft': 'Черновик',
+    'home.fields': 'Полей',
+    'home.updated': 'Обновлено',
+    'home.edit': 'Редактировать',
+    'home.results': 'Результаты',
+    'home.publish': 'Опубликовать',
+    'home.unpublish': 'Снять публикацию',
+    'home.copyLink': 'Скопировать ссылку',
+    'home.confirmDelete': 'Удалить эту форму?',
+    'home.formDeleted': 'Форма удалена',
+    'home.formPublished': 'Форма опубликована! Ссылка скопирована',
+    'home.formUnpublished': 'Публикация снята',
+    'home.linkCopied': 'Ссылка скопирована!',
+    
     // Form Settings
     'settings.title': 'Настройки формы',
     'settings.formTitle': 'Заголовок формы',
@@ -28,6 +50,9 @@ const translations: Record<Language, Translations> = {
     'settings.headerImage': 'Изображение заголовка',
     'settings.completionMessage': 'Сообщение после завершения',
     'settings.completionPlaceholder': 'Спасибо за заполнение формы!',
+    'settings.paymentAccount': 'Счёт для оплаты',
+    'settings.paymentAccountPlaceholder': 'PL00 0000 0000 0000 0000 0000 0000',
+    'settings.paymentAccountHint': 'Номер счёта, на который будут поступать платежи',
     
     // Field Types
     'field.text': 'Текст',
@@ -44,6 +69,7 @@ const translations: Record<Language, Translations> = {
     
     // Field Editor
     'editor.addField': 'Добавить поле',
+    'editor.newForm': 'Новая форма',
     'editor.fieldLabel': 'Метка поля',
     'editor.placeholder': 'Подсказка',
     'editor.placeholderText': 'Текст подсказки',
@@ -87,6 +113,23 @@ const translations: Record<Language, Translations> = {
     'preview.perEach': 'за каждое',
     'preview.baseAmount': 'Базовая сумма:',
     
+    // Form View
+    'formView.notFound': 'Форма не найдена',
+    'formView.notFoundDesc': 'Эта форма не существует или была удалена',
+    'formView.notPublished': 'Форма не опубликована',
+    'formView.notPublishedDesc': 'Эта форма ещё не опубликована владельцем',
+    
+    // Results
+    'results.title': 'Результаты',
+    'results.responses': 'Ответы',
+    'results.total': 'Всего',
+    'results.export': 'Экспорт CSV',
+    'results.noResponses': 'Нет ответов',
+    'results.noResponsesHint': 'Ответы появятся здесь после заполнения формы пользователями',
+    'results.submittedAt': 'Дата отправки',
+    'results.paymentAmount': 'Сумма',
+    'results.paymentMethod': 'Способ оплаты',
+    
     // Completion
     'complete.editMessage': 'Редактировать сообщение',
     'complete.cancel': 'Отмена',
@@ -94,6 +137,7 @@ const translations: Record<Language, Translations> = {
     
     // Payment
     'payment.selectMethod': 'Выберите способ оплаты',
+    'payment.accountLabel': 'Счёт для оплаты',
     'payment.blik': 'BLIK',
     'payment.blikDesc': 'Быстрая оплата кодом из банковского приложения',
     'payment.card': 'Банковская карта',
@@ -123,6 +167,28 @@ const translations: Record<Language, Translations> = {
     'tabs.editor': 'Editor',
     'tabs.preview': 'Preview',
     
+    // Home
+    'home.myForms': 'My Forms',
+    'home.newForm': 'New Form',
+    'home.noForms': 'No forms yet',
+    'home.noFormsHint': 'Create your first form to get started',
+    'home.createFirst': 'Create Form',
+    'home.noDescription': 'No description',
+    'home.published': 'Published',
+    'home.draft': 'Draft',
+    'home.fields': 'Fields',
+    'home.updated': 'Updated',
+    'home.edit': 'Edit',
+    'home.results': 'Results',
+    'home.publish': 'Publish',
+    'home.unpublish': 'Unpublish',
+    'home.copyLink': 'Copy Link',
+    'home.confirmDelete': 'Delete this form?',
+    'home.formDeleted': 'Form deleted',
+    'home.formPublished': 'Form published! Link copied',
+    'home.formUnpublished': 'Form unpublished',
+    'home.linkCopied': 'Link copied!',
+    
     // Form Settings
     'settings.title': 'Form Settings',
     'settings.formTitle': 'Form Title',
@@ -132,6 +198,9 @@ const translations: Record<Language, Translations> = {
     'settings.headerImage': 'Header Image',
     'settings.completionMessage': 'Completion Message',
     'settings.completionPlaceholder': 'Thank you for filling out the form!',
+    'settings.paymentAccount': 'Payment Account',
+    'settings.paymentAccountPlaceholder': 'PL00 0000 0000 0000 0000 0000 0000',
+    'settings.paymentAccountHint': 'Account number where payments will be sent',
     
     // Field Types
     'field.text': 'Text',
@@ -148,6 +217,7 @@ const translations: Record<Language, Translations> = {
     
     // Field Editor
     'editor.addField': 'Add Field',
+    'editor.newForm': 'New Form',
     'editor.fieldLabel': 'Field Label',
     'editor.placeholder': 'Placeholder',
     'editor.placeholderText': 'Placeholder text',
@@ -191,6 +261,23 @@ const translations: Record<Language, Translations> = {
     'preview.perEach': 'per each',
     'preview.baseAmount': 'Base amount:',
     
+    // Form View
+    'formView.notFound': 'Form not found',
+    'formView.notFoundDesc': 'This form does not exist or was deleted',
+    'formView.notPublished': 'Form not published',
+    'formView.notPublishedDesc': 'This form has not been published by the owner yet',
+    
+    // Results
+    'results.title': 'Results',
+    'results.responses': 'Responses',
+    'results.total': 'Total',
+    'results.export': 'Export CSV',
+    'results.noResponses': 'No responses yet',
+    'results.noResponsesHint': 'Responses will appear here after users submit the form',
+    'results.submittedAt': 'Submitted at',
+    'results.paymentAmount': 'Amount',
+    'results.paymentMethod': 'Payment method',
+    
     // Completion
     'complete.editMessage': 'Edit message',
     'complete.cancel': 'Cancel',
@@ -198,6 +285,7 @@ const translations: Record<Language, Translations> = {
     
     // Payment
     'payment.selectMethod': 'Select payment method',
+    'payment.accountLabel': 'Payment Account',
     'payment.blik': 'BLIK',
     'payment.blikDesc': 'Quick payment with code from banking app',
     'payment.card': 'Payment Card',

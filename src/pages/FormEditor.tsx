@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useFormBuilder } from '@/hooks/useFormBuilder';
+import { useFormsStorage } from '@/hooks/useFormsStorage';
 import { FormSettings } from '@/components/FormBuilder/FormSettings';
 import { FieldTypeSelector } from '@/components/FormBuilder/FieldTypeSelector';
 import { FieldEditor } from '@/components/FormBuilder/FieldEditor';
@@ -7,14 +9,39 @@ import { FormPreview } from '@/components/FormPreview/FormPreview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, Settings, Plus, FileText, Trash2 } from 'lucide-react';
+import { Eye, Settings, Plus, FileText, ArrowLeft, Copy, Link, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { FormData } from '@/types/form';
 
-const Index = () => {
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
+const defaultForm: FormData = {
+  id: generateId(),
+  title: 'Новая форма',
+  description: '',
+  fields: [],
+  completionMessage: 'Спасибо за заполнение формы!',
+  paymentEnabled: false,
+  totalAmount: 0,
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+  published: false,
+};
+
+const FormEditor = () => {
+  const { formId } = useParams();
+  const navigate = useNavigate();
+  const { getForm, saveForm, togglePublish } = useFormsStorage();
+  const { t } = useLanguage();
+  
+  const isNew = formId === 'new';
+  const existingForm = !isNew ? getForm(formId!) : undefined;
+  
   const {
     form,
+    setForm,
     updateFormMeta,
     addField,
     updateField,
@@ -23,24 +50,41 @@ const Index = () => {
     addPaymentField,
     updatePaymentField,
     removePaymentField,
-    resetForm,
-  } = useFormBuilder();
+  } = useFormBuilder(existingForm || { ...defaultForm, id: generateId() });
 
   const [activeTab, setActiveTab] = useState('builder');
-  const { t } = useLanguage();
 
-  const handleSaveForm = () => {
-    localStorage.setItem('savedForm', JSON.stringify(form));
+  useEffect(() => {
+    if (existingForm) {
+      setForm(existingForm);
+    }
+  }, [formId]);
+
+  const handleSave = () => {
+    saveForm(form);
     toast.success(t('form.saved'));
+    if (isNew) {
+      navigate(`/form/${form.id}`, { replace: true });
+    }
   };
 
-  const handleLoadForm = () => {
-    const saved = localStorage.getItem('savedForm');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      updateFormMeta(parsed);
-      toast.success(t('form.loaded'));
+  const handlePublish = () => {
+    saveForm(form);
+    const updatedForm = togglePublish(form.id);
+    if (updatedForm?.published) {
+      const url = `${window.location.origin}/f/${form.id}`;
+      navigator.clipboard.writeText(url);
+      toast.success(t('home.linkCopied'));
+    } else {
+      toast.info(t('home.formUnpublished'));
     }
+    setForm(prev => ({ ...prev, published: !prev.published }));
+  };
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/f/${form.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success(t('home.linkCopied'));
   };
 
   return (
@@ -49,25 +93,41 @@ const Index = () => {
       <header className="border-b bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-semibold text-lg">{t('header.title')}</h1>
+              <h1 className="font-semibold text-lg">{isNew ? t('editor.newForm') : form.title}</h1>
               <p className="text-xs text-muted-foreground">{t('header.subtitle')}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <Button variant="outline" size="sm" onClick={handleLoadForm}>
-              {t('header.load')}
+            {!isNew && (
+              <Button variant="outline" size="sm" onClick={() => navigate(`/form/${form.id}/results`)}>
+                <BarChart3 className="w-4 h-4 mr-1" />
+                {t('home.results')}
+              </Button>
+            )}
+            {form.published && (
+              <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                <Copy className="w-4 h-4 mr-1" />
+                {t('home.copyLink')}
+              </Button>
+            )}
+            <Button 
+              variant={form.published ? "outline" : "default"} 
+              size="sm" 
+              onClick={handlePublish}
+            >
+              <Link className="w-4 h-4 mr-1" />
+              {form.published ? t('home.unpublish') : t('home.publish')}
             </Button>
-            <Button variant="outline" size="sm" onClick={resetForm}>
-              <Trash2 className="w-4 h-4 mr-1" />
-              {t('header.clear')}
-            </Button>
-            <Button size="sm" onClick={handleSaveForm}>
+            <Button size="sm" onClick={handleSave}>
               {t('header.save')}
             </Button>
           </div>
@@ -176,4 +236,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default FormEditor;

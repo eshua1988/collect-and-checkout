@@ -49,6 +49,19 @@ export interface FormData {
   completionMessage: string;
   paymentEnabled: boolean;
   totalAmount: number;
+  paymentAccount?: string; // Account number for payment
+  createdAt: number;
+  updatedAt: number;
+  published: boolean;
+}
+
+export interface FormSubmission {
+  id: string;
+  formId: string;
+  responses: FormResponse;
+  paymentAmount?: number;
+  paymentMethod?: PaymentMethod;
+  submittedAt: number;
 }
 
 export interface FormResponse {
