@@ -9,10 +9,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PaymentSelectorProps {
   amount: number;
-  onPaymentComplete: () => void;
+  onPaymentComplete: (paymentMethod?: string) => void;
+  paymentAccount?: string;
 }
 
-export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorProps) {
+export function PaymentSelector({ amount, onPaymentComplete, paymentAccount }: PaymentSelectorProps) {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [blikCode, setBlikCode] = useState('');
   const [cardNumber, setCardNumber] = useState('');
@@ -44,7 +45,7 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
     setIsProcessing(false);
     setIsComplete(true);
     setTimeout(() => {
-      onPaymentComplete();
+      onPaymentComplete(selectedMethod || undefined);
     }, 1500);
   };
 
@@ -76,9 +77,19 @@ export function PaymentSelector({ amount, onPaymentComplete }: PaymentSelectorPr
       </Card>
     );
   }
-
   return (
     <div className="max-w-lg mx-auto space-y-6 animate-slide-up">
+      {paymentAccount && (
+        <Card variant="form">
+          <CardContent className="pt-6">
+            <Label className="text-base mb-2 block">{t('payment.accountLabel')}</Label>
+            <div className="p-3 bg-muted rounded-lg font-mono text-sm break-all">
+              {paymentAccount}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Card variant="form">
         <CardHeader variant="form">
           <CardTitle className="flex items-center justify-between">

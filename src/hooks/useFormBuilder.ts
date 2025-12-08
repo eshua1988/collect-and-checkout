@@ -11,6 +11,9 @@ const defaultForm: FormData = {
   completionMessage: 'Dziękujemy za wypełnienie formularza!',
   paymentEnabled: false,
   totalAmount: 0,
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+  published: false,
 };
 
 export function useFormBuilder(initialForm?: FormData) {

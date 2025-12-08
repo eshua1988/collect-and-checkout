@@ -11,11 +11,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface FormPreviewProps {
   form: FormData;
   onUpdateCompletionMessage?: (message: string) => void;
+  isPublicView?: boolean;
+  onSubmit?: (responses: FormResponse, paymentAmount?: number, paymentMethod?: string) => void;
 }
 
 type FormStage = 'filling' | 'payment' | 'complete';
 
-export function FormPreview({ form, onUpdateCompletionMessage }: FormPreviewProps) {
+export function FormPreview({ form, onUpdateCompletionMessage, isPublicView, onSubmit }: FormPreviewProps) {
   const [responses, setResponses] = useState<FormResponse>({});
   const [stage, setStage] = useState<FormStage>('filling');
   const [totalAmount, setTotalAmount] = useState(0);
@@ -41,7 +43,10 @@ export function FormPreview({ form, onUpdateCompletionMessage }: FormPreviewProp
     }
   };
 
-  const handlePaymentComplete = () => {
+  const handlePaymentComplete = (paymentMethod?: string) => {
+    if (onSubmit) {
+      onSubmit(responses, totalAmount, paymentMethod);
+    }
     setStage('complete');
   };
 
@@ -55,7 +60,11 @@ export function FormPreview({ form, onUpdateCompletionMessage }: FormPreviewProp
   if (stage === 'payment') {
     return (
       <div className="min-h-screen bg-background py-8 px-4">
-        <PaymentSelector amount={totalAmount} onPaymentComplete={handlePaymentComplete} />
+        <PaymentSelector 
+          amount={totalAmount} 
+          onPaymentComplete={handlePaymentComplete}
+          paymentAccount={form.paymentAccount}
+        />
       </div>
     );
   }

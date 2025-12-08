@@ -70,6 +70,17 @@ export function FormSettings({ form, onUpdate }: FormSettingsProps) {
         </div>
 
         <div>
+          <Label>{t('settings.paymentAccount')}</Label>
+          <Input
+            value={form.paymentAccount || ''}
+            onChange={(e) => onUpdate({ paymentAccount: e.target.value })}
+            placeholder={t('settings.paymentAccountPlaceholder')}
+            className="mt-1 font-mono"
+          />
+          <p className="text-xs text-muted-foreground mt-1">{t('settings.paymentAccountHint')}</p>
+        </div>
+
+        <div>
           <Label>{t('settings.completionMessage')}</Label>
           <Textarea
             value={form.completionMessage}
