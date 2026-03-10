@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, Send, Info } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FormSettingsProps {

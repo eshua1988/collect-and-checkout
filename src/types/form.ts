@@ -50,6 +50,8 @@ export interface FormData {
   paymentEnabled: boolean;
   totalAmount: number;
   paymentAccount?: string; // Account number for payment
+  telegramBotToken?: string;
+  telegramChatId?: string;
   createdAt: number;
   updatedAt: number;
   published: boolean;
