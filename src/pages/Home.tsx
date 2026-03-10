@@ -55,6 +55,11 @@ const Home = () => {
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            {user && (
+              <span className="hidden sm:block text-xs text-muted-foreground max-w-[140px] truncate">
+                {user.email}
+              </span>
+            )}
             {tab === 'forms' ? (
               <Button onClick={() => navigate('/form/new')}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -66,6 +71,15 @@ const Home = () => {
                 Новый бот
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={async () => { await signOut(); }}
+              title="Выйти"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </header>
