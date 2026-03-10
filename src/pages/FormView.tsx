@@ -93,6 +93,7 @@ const FormView = () => {
       paymentAmount,
       paymentMethod: paymentMethod as any,
     });
+    sendTelegramNotification(form, responses, paymentAmount, paymentMethod);
   };
 
   return (
