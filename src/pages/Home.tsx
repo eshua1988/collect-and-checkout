@@ -16,6 +16,7 @@ const Home = () => {
   const { forms, deleteForm, togglePublish } = useFormsStorage();
   const { bots, deleteBot } = useBotsStorage();
   const { t } = useLanguage();
+  const { user, signOut } = useAuth();
   const [tab, setTab] = useState<'forms' | 'bots'>('forms');
 
   const handleDeleteForm = (formId: string) => {
