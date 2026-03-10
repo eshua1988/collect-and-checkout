@@ -2,10 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { useFormsStorage } from '@/hooks/useFormsStorage';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Send, Bot, Settings } from 'lucide-react';
+import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Bot, Settings, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useState } from 'react';
@@ -15,6 +16,7 @@ const Home = () => {
   const { forms, deleteForm, togglePublish } = useFormsStorage();
   const { bots, deleteBot } = useBotsStorage();
   const { t } = useLanguage();
+  const { user, signOut } = useAuth();
   const [tab, setTab] = useState<'forms' | 'bots'>('forms');
 
   const handleDeleteForm = (formId: string) => {
@@ -53,6 +55,11 @@ const Home = () => {
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            {user && (
+              <span className="hidden sm:block text-xs text-muted-foreground max-w-[140px] truncate">
+                {user.email}
+              </span>
+            )}
             {tab === 'forms' ? (
               <Button onClick={() => navigate('/form/new')}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -64,6 +71,15 @@ const Home = () => {
                 Новый бот
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={async () => { await signOut(); }}
+              title="Выйти"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </header>
