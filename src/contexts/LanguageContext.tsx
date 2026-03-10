@@ -207,6 +207,12 @@ const translations: Record<Language, Translations> = {
     'settings.paymentAccount': 'Payment Account',
     'settings.paymentAccountPlaceholder': 'PL00 0000 0000 0000 0000 0000 0000',
     'settings.paymentAccountHint': 'Account number where payments will be sent',
+    'settings.telegramTitle': 'Telegram Bot Notifications',
+    'settings.telegramHint': 'Create a bot via @BotFather in Telegram, copy the token and enter the Chat ID to receive notifications. After form submission you will receive a message with the responses.',
+    'settings.telegramBotToken': 'Bot Token',
+    'settings.telegramBotTokenHint': 'Get the token from @BotFather in Telegram',
+    'settings.telegramChatId': 'Chat ID',
+    'settings.telegramChatIdHint': 'ID of the chat or channel to receive notifications (find via @userinfobot)',
     
     // Field Types
     'field.text': 'Text',
