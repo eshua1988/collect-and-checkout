@@ -3,7 +3,7 @@ import { BotNode, BotEdge, BotNodeData } from '@/types/bot';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Send, RefreshCw, Bot, User, Loader2 } from 'lucide-react';
+import { X, Send, RefreshCw, Bot, User, Loader2, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SimMessage {
