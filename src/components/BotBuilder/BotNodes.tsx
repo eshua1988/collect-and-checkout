@@ -1,10 +1,7 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { BotNodeData } from '@/types/bot';
-import { MessageSquare, ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-
-const generateId = () => Math.random().toString(36).substring(2, 9);
+import { MessageSquare, ChevronRight } from 'lucide-react';
 
 export const MessageNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
   return (
@@ -47,7 +44,7 @@ export const UserInputNode = memo(({ data, selected }: NodeProps<BotNodeData>) =
       
       <div className="flex items-center gap-2 px-3 py-2 rounded-t-xl bg-destructive/10 border-b border-border">
         <div className="w-6 h-6 rounded-full bg-destructive flex items-center justify-center">
-          <span className="text-xs text-white font-bold">?</span>
+          <span className="text-xs text-destructive-foreground font-bold">?</span>
         </div>
         <span className="text-xs font-semibold text-destructive">Ввод пользователя</span>
       </div>
@@ -71,7 +68,7 @@ export const UserInputNode = memo(({ data, selected }: NodeProps<BotNodeData>) =
 
 export const ConditionNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
   return (
-    <div className={`min-w-[200px] max-w-[260px] rounded-xl border-2 shadow-md bg-card transition-all ${selected ? 'border-warning shadow-lg' : 'border-border'}`}>
+    <div className={`relative min-w-[200px] max-w-[260px] rounded-xl border-2 shadow-md bg-card transition-all ${selected ? 'border-warning shadow-lg' : 'border-border'}`}>
       <Handle type="target" position={Position.Left} className="!w-3 !h-3 !bg-warning !border-2 !border-background" />
       
       <div className="flex items-center gap-2 px-3 py-2 rounded-t-xl bg-warning/10 border-b border-border">
@@ -93,8 +90,8 @@ export const ConditionNode = memo(({ data, selected }: NodeProps<BotNodeData>) =
       <Handle type="source" id="yes" position={Position.Right} style={{ top: '35%' }} className="!w-3 !h-3 !bg-success !border-2 !border-background" />
       <Handle type="source" id="no" position={Position.Right} style={{ top: '65%' }} className="!w-3 !h-3 !bg-destructive !border-2 !border-background" />
       
-      <div className="absolute right-[-28px] top-[26%] text-[10px] text-success font-bold">Да</div>
-      <div className="absolute right-[-28px] top-[56%] text-[10px] text-destructive font-bold">Нет</div>
+      <div className="absolute text-[10px] text-success font-bold pointer-events-none" style={{ right: '-28px', top: '26%' }}>Да</div>
+      <div className="absolute text-[10px] text-destructive font-bold pointer-events-none" style={{ right: '-28px', top: '56%' }}>Нет</div>
     </div>
   );
 });
@@ -107,14 +104,14 @@ export const ActionNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
   };
 
   return (
-    <div className={`min-w-[200px] max-w-[260px] rounded-xl border-2 shadow-md bg-card transition-all ${selected ? 'border-purple-500 shadow-lg' : 'border-border'}`}>
-      <Handle type="target" position={Position.Left} className="!w-3 !h-3 !bg-purple-500 !border-2 !border-background" />
+    <div className={`min-w-[200px] max-w-[260px] rounded-xl border-2 shadow-md bg-card transition-all ${selected ? 'border-accent shadow-lg' : 'border-border'}`}>
+      <Handle type="target" position={Position.Left} className="!w-3 !h-3 !bg-accent !border-2 !border-background" />
       
-      <div className="flex items-center gap-2 px-3 py-2 rounded-t-xl bg-purple-500/10 border-b border-border">
-        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
-          <span className="text-xs text-white">⚡</span>
+      <div className="flex items-center gap-2 px-3 py-2 rounded-t-xl bg-accent/10 border-b border-border">
+        <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
+          <span className="text-xs">⚡</span>
         </div>
-        <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">Действие</span>
+        <span className="text-xs font-semibold text-accent-foreground">Действие</span>
       </div>
 
       <div className="p-3">
@@ -129,7 +126,7 @@ export const ActionNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
         )}
       </div>
 
-      <Handle type="source" position={Position.Right} className="!w-3 !h-3 !bg-purple-500 !border-2 !border-background" />
+      <Handle type="source" position={Position.Right} className="!w-3 !h-3 !bg-accent !border-2 !border-background" />
     </div>
   );
 });
@@ -139,7 +136,7 @@ export const StartNode = memo(({ selected }: NodeProps<BotNodeData>) => {
     <div className={`min-w-[140px] rounded-xl border-2 shadow-md bg-card transition-all ${selected ? 'border-success shadow-lg' : 'border-border'}`}>
       <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-success/10">
         <div className="w-6 h-6 rounded-full bg-success flex items-center justify-center">
-          <span className="text-xs text-white font-bold">▶</span>
+          <span className="text-xs text-success-foreground font-bold">▶</span>
         </div>
         <span className="text-sm font-semibold text-success">Старт</span>
       </div>
