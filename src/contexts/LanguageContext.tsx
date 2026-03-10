@@ -53,6 +53,12 @@ const translations: Record<Language, Translations> = {
     'settings.paymentAccount': 'Счёт для оплаты',
     'settings.paymentAccountPlaceholder': 'PL00 0000 0000 0000 0000 0000 0000',
     'settings.paymentAccountHint': 'Номер счёта, на который будут поступать платежи',
+    'settings.telegramTitle': 'Telegram-бот уведомления',
+    'settings.telegramHint': 'Создайте бота через @BotFather в Telegram, скопируйте токен и укажите Chat ID куда слать уведомления. После заполнения формы вы получите сообщение с ответами.',
+    'settings.telegramBotToken': 'Токен бота',
+    'settings.telegramBotTokenHint': 'Получите токен у @BotFather в Telegram',
+    'settings.telegramChatId': 'Chat ID',
+    'settings.telegramChatIdHint': 'ID чата или канала для получения уведомлений (можно узнать через @userinfobot)',
     
     // Field Types
     'field.text': 'Текст',

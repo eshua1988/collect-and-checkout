@@ -90,6 +90,39 @@ export function FormSettings({ form, onUpdate }: FormSettingsProps) {
             rows={3}
           />
         </div>
+
+        {/* Telegram Bot Settings */}
+        <div className="border-t pt-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Send className="w-4 h-4 text-primary" />
+            <Label className="text-base font-semibold">{t('settings.telegramTitle')}</Label>
+          </div>
+          <div className="rounded-lg bg-muted/50 border p-3 flex gap-2 text-xs text-muted-foreground">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{t('settings.telegramHint')}</span>
+          </div>
+          <div>
+            <Label>{t('settings.telegramBotToken')}</Label>
+            <Input
+              value={form.telegramBotToken || ''}
+              onChange={(e) => onUpdate({ telegramBotToken: e.target.value })}
+              placeholder="1234567890:AAF..."
+              className="mt-1 font-mono text-sm"
+              type="password"
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t('settings.telegramBotTokenHint')}</p>
+          </div>
+          <div>
+            <Label>{t('settings.telegramChatId')}</Label>
+            <Input
+              value={form.telegramChatId || ''}
+              onChange={(e) => onUpdate({ telegramChatId: e.target.value })}
+              placeholder="-1001234567890"
+              className="mt-1 font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t('settings.telegramChatIdHint')}</p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
