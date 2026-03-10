@@ -53,6 +53,12 @@ const translations: Record<Language, Translations> = {
     'settings.paymentAccount': 'Счёт для оплаты',
     'settings.paymentAccountPlaceholder': 'PL00 0000 0000 0000 0000 0000 0000',
     'settings.paymentAccountHint': 'Номер счёта, на который будут поступать платежи',
+    'settings.telegramTitle': 'Telegram-бот уведомления',
+    'settings.telegramHint': 'Создайте бота через @BotFather в Telegram, скопируйте токен и укажите Chat ID куда слать уведомления. После заполнения формы вы получите сообщение с ответами.',
+    'settings.telegramBotToken': 'Токен бота',
+    'settings.telegramBotTokenHint': 'Получите токен у @BotFather в Telegram',
+    'settings.telegramChatId': 'Chat ID',
+    'settings.telegramChatIdHint': 'ID чата или канала для получения уведомлений (можно узнать через @userinfobot)',
     
     // Field Types
     'field.text': 'Текст',
@@ -201,6 +207,12 @@ const translations: Record<Language, Translations> = {
     'settings.paymentAccount': 'Payment Account',
     'settings.paymentAccountPlaceholder': 'PL00 0000 0000 0000 0000 0000 0000',
     'settings.paymentAccountHint': 'Account number where payments will be sent',
+    'settings.telegramTitle': 'Telegram Bot Notifications',
+    'settings.telegramHint': 'Create a bot via @BotFather in Telegram, copy the token and enter the Chat ID to receive notifications. After form submission you will receive a message with the responses.',
+    'settings.telegramBotToken': 'Bot Token',
+    'settings.telegramBotTokenHint': 'Get the token from @BotFather in Telegram',
+    'settings.telegramChatId': 'Chat ID',
+    'settings.telegramChatIdHint': 'ID of the chat or channel to receive notifications (find via @userinfobot)',
     
     // Field Types
     'field.text': 'Text',
