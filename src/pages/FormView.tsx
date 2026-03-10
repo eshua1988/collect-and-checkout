@@ -5,6 +5,51 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, AlertCircle } from 'lucide-react';
+import { FormData, FormResponse } from '@/types/form';
+
+const sendTelegramNotification = async (
+  form: FormData,
+  responses: FormResponse,
+  paymentAmount?: number,
+  paymentMethod?: string
+) => {
+  if (!form.telegramBotToken || !form.telegramChatId) return;
+
+  const fieldLabels: Record<string, string> = {};
+  form.fields.forEach((f) => { fieldLabels[f.id] = f.label; });
+
+  const lines: string[] = [
+    `📋 *Новый ответ на форму: ${form.title}*`,
+    `🕐 ${new Date().toLocaleString('ru-RU')}`,
+    '',
+  ];
+
+  Object.entries(responses).forEach(([fieldId, value]) => {
+    const label = fieldLabels[fieldId] || fieldId;
+    const displayValue = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+    if (displayValue) lines.push(`*${label}:* ${displayValue}`);
+  });
+
+  if (paymentAmount && paymentAmount > 0) {
+    lines.push('');
+    lines.push(`💳 *Сумма к оплате:* ${paymentAmount.toFixed(2)} PLN`);
+    if (paymentMethod) lines.push(`*Метод оплаты:* ${paymentMethod}`);
+  }
+
+  try {
+    await fetch(`https://api.telegram.org/bot${form.telegramBotToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: form.telegramChatId,
+        text: lines.join('\n'),
+        parse_mode: 'Markdown',
+      }),
+    });
+  } catch (e) {
+    console.error('Telegram notification error:', e);
+  }
+};
 
 const FormView = () => {
   const { formId } = useParams();
