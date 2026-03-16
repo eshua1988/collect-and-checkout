@@ -342,10 +342,43 @@ export function BotTemplatesPanel({ bot, onLoad, onClose }: BotTemplatesPanelPro
     t.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()))
   );
 
+  // Re-generate all IDs so merged nodes don't collide with existing ones
+  const remapIds = (tpl: typeof templates[0]): { nodes: BotNode[]; edges: BotEdge[] } => {
+    const idMap: Record<string, string> = {};
+    // skip remapping 'start' — there's already one on canvas
+    tpl.nodes.forEach(n => {
+      idMap[n.id] = n.id === 'start' ? n.id : gen();
+    });
+    const nodes: BotNode[] = tpl.nodes
+      .filter(n => n.id !== 'start')
+      .map(n => ({
+        ...n,
+        id: idMap[n.id],
+        // Offset so merged nodes appear to the right of existing content
+        position: { x: n.position.x + 200 + Math.random() * 60, y: n.position.y + 80 + Math.random() * 40 },
+      }));
+    const edges: BotEdge[] = tpl.edges
+      .filter(e => e.source !== 'start' && e.target !== 'start')
+      .map(e => ({
+        ...e,
+        id: gen(),
+        source: idMap[e.source] ?? e.source,
+        target: idMap[e.target] ?? e.target,
+      }));
+    return { nodes, edges };
+  };
+
   const handleLoad = (tpl: typeof templates[0]) => {
     onLoad(tpl.nodes, tpl.edges);
     toast.success(`Шаблон "${tpl.title}" загружен!`);
     onClose();
+  };
+
+  const handleMerge = (tpl: typeof templates[0]) => {
+    const { nodes, edges } = remapIds(tpl);
+    onMerge(nodes, edges);
+    toast.success(`Шаблон "${tpl.title}" добавлен к текущему потоку!`);
+    setConfirmId(null);
   };
 
   return (
