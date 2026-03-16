@@ -23,13 +23,16 @@ import {
 } from './BotNodes';
 import { NodeEditor } from './NodeEditor';
 import { BotSimulator } from './BotSimulator';
-import { BotNodeData, BotNodeType, TelegramBot } from '@/types/bot';
+import { BotTipsPanel } from './BotTipsPanel';
+import { BotTemplatesPanel } from './BotTemplatesPanel';
+import { BotNodeData, BotNodeType, BotNode, BotEdge, TelegramBot } from '@/types/bot';
 import { FormData } from '@/types/form';
 import { Button } from '@/components/ui/button';
 import {
   MessageSquare, GitBranch, Zap, HelpCircle, Save, Info,
   Brain, Clock, Image, SlidersHorizontal, Shuffle, CornerDownRight, Play,
   Languages, Globe, Youtube, Share2, Instagram, Facebook, Flag,
+  Lightbulb, Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -103,6 +106,8 @@ const nodeAddButtons: { type: BotNodeType; label: string; icon: React.ReactNode;
   { type: 'jump',             label: 'Переход',      icon: <CornerDownRight className="w-3.5 h-3.5" />,   color: 'bg-muted text-muted-foreground border-border' },
 ];
 
+type SidePanel = 'nodeEditor' | 'simulator' | 'tips' | 'templates' | null;
+
 function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
@@ -114,9 +119,14 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(bot.edges as Edge[]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [showSimulator, setShowSimulator] = useState(false);
+  const [sidePanel, setSidePanel] = useState<SidePanel>(null);
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
+
+  const togglePanel = (panel: SidePanel) => {
+    setSidePanel(prev => prev === panel ? null : panel);
+    if (panel !== 'nodeEditor') setSelectedNodeId(null);
+  };
 
   const onConnect = useCallback((connection: Connection) => {
     setEdges(eds => addEdge({ ...connection, animated: true, style: { stroke: 'hsl(var(--primary))' } }, eds));
@@ -127,6 +137,7 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
     const pos = { x: 200 + Math.random() * 400, y: 100 + Math.random() * 300 };
     setNodes(nds => [...nds, { id, type, position: pos, data: { ...defaultData[type] } }]);
     setSelectedNodeId(id);
+    setSidePanel('nodeEditor');
   }, [setNodes]);
 
   const updateNodeData = useCallback((nodeId: string, data: BotNodeData) => {
@@ -137,6 +148,7 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
     setNodes(nds => nds.filter(n => n.id !== nodeId));
     setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
     setSelectedNodeId(null);
+    setSidePanel(null);
   }, [setNodes, setEdges]);
 
   const handleSave = () => {
@@ -144,12 +156,19 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
     toast.success('Поток бота сохранён!');
   };
 
+  const handleLoadTemplate = (tplNodes: BotNode[], tplEdges: BotEdge[]) => {
+    setNodes(tplNodes as Node[]);
+    setEdges(tplEdges as Edge[]);
+    setSelectedNodeId(null);
+    setSidePanel(null);
+  };
+
   return (
     <div className="flex h-full">
       {/* Canvas */}
       <div className="flex-1 relative" ref={reactFlowWrapper}>
         {/* Toolbar: node types */}
-        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 flex-wrap max-w-[calc(100%-180px)]">
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 flex-wrap max-w-[calc(100%-260px)]">
           {nodeAddButtons.map(btn => (
             <button
               key={btn.type}
@@ -166,8 +185,26 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
           <Button
             size="sm"
-            variant={showSimulator ? 'default' : 'outline'}
-            onClick={() => setShowSimulator(v => !v)}
+            variant={sidePanel === 'tips' ? 'default' : 'outline'}
+            onClick={() => togglePanel('tips')}
+            className="shadow-md"
+          >
+            <Lightbulb className="w-4 h-4 mr-1.5" />
+            Подсказки
+          </Button>
+          <Button
+            size="sm"
+            variant={sidePanel === 'templates' ? 'default' : 'outline'}
+            onClick={() => togglePanel('templates')}
+            className="shadow-md"
+          >
+            <Layers className="w-4 h-4 mr-1.5" />
+            Шаблоны
+          </Button>
+          <Button
+            size="sm"
+            variant={sidePanel === 'simulator' ? 'default' : 'outline'}
+            onClick={() => togglePanel('simulator')}
             className="shadow-md"
           >
             <Play className="w-4 h-4 mr-1.5" />
@@ -194,8 +231,8 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => { setSelectedNodeId(node.id); setShowSimulator(false); }}
-          onPaneClick={() => setSelectedNodeId(null)}
+          onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSidePanel('nodeEditor'); }}
+          onPaneClick={() => { setSelectedNodeId(null); if (sidePanel === 'nodeEditor') setSidePanel(null); }}
           fitView
           proOptions={{ hideAttribution: true }}
           defaultEdgeOptions={{ animated: true, style: { stroke: 'hsl(var(--primary))', strokeWidth: 2 } }}
@@ -218,7 +255,7 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
       </div>
 
       {/* Node Editor side panel */}
-      {selectedNode && selectedNode.id !== 'start' && !showSimulator && (
+      {sidePanel === 'nodeEditor' && selectedNode && selectedNode.id !== 'start' && (
         <div className="w-80 border-l bg-card overflow-y-auto shrink-0 flex flex-col">
           <NodeEditor
             nodeId={selectedNode.id}
@@ -227,22 +264,36 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
             forms={forms}
             nodes={nodes as any}
             onUpdate={updateNodeData}
-            onClose={() => setSelectedNodeId(null)}
+            onClose={() => setSidePanel(null)}
             onDelete={deleteNode}
           />
         </div>
       )}
 
       {/* Simulator side panel */}
-      {showSimulator && (
+      {sidePanel === 'simulator' && (
         <div className="w-80 border-l bg-card shrink-0 flex flex-col overflow-hidden">
           <BotSimulator
             nodes={nodes as any}
             edges={edges as any}
             botName={bot.name}
-            onClose={() => setShowSimulator(false)}
+            onClose={() => setSidePanel(null)}
           />
         </div>
+      )}
+
+      {/* Tips side panel */}
+      {sidePanel === 'tips' && (
+        <BotTipsPanel onClose={() => setSidePanel(null)} />
+      )}
+
+      {/* Templates side panel */}
+      {sidePanel === 'templates' && (
+        <BotTemplatesPanel
+          bot={bot}
+          onLoad={handleLoadTemplate}
+          onClose={() => setSidePanel(null)}
+        />
       )}
     </div>
   );

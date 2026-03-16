@@ -3,12 +3,26 @@ import { TelegramBot } from '@/types/bot';
 
 const BOTS_KEY = 'formbuilder_bots';
 
-export function useBotsStorage() {
-  const [bots, setBots] = useState<TelegramBot[]>([]);
-
-  useEffect(() => {
+// Read directly from localStorage (sync) so getBot works on first render
+function readBots(): TelegramBot[] {
+  try {
     const saved = localStorage.getItem(BOTS_KEY);
-    if (saved) setBots(JSON.parse(saved));
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function useBotsStorage() {
+  const [bots, setBots] = useState<TelegramBot[]>(readBots);
+
+  // Keep in sync across tabs
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === BOTS_KEY) setBots(readBots());
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
   }, []);
 
   const saveBots = useCallback((newBots: TelegramBot[]) => {
@@ -36,8 +50,9 @@ export function useBotsStorage() {
   }, []);
 
   const getBot = useCallback((botId: string) => {
-    return bots.find(b => b.id === botId);
-  }, [bots]);
+    // Read fresh from localStorage to avoid stale state on first render
+    return readBots().find(b => b.id === botId);
+  }, []);
 
-  return { bots, saveBot, deleteBot, getBot };
+  return { bots, saveBot, saveBots, deleteBot, getBot };
 }
