@@ -19,6 +19,7 @@ import {
   MessageNode, UserInputNode, ConditionNode, ActionNode, StartNode,
   AiChatNode, DelayNode, MediaNode, VariableNode, RandomizerNode, JumpNode,
   TranslateNode, LangDetectNode, YoutubeMonitorNode, SocialShareNode,
+  InstagramMonitorNode, FacebookMonitorNode, UserLangPrefNode,
 } from './BotNodes';
 import { NodeEditor } from './NodeEditor';
 import { BotSimulator } from './BotSimulator';
@@ -28,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import {
   MessageSquare, GitBranch, Zap, HelpCircle, Save, Info,
   Brain, Clock, Image, SlidersHorizontal, Shuffle, CornerDownRight, Play,
-  Languages, Globe, Youtube, Share2,
+  Languages, Globe, Youtube, Share2, Instagram, Facebook, Flag,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -48,6 +49,9 @@ const nodeTypes: NodeTypes = {
   langDetect: LangDetectNode,
   youtubeMonitor: YoutubeMonitorNode,
   socialShare: SocialShareNode,
+  instagramMonitor: InstagramMonitorNode,
+  facebookMonitor: FacebookMonitorNode,
+  userLangPref: UserLangPrefNode,
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
