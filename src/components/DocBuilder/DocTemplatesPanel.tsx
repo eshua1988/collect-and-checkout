@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { DocTemplate, DOC_TEMPLATES } from './DocTemplates';
+import { DOC_TEMPLATES } from './DocTemplates';
+import { DocTemplate } from '@/types/document';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, Search } from 'lucide-react';
