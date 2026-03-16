@@ -163,6 +163,11 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
     setSidePanel(null);
   };
 
+  const handleMergeTemplate = (tplNodes: BotNode[], tplEdges: BotEdge[]) => {
+    setNodes(nds => [...nds, ...(tplNodes as Node[])]);
+    setEdges(eds => [...eds, ...(tplEdges as Edge[])]);
+  };
+
   return (
     <div className="flex h-full">
       {/* Canvas */}

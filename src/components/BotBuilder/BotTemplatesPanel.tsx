@@ -440,11 +440,28 @@ export function BotTemplatesPanel({ bot, onLoad, onMerge, onClose }: BotTemplate
                 </div>
 
                 {confirmId === tpl.id ? (
-                  <div className="flex gap-1.5">
-                    <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => { handleLoad(tpl); setConfirmId(null); }}>
-                      ✅ Загрузить
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs px-2" onClick={() => setConfirmId(null)}>
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] text-muted-foreground text-center">Как добавить шаблон?</p>
+                    <div className="flex gap-1.5">
+                      <Button
+                        size="sm"
+                        className="flex-1 h-7 text-xs gap-1"
+                        onClick={() => handleMerge(tpl)}
+                      >
+                        <PlusCircle className="w-3 h-3" />
+                        Добавить
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="flex-1 h-7 text-xs gap-1"
+                        onClick={() => { handleLoad(tpl); setConfirmId(null); }}
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Заменить
+                      </Button>
+                    </div>
+                    <Button size="sm" variant="ghost" className="w-full h-6 text-xs text-muted-foreground" onClick={() => setConfirmId(null)}>
                       Отмена
                     </Button>
                   </div>
