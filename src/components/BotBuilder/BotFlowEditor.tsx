@@ -64,6 +64,10 @@ const defaultData: Record<BotNodeType, BotNodeData> = {
   variable: { varOperation: 'set', varName: '', varValue: '' },
   randomizer: { randWeights: [1, 1] },
   jump: { jumpTarget: '' },
+  translate: { translateSourceLang: 'auto', translateTargetLang: 'ru', translateMode: 'fixed', translateSourceVar: 'user_message', translateResultVar: 'translated_text' },
+  langDetect: { langDetectVar: 'user_message', langResultVar: 'user_lang', langSetAsDefault: true },
+  youtubeMonitor: { ytNotifyVideos: true, ytNotifyStreams: true, ytCheckInterval: 30, ytMessageTemplate: '🎬 Новое видео: {{title}}\n▶️ {{url}}' },
+  socialShare: { shareLinks: [], shareText: '', shareLayout: 'buttons' },
 };
 
 const nodeAddButtons: { type: BotNodeType; label: string; icon: React.ReactNode; color: string }[] = [
