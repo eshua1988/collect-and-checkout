@@ -162,6 +162,9 @@ const Home = () => {
                 <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{projects.length}</span>
               )}
             </button>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
