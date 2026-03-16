@@ -77,16 +77,20 @@ const defaultData: Record<BotNodeType, BotNodeData> = {
 };
 
 const nodeAddButtons: { type: BotNodeType; label: string; icon: React.ReactNode; color: string }[] = [
-  { type: 'message',    label: 'Сообщение',   icon: <MessageSquare className="w-3.5 h-3.5" />, color: 'bg-primary/10 text-primary border-primary/30' },
-  { type: 'userInput',  label: 'Ввод',         icon: <HelpCircle className="w-3.5 h-3.5" />,   color: 'bg-destructive/10 text-destructive border-destructive/30' },
-  { type: 'condition',  label: 'Условие',      icon: <GitBranch className="w-3.5 h-3.5" />,    color: 'bg-warning/10 text-warning border-warning/30' },
-  { type: 'action',     label: 'Действие',     icon: <Zap className="w-3.5 h-3.5" />,          color: 'bg-accent/10 text-accent-foreground border-accent/30' },
-  { type: 'aiChat',     label: '🤖 ИИ',        icon: <Brain className="w-3.5 h-3.5" />,        color: 'bg-primary/10 text-primary border-primary/30' },
-  { type: 'delay',      label: 'Пауза',        icon: <Clock className="w-3.5 h-3.5" />,         color: 'bg-muted text-muted-foreground border-border' },
-  { type: 'media',      label: 'Медиа',        icon: <Image className="w-3.5 h-3.5" />,         color: 'bg-secondary/80 text-secondary-foreground border-secondary' },
-  { type: 'variable',   label: 'Переменная',   icon: <SlidersHorizontal className="w-3.5 h-3.5" />, color: 'bg-secondary/80 text-secondary-foreground border-secondary' },
-  { type: 'randomizer', label: 'Рандом',       icon: <Shuffle className="w-3.5 h-3.5" />,       color: 'bg-primary/10 text-primary border-primary/30' },
-  { type: 'jump',       label: 'Переход',      icon: <CornerDownRight className="w-3.5 h-3.5" />, color: 'bg-muted text-muted-foreground border-border' },
+  { type: 'message',       label: 'Сообщение',   icon: <MessageSquare className="w-3.5 h-3.5" />,       color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'userInput',     label: 'Ввод',         icon: <HelpCircle className="w-3.5 h-3.5" />,          color: 'bg-destructive/10 text-destructive border-destructive/30' },
+  { type: 'condition',     label: 'Условие',      icon: <GitBranch className="w-3.5 h-3.5" />,           color: 'bg-warning/10 text-warning border-warning/30' },
+  { type: 'action',        label: 'Действие',     icon: <Zap className="w-3.5 h-3.5" />,                 color: 'bg-accent/10 text-accent-foreground border-accent/30' },
+  { type: 'aiChat',        label: '🤖 ИИ',        icon: <Brain className="w-3.5 h-3.5" />,               color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'translate',     label: '🌐 Перевод',   icon: <Languages className="w-3.5 h-3.5" />,           color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'langDetect',    label: '🔍 Язык',      icon: <Globe className="w-3.5 h-3.5" />,               color: 'bg-accent/10 text-accent-foreground border-accent/30' },
+  { type: 'youtubeMonitor',label: '▶ YouTube',    icon: <Youtube className="w-3.5 h-3.5" />,             color: 'bg-destructive/10 text-destructive border-destructive/30' },
+  { type: 'socialShare',   label: '📱 Соц.сети',  icon: <Share2 className="w-3.5 h-3.5" />,              color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'delay',         label: 'Пауза',        icon: <Clock className="w-3.5 h-3.5" />,               color: 'bg-muted text-muted-foreground border-border' },
+  { type: 'media',         label: 'Медиа',        icon: <Image className="w-3.5 h-3.5" />,               color: 'bg-secondary/80 text-secondary-foreground border-secondary' },
+  { type: 'variable',      label: 'Переменная',   icon: <SlidersHorizontal className="w-3.5 h-3.5" />,   color: 'bg-secondary/80 text-secondary-foreground border-secondary' },
+  { type: 'randomizer',    label: 'Рандом',       icon: <Shuffle className="w-3.5 h-3.5" />,             color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'jump',          label: 'Переход',      icon: <CornerDownRight className="w-3.5 h-3.5" />,     color: 'bg-muted text-muted-foreground border-border' },
 ];
 
 function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
