@@ -206,6 +206,103 @@ const Home = () => {
           </>
         )}
 
+        {/* DOCS TAB */}
+        {tab === 'docs' && (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Мои Документы</h2>
+            <div className="mb-6 rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
+              <div className="text-2xl shrink-0">📄</div>
+              <div>
+                <p className="font-medium text-sm mb-1">Конструктор документов, форм и таблиц</p>
+                <p className="text-xs text-muted-foreground">
+                  Создавайте документы, заполняемые формы и таблицы. 18+ готовых шаблонов. Экспорт в PDF и HTML. Подписи, изображения, видео.
+                </p>
+              </div>
+            </div>
+            {docs.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-16 text-center">
+                  <FileEdit className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-xl font-medium mb-2">Нет документов</h3>
+                  <p className="text-muted-foreground mb-6">Создайте первый документ или выберите готовый шаблон</p>
+                  <Button onClick={() => navigate('/doc/new')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Создать документ
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {docs.map((doc) => (
+                  <Card key={doc.id} className="group hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
+                          <CardDescription className="mt-1">
+                            {doc.blocks.length} блоков{doc.allowFill ? ' · Форма для заполнения' : ''}
+                          </CardDescription>
+                        </div>
+                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${
+                          doc.published ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {doc.published ? 'Опубликован' : 'Черновик'}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                        <span>Обновлён: {format(doc.updatedAt, 'dd.MM.yyyy')}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/doc/${doc.id}`)}>
+                          Редактировать
+                        </Button>
+                        <Button
+                          variant={doc.published ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => {
+                            const updated = toggleDocPublish(doc.id);
+                            if (updated?.published) {
+                              const url = `${window.location.origin}/d/${doc.id}`;
+                              navigator.clipboard.writeText(url);
+                              toast.success('Опубликован! Ссылка скопирована');
+                            } else {
+                              toast.info('Документ снят с публикации');
+                            }
+                          }}
+                        >
+                          <Link className="w-4 h-4 mr-1" />
+                          {doc.published ? 'Снять' : 'Публиковать'}
+                        </Button>
+                        {doc.published && (
+                          <>
+                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/d/${doc.id}`);
+                              toast.success('Ссылка скопирована');
+                            }}>
+                              <Copy className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => window.open(`/d/${doc.id}`, '_blank')}>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:text-destructive ml-auto"
+                          onClick={() => { if (window.confirm('Удалить документ?')) { deleteDoc(doc.id); toast.success('Документ удалён'); } }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
         {/* BOTS TAB */}
         {tab === 'bots' && (
           <>
