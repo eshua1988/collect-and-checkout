@@ -903,6 +903,336 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
           </>
         )}
 
+        {/* ══════════════════════════════════════════════════════════════════════
+            INSTAGRAM MONITOR NODE
+        ══════════════════════════════════════════════════════════════════════ */}
+        {nodeType === 'instagramMonitor' && (
+          <>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/5 border border-destructive/20">
+              <span className="text-base">📸</span>
+              <p className="text-xs text-destructive font-medium">Мониторинг Instagram аккаунта</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">URL аккаунта Instagram</Label>
+              <Input
+                value={local.igAccountUrl || ''}
+                onChange={e => update({ igAccountUrl: e.target.value })}
+                placeholder="https://instagram.com/username или @username"
+                className="mt-1 h-8 text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">или ID аккаунта (Meta Graph API)</Label>
+              <Input
+                value={local.igAccountId || ''}
+                onChange={e => update({ igAccountId: e.target.value })}
+                placeholder="17841400000000000"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs">Meta Graph API Access Token</Label>
+              <Input
+                value={local.igAccessToken || ''}
+                onChange={e => update({ igAccessToken: e.target.value })}
+                type="password"
+                placeholder="EAAxxxxxxxxxx..."
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Получите в Meta for Developers → Graph API Explorer</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Интервал проверки</Label>
+              <Select value={String(local.igCheckInterval || 30)} onValueChange={v => update({ igCheckInterval: Number(v) })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">Каждые 15 минут</SelectItem>
+                  <SelectItem value="30">Каждые 30 минут</SelectItem>
+                  <SelectItem value="60">Каждый час</SelectItem>
+                  <SelectItem value="120">Каждые 2 часа</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs">Что отслеживать</Label>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">📝 Новые посты в ленте</span>
+                <Switch checked={local.igNotifyPosts ?? true} onCheckedChange={v => update({ igNotifyPosts: v })} />
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">🎬 Новые Reels</span>
+                <Switch checked={local.igNotifyReels ?? true} onCheckedChange={v => update({ igNotifyReels: v })} />
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">🔴 Начало прямого эфира</span>
+                <Switch checked={local.igNotifyLive ?? false} onCheckedChange={v => update({ igNotifyLive: v })} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs">Автоматический перевод контента</Label>
+              <div className="flex items-center justify-between p-2 bg-primary/5 rounded-lg border border-primary/20">
+                <div>
+                  <p className="text-xs font-medium">🌐 Переводить на язык пользователя</p>
+                  <p className="text-xs text-muted-foreground">Использует {'{{user_lang}}'} для перевода</p>
+                </div>
+                <Switch checked={local.igTranslateContent ?? true} onCheckedChange={v => update({ igTranslateContent: v })} />
+              </div>
+              {local.igTranslateContent && (
+                <Select value={local.igTranslateContentType || 'both'} onValueChange={v => update({ igTranslateContentType: v as any })}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="caption">Только подпись (caption)</SelectItem>
+                    <SelectItem value="post">Только текст поста</SelectItem>
+                    <SelectItem value="both">Текст + подпись (оба)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-xs">Шаблон уведомления</Label>
+              <Textarea
+                value={local.igMessageTemplate || ''}
+                onChange={e => update({ igMessageTemplate: e.target.value })}
+                placeholder={'📸 Новый пост!\n\n{{caption}}\n\n🔗 {{url}}'}
+                rows={4}
+                className="mt-1 text-xs font-mono"
+              />
+              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                <p>Переменные: <span className="font-mono">{'{{caption}}'}</span> <span className="font-mono">{'{{url}}'}</span> <span className="font-mono">{'{{author}}'}</span> <span className="font-mono">{'{{type}}'}</span> <span className="font-mono">{'{{media_url}}'}</span></p>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Переменная ID последнего поста</Label>
+              <Input
+                value={local.igSaveLastIdVar || ''}
+                onChange={e => update({ igSaveLastIdVar: e.target.value })}
+                placeholder="ig_last_post_id"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+            </div>
+
+            <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-2 text-xs space-y-1">
+              <p className="font-medium">Как подключить Instagram:</p>
+              <p className="text-muted-foreground">1. Создайте приложение на developers.facebook.com</p>
+              <p className="text-muted-foreground">2. Подключите Instagram Basic Display API</p>
+              <p className="text-muted-foreground">3. Получите долгосрочный токен (60 дней)</p>
+              <p className="text-muted-foreground">4. Используйте вебхуки для real-time уведомлений</p>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            FACEBOOK MONITOR NODE
+        ══════════════════════════════════════════════════════════════════════ */}
+        {nodeType === 'facebookMonitor' && (
+          <>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+              <span className="text-base">📘</span>
+              <p className="text-xs text-primary font-medium">Мониторинг Facebook страницы</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">URL страницы Facebook</Label>
+              <Input
+                value={local.fbPageUrl || ''}
+                onChange={e => update({ fbPageUrl: e.target.value })}
+                placeholder="https://facebook.com/pagename"
+                className="mt-1 h-8 text-xs"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">или ID страницы (Meta Graph API)</Label>
+              <Input
+                value={local.fbPageId || ''}
+                onChange={e => update({ fbPageId: e.target.value })}
+                placeholder="123456789012345"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs">Page Access Token</Label>
+              <Input
+                value={local.fbAccessToken || ''}
+                onChange={e => update({ fbAccessToken: e.target.value })}
+                type="password"
+                placeholder="EAAxxxxxxxxxx..."
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Получите в Meta for Developers → Page Access Tokens</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Интервал проверки</Label>
+              <Select value={String(local.fbCheckInterval || 30)} onValueChange={v => update({ fbCheckInterval: Number(v) })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">Каждые 15 минут</SelectItem>
+                  <SelectItem value="30">Каждые 30 минут</SelectItem>
+                  <SelectItem value="60">Каждый час</SelectItem>
+                  <SelectItem value="120">Каждые 2 часа</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs">Что отслеживать</Label>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">📝 Новые посты на странице</span>
+                <Switch checked={local.fbNotifyPosts ?? true} onCheckedChange={v => update({ fbNotifyPosts: v })} />
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">🎬 Новые видео</span>
+                <Switch checked={local.fbNotifyVideos ?? true} onCheckedChange={v => update({ fbNotifyVideos: v })} />
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">🔴 Начало прямого эфира</span>
+                <Switch checked={local.fbNotifyLive ?? false} onCheckedChange={v => update({ fbNotifyLive: v })} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs">Автоматический перевод контента</Label>
+              <div className="flex items-center justify-between p-2 bg-primary/5 rounded-lg border border-primary/20">
+                <div>
+                  <p className="text-xs font-medium">🌐 Переводить на язык пользователя</p>
+                  <p className="text-xs text-muted-foreground">Использует {'{{user_lang}}'} для перевода</p>
+                </div>
+                <Switch checked={local.fbTranslateContent ?? true} onCheckedChange={v => update({ fbTranslateContent: v })} />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Шаблон уведомления</Label>
+              <Textarea
+                value={local.fbMessageTemplate || ''}
+                onChange={e => update({ fbMessageTemplate: e.target.value })}
+                placeholder={'📘 Новый пост от {{author}}!\n\n{{text}}\n\n🔗 {{url}}'}
+                rows={4}
+                className="mt-1 text-xs font-mono"
+              />
+              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                <p>Переменные: <span className="font-mono">{'{{text}}'}</span> <span className="font-mono">{'{{url}}'}</span> <span className="font-mono">{'{{author}}'}</span> <span className="font-mono">{'{{type}}'}</span> <span className="font-mono">{'{{media_url}}'}</span></p>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Переменная ID последнего поста</Label>
+              <Input
+                value={local.fbSaveLastIdVar || ''}
+                onChange={e => update({ fbSaveLastIdVar: e.target.value })}
+                placeholder="fb_last_post_id"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+            </div>
+
+            <div className="rounded-lg bg-primary/5 border border-primary/20 p-2 text-xs space-y-1">
+              <p className="font-medium">Как подключить Facebook:</p>
+              <p className="text-muted-foreground">1. Создайте приложение на developers.facebook.com</p>
+              <p className="text-muted-foreground">2. Добавьте продукт "Webhooks" или "Pages API"</p>
+              <p className="text-muted-foreground">3. Получите Page Access Token</p>
+              <p className="text-muted-foreground">4. Настройте подписку на feed/videos события</p>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            USER LANG PREF NODE — ask user to pick their language
+        ══════════════════════════════════════════════════════════════════════ */}
+        {nodeType === 'userLangPref' && (
+          <>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+              <span className="text-base">🗣</span>
+              <p className="text-xs text-primary font-medium">Спрашивает пользователя его язык и сохраняет для перевода контента</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Вопрос о выборе языка</Label>
+              <Textarea
+                value={local.ulpQuestion || ''}
+                onChange={e => update({ ulpQuestion: e.target.value })}
+                placeholder="Выберите язык / Choose your language:"
+                rows={2}
+                className="mt-1 text-sm"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs">Языки для выбора</Label>
+              <div className="mt-1 space-y-1">
+                {(['ru','en','de','fr','es','it','zh','ja','ar','pt','ko','tr','uk','pl','nl'] as const).map(code => {
+                  const flagMap: Record<string, string> = {
+                    ru:'🇷🇺 Русский', en:'🇬🇧 English', de:'🇩🇪 Deutsch', fr:'🇫🇷 Français', es:'🇪🇸 Español',
+                    it:'🇮🇹 Italiano', zh:'🇨🇳 中文', ja:'🇯🇵 日本語', ar:'🇸🇦 العربية', pt:'🇧🇷 Português',
+                    ko:'🇰🇷 한국어', tr:'🇹🇷 Türkçe', uk:'🇺🇦 Українська', pl:'🇵🇱 Polski', nl:'🇳🇱 Nederlands',
+                  };
+                  const active = (local.ulpLanguages || ['ru','en']).includes(code);
+                  return (
+                    <button
+                      key={code}
+                      onClick={() => {
+                        const current = local.ulpLanguages || ['ru','en'];
+                        const updated = active ? current.filter(l => l !== code) : [...current, code];
+                        update({ ulpLanguages: updated });
+                      }}
+                      className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${active ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-muted/40 text-muted-foreground hover:bg-muted'}`}
+                    >
+                      {flagMap[code] || code}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Нажмите чтобы включить/выключить язык</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Сохранить выбор в переменную</Label>
+              <Input
+                value={local.ulpSaveVar || ''}
+                onChange={e => update({ ulpSaveVar: e.target.value })}
+                placeholder="user_lang"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Код языка (ru, en, de...) будет сохранён в эту переменную</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Язык по умолчанию (если не выбран)</Label>
+              <Select value={local.ulpDefaultLang || 'ru'} onValueChange={v => update({ ulpDefaultLang: v })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.filter(l => l.code !== 'auto').map(l => (
+                    <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+              <div>
+                <p className="text-xs font-medium">Показывать флаги стран</p>
+                <p className="text-xs text-muted-foreground">Отображать эмодзи флагов на кнопках</p>
+              </div>
+              <Switch checked={local.ulpShowFlags ?? true} onCheckedChange={v => update({ ulpShowFlags: v })} />
+            </div>
+
+            <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Схема использования:</p>
+              <p>1. 🗣 Этот узел → спрашивает язык, сохраняет в {'{{user_lang}}'}</p>
+              <p>2. 📸 Instagram/Facebook Monitor → получает новый пост</p>
+              <p>3. 🌐 Перевод (режим «по языку юзера») → переводит на {'{{user_lang}}'}</p>
+              <p>4. 💬 Сообщение → {'{{translated_text}}'} пользователю</p>
+            </div>
+          </>
+        )}
+
       </CardContent>
     </Card>
   );
