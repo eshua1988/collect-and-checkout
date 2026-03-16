@@ -8,6 +8,8 @@ import FormEditor from "./pages/FormEditor";
 import FormView from "./pages/FormView";
 import FormResults from "./pages/FormResults";
 import BotEditor from "./pages/BotEditor";
+import DocumentEditor from "./pages/DocumentEditor";
+import DocView from "./pages/DocView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
