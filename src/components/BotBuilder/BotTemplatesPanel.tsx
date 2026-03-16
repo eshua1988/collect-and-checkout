@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Layers, Zap } from 'lucide-react';
+import { X, Layers, Zap, PlusCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TelegramBot, BotNode, BotEdge } from '@/types/bot';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 interface BotTemplatesPanelProps {
   bot: TelegramBot;
   onLoad: (nodes: BotNode[], edges: BotEdge[]) => void;
+  onMerge: (nodes: BotNode[], edges: BotEdge[]) => void;
   onClose: () => void;
 }
 
@@ -331,7 +332,7 @@ const tagColors: Record<string, string> = {
   'webhook': 'bg-accent/10 text-accent-foreground',
 };
 
-export function BotTemplatesPanel({ bot, onLoad, onClose }: BotTemplatesPanelProps) {
+export function BotTemplatesPanel({ bot, onLoad, onMerge, onClose }: BotTemplatesPanelProps) {
   const [search, setSearch] = useState('');
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
@@ -341,10 +342,43 @@ export function BotTemplatesPanel({ bot, onLoad, onClose }: BotTemplatesPanelPro
     t.tags.some(tag => tag.toLowerCase().includes(search.toLowerCase()))
   );
 
+  // Re-generate all IDs so merged nodes don't collide with existing ones
+  const remapIds = (tpl: typeof templates[0]): { nodes: BotNode[]; edges: BotEdge[] } => {
+    const idMap: Record<string, string> = {};
+    // skip remapping 'start' — there's already one on canvas
+    tpl.nodes.forEach(n => {
+      idMap[n.id] = n.id === 'start' ? n.id : gen();
+    });
+    const nodes: BotNode[] = tpl.nodes
+      .filter(n => n.id !== 'start')
+      .map(n => ({
+        ...n,
+        id: idMap[n.id],
+        // Offset so merged nodes appear to the right of existing content
+        position: { x: n.position.x + 200 + Math.random() * 60, y: n.position.y + 80 + Math.random() * 40 },
+      }));
+    const edges: BotEdge[] = tpl.edges
+      .filter(e => e.source !== 'start' && e.target !== 'start')
+      .map(e => ({
+        ...e,
+        id: gen(),
+        source: idMap[e.source] ?? e.source,
+        target: idMap[e.target] ?? e.target,
+      }));
+    return { nodes, edges };
+  };
+
   const handleLoad = (tpl: typeof templates[0]) => {
     onLoad(tpl.nodes, tpl.edges);
     toast.success(`Шаблон "${tpl.title}" загружен!`);
     onClose();
+  };
+
+  const handleMerge = (tpl: typeof templates[0]) => {
+    const { nodes, edges } = remapIds(tpl);
+    onMerge(nodes, edges);
+    toast.success(`Шаблон "${tpl.title}" добавлен к текущему потоку!`);
+    setConfirmId(null);
   };
 
   return (
@@ -375,7 +409,10 @@ export function BotTemplatesPanel({ bot, onLoad, onClose }: BotTemplatesPanelPro
       <div className="px-3 py-2 border-b shrink-0">
         <div className="rounded-lg bg-muted/50 p-2.5 flex items-start gap-2">
           <Zap className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground">Загрузка шаблона <strong>заменит</strong> текущий поток. Убедитесь что сохранили важное.</p>
+          <p className="text-xs text-muted-foreground">
+            <strong>Добавить</strong> — вставляет узлы в текущий поток.<br />
+            <strong>Заменить</strong> — полностью перезаписывает поток.
+          </p>
         </div>
       </div>
 
@@ -406,11 +443,28 @@ export function BotTemplatesPanel({ bot, onLoad, onClose }: BotTemplatesPanelPro
                 </div>
 
                 {confirmId === tpl.id ? (
-                  <div className="flex gap-1.5">
-                    <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => { handleLoad(tpl); setConfirmId(null); }}>
-                      ✅ Загрузить
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs px-2" onClick={() => setConfirmId(null)}>
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] text-muted-foreground text-center">Как добавить шаблон?</p>
+                    <div className="flex gap-1.5">
+                      <Button
+                        size="sm"
+                        className="flex-1 h-7 text-xs gap-1"
+                        onClick={() => handleMerge(tpl)}
+                      >
+                        <PlusCircle className="w-3 h-3" />
+                        Добавить
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="flex-1 h-7 text-xs gap-1"
+                        onClick={() => { handleLoad(tpl); setConfirmId(null); }}
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Заменить
+                      </Button>
+                    </div>
+                    <Button size="sm" variant="ghost" className="w-full h-6 text-xs text-muted-foreground" onClick={() => setConfirmId(null)}>
                       Отмена
                     </Button>
                   </div>
