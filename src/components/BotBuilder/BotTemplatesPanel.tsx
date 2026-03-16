@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Layers, Zap } from 'lucide-react';
+import { X, Layers, Zap, PlusCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TelegramBot, BotNode, BotEdge } from '@/types/bot';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 interface BotTemplatesPanelProps {
   bot: TelegramBot;
   onLoad: (nodes: BotNode[], edges: BotEdge[]) => void;
+  onMerge: (nodes: BotNode[], edges: BotEdge[]) => void;
   onClose: () => void;
 }
 
