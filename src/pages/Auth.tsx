@@ -36,10 +36,7 @@ export default function Auth() {
     });
     setLoading(false);
     if (error) toast.error(error.message);
-    else {
-      toast.success('Регистрация успешна! Проверьте почту для подтверждения.');
-      setMode('login');
-    }
+    else toast.success('Регистрация успешна! Добро пожаловать!');
   };
 
   const handleForgot = async () => {
