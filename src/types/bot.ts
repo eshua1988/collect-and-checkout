@@ -13,7 +13,10 @@ export type BotNodeType =
   | 'translate'
   | 'youtubeMonitor'
   | 'socialShare'
-  | 'langDetect';
+  | 'langDetect'
+  | 'instagramMonitor'
+  | 'facebookMonitor'
+  | 'userLangPref';
 
 export interface BotButton {
   id: string;
@@ -81,31 +84,69 @@ export interface BotNodeData {
   jumpTarget?: string;
 
   // translate node
-  translateSourceVar?: string;      // variable containing text to translate
-  translateTargetLang?: string;     // target language code e.g. 'en', 'ru', 'de'
-  translateSourceLang?: string;     // 'auto' or explicit lang code
-  translateResultVar?: string;      // where to save translated text
-  translateMode?: 'fixed' | 'userLang'; // fixed lang or follow user detected lang
+  translateSourceVar?: string;
+  translateTargetLang?: string;
+  translateSourceLang?: string;
+  translateResultVar?: string;
+  translateMode?: 'fixed' | 'userLang';
+  translateContentType?: 'text' | 'post' | 'caption' | 'video_description' | 'audio_transcript';
+  translateCaptionVar?: string;
+  translateCaptionResultVar?: string;
+  translateAutoSend?: boolean;      // auto-send translated result immediately
 
   // langDetect node
-  langDetectVar?: string;           // variable with text to analyze
-  langResultVar?: string;           // where to save detected lang code e.g. 'user_lang'
-  langSetAsDefault?: boolean;       // auto-apply detected lang for future translates
+  langDetectVar?: string;
+  langResultVar?: string;
+  langSetAsDefault?: boolean;
 
   // youtubeMonitor node
-  ytChannelId?: string;             // YouTube channel ID (UCxxxxxxxx)
-  ytChannelUrl?: string;            // or channel URL
-  ytCheckInterval?: number;         // minutes between checks (15, 30, 60, 120)
-  ytNotifyVideos?: boolean;         // notify on new videos
-  ytNotifyStreams?: boolean;        // notify on live streams
-  ytNotifyPremiere?: boolean;       // notify on premieres
-  ytMessageTemplate?: string;       // message template with {{title}}, {{url}}, {{author}}
-  ytSaveLastIdVar?: string;         // variable to track last video ID
+  ytChannelId?: string;
+  ytChannelUrl?: string;
+  ytCheckInterval?: number;
+  ytNotifyVideos?: boolean;
+  ytNotifyStreams?: boolean;
+  ytNotifyPremiere?: boolean;
+  ytMessageTemplate?: string;
+  ytSaveLastIdVar?: string;
+  ytAutoTranslate?: boolean;        // auto-translate to user lang
 
   // socialShare node
-  shareLinks?: SocialLink[];        // list of platform links to share
-  shareText?: string;               // message text before links
-  shareLayout?: 'buttons' | 'text' | 'mixed'; // how to display
+  shareLinks?: SocialLink[];
+  shareText?: string;
+  shareLayout?: 'buttons' | 'text' | 'mixed';
+
+  // instagramMonitor node
+  igAccountId?: string;             // Instagram account/page ID
+  igAccountUrl?: string;            // or account URL e.g. @username
+  igAccessToken?: string;           // Meta Graph API access token (from settings)
+  igCheckInterval?: number;         // minutes between checks
+  igNotifyPosts?: boolean;          // notify on new feed posts
+  igNotifyReels?: boolean;          // notify on new reels
+  igNotifyStories?: boolean;        // notify on stories (limited API)
+  igNotifyLive?: boolean;           // notify on live streams
+  igTranslateContent?: boolean;     // auto-translate text/caption to user lang
+  igTranslateContentType?: 'caption' | 'post' | 'both';
+  igMessageTemplate?: string;       // {{type}} {{author}} {{caption}} {{url}} {{media_url}}
+  igSaveLastIdVar?: string;
+
+  // facebookMonitor node
+  fbPageId?: string;                // Facebook Page ID
+  fbPageUrl?: string;               // or page URL
+  fbAccessToken?: string;           // Meta Graph API page access token
+  fbCheckInterval?: number;
+  fbNotifyPosts?: boolean;
+  fbNotifyVideos?: boolean;
+  fbNotifyLive?: boolean;
+  fbTranslateContent?: boolean;     // auto-translate post text to user lang
+  fbMessageTemplate?: string;       // {{type}} {{author}} {{text}} {{url}} {{media_url}}
+  fbSaveLastIdVar?: string;
+
+  // userLangPref node — ask user to choose their language
+  ulpQuestion?: string;             // question to ask
+  ulpSaveVar?: string;              // variable to save lang code e.g. 'user_lang'
+  ulpDefaultLang?: string;          // default if user doesn't respond
+  ulpShowFlags?: boolean;           // show flag emoji on buttons
+  ulpLanguages?: string[];          // language codes to offer ['ru','en','de',...]
 }
 
 export interface SocialLink {

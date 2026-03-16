@@ -1,1 +1,10 @@
 project_id = "iiozrroogswlinpmdyyt"
+
+[functions.bot-ai-chat]
+verify_jwt = false
+
+[functions.bot-translate]
+verify_jwt = false
+
+[functions.bot-lang-detect]
+verify_jwt = false

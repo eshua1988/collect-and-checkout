@@ -385,3 +385,71 @@ export const SocialShareNode = memo(({ data, selected }: NodeProps<BotNodeData>)
     </NodeShell>
   );
 });
+
+// ─── INSTAGRAM MONITOR ─────────────────────────────────────────────────────────
+
+export const InstagramMonitorNode = memo(({ data, selected }: NodeProps<BotNodeData>) => (
+  <NodeShell selected={selected} color="destructive" icon={<span className="text-xs text-destructive-foreground font-bold">IG</span>} label="📸 Instagram Monitor">
+    {data.igAccountUrl || data.igAccountId ? (
+      <p className="text-xs text-muted-foreground truncate">{data.igAccountUrl || data.igAccountId}</p>
+    ) : (
+      <p className="text-xs"><EmptyText text="Аккаунт не задан..." /></p>
+    )}
+    <div className="flex gap-1 flex-wrap">
+      {data.igNotifyPosts && <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">📝 Посты</span>}
+      {data.igNotifyReels && <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">🎬 Reels</span>}
+      {data.igNotifyLive && <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">🔴 Live</span>}
+    </div>
+    {data.igTranslateContent && (
+      <div className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🌐 Авто-перевод</div>
+    )}
+    <div className="text-xs text-muted-foreground">Каждые {data.igCheckInterval || 30} мин</div>
+  </NodeShell>
+));
+
+// ─── FACEBOOK MONITOR ──────────────────────────────────────────────────────────
+
+export const FacebookMonitorNode = memo(({ data, selected }: NodeProps<BotNodeData>) => (
+  <NodeShell selected={selected} color="primary" icon={<span className="text-xs text-primary-foreground font-bold">FB</span>} label="📘 Facebook Monitor">
+    {data.fbPageUrl || data.fbPageId ? (
+      <p className="text-xs text-muted-foreground truncate">{data.fbPageUrl || data.fbPageId}</p>
+    ) : (
+      <p className="text-xs"><EmptyText text="Страница не задана..." /></p>
+    )}
+    <div className="flex gap-1 flex-wrap">
+      {data.fbNotifyPosts && <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">📝 Посты</span>}
+      {data.fbNotifyVideos && <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🎬 Видео</span>}
+      {data.fbNotifyLive && <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🔴 Live</span>}
+    </div>
+    {data.fbTranslateContent && (
+      <div className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">🌐 Авто-перевод</div>
+    )}
+    <div className="text-xs text-muted-foreground">Каждые {data.fbCheckInterval || 30} мин</div>
+  </NodeShell>
+));
+
+// ─── USER LANG PREF ────────────────────────────────────────────────────────────
+
+export const UserLangPrefNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
+  const langs = data.ulpLanguages || ['ru', 'en'];
+  const flagMap: Record<string, string> = {
+    ru: '🇷🇺', en: '🇬🇧', de: '🇩🇪', fr: '🇫🇷', es: '🇪🇸',
+    it: '🇮🇹', zh: '🇨🇳', ja: '🇯🇵', ar: '🇸🇦', pt: '🇧🇷',
+    ko: '🇰🇷', tr: '🇹🇷', uk: '🇺🇦', pl: '🇵🇱',
+  };
+  return (
+    <NodeShell selected={selected} color="primary" icon={<span className="text-xs text-primary-foreground">🗣</span>} label="Выбор языка">
+      <p className="text-xs text-muted-foreground line-clamp-2">
+        {data.ulpQuestion || <EmptyText text="Вопрос о языке..." />}
+      </p>
+      <div className="flex gap-1 flex-wrap">
+        {langs.map(l => (
+          <span key={l} className="text-sm" title={l}>{flagMap[l] || l.toUpperCase()}</span>
+        ))}
+      </div>
+      {data.ulpSaveVar && (
+        <div className="text-xs bg-muted px-2 py-1 rounded font-mono text-muted-foreground">→ {data.ulpSaveVar}</div>
+      )}
+    </NodeShell>
+  );
+});
