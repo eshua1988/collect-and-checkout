@@ -150,9 +150,18 @@ const Home = () => {
                 <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{bots.length}</span>
               )}
             </button>
-          </div>
-        </div>
-      </div>
+            <button
+              onClick={() => setTab('projects')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                tab === 'projects' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              Объединить
+              {projects.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{projects.length}</span>
+              )}
+            </button>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
