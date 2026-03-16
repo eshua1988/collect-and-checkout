@@ -81,8 +81,8 @@ const App = () => (
 
 // Wrapper to pass projectId from params
 function ProjectEditorRoute() {
-  const { useParams } = require('react-router-dom');
-  return <ProjectEditor />;
+  const { projectId } = useParams<{ projectId: string }>();
+  return <ProjectEditor projectId={projectId} />;
 }
 
 export default App;
