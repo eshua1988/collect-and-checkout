@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BotNodeData, BotNodeType, BotButton } from '@/types/bot';
+import { BotNodeData, BotNodeType, BotButton, SocialLink } from '@/types/bot';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { X, Plus, Trash2, Settings2, Brain, Clock, Shuffle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { X, Plus, Trash2, Settings2, Brain, Clock, Shuffle, Languages, Youtube, Share2, Globe } from 'lucide-react';
 import { FormData } from '@/types/form';
 import { BotNode } from '@/types/bot';
 
@@ -41,6 +42,42 @@ const typeLabel: Record<BotNodeType, string> = {
   youtubeMonitor: '▶ YouTube Monitor',
   socialShare: '📱 Соц. сети',
 };
+
+const LANGUAGES = [
+  { code: 'auto', name: '🔄 Авто-определение' },
+  { code: 'ru', name: '🇷🇺 Русский' },
+  { code: 'en', name: '🇬🇧 English' },
+  { code: 'de', name: '🇩🇪 Deutsch' },
+  { code: 'fr', name: '🇫🇷 Français' },
+  { code: 'es', name: '🇪🇸 Español' },
+  { code: 'it', name: '🇮🇹 Italiano' },
+  { code: 'zh', name: '🇨🇳 中文' },
+  { code: 'ja', name: '🇯🇵 日本語' },
+  { code: 'ar', name: '🇸🇦 العربية' },
+  { code: 'pt', name: '🇧🇷 Português' },
+  { code: 'ko', name: '🇰🇷 한국어' },
+  { code: 'tr', name: '🇹🇷 Türkçe' },
+  { code: 'uk', name: '🇺🇦 Українська' },
+  { code: 'pl', name: '🇵🇱 Polski' },
+  { code: 'nl', name: '🇳🇱 Nederlands' },
+  { code: 'sv', name: '🇸🇪 Svenska' },
+  { code: 'cs', name: '🇨🇿 Čeština' },
+  { code: 'he', name: '🇮🇱 עברית' },
+  { code: 'hi', name: '🇮🇳 हिन्दी' },
+];
+
+const PLATFORMS: { id: SocialLink['platform']; name: string; emoji: string; placeholder: string }[] = [
+  { id: 'telegram', name: 'Telegram', emoji: '✈️', placeholder: 'https://t.me/...' },
+  { id: 'youtube', name: 'YouTube', emoji: '▶️', placeholder: 'https://youtube.com/@...' },
+  { id: 'instagram', name: 'Instagram', emoji: '📸', placeholder: 'https://instagram.com/...' },
+  { id: 'tiktok', name: 'TikTok', emoji: '🎵', placeholder: 'https://tiktok.com/@...' },
+  { id: 'twitter', name: 'X (Twitter)', emoji: '🐦', placeholder: 'https://x.com/...' },
+  { id: 'vk', name: 'ВКонтакте', emoji: '💬', placeholder: 'https://vk.com/...' },
+  { id: 'facebook', name: 'Facebook', emoji: '📘', placeholder: 'https://facebook.com/...' },
+  { id: 'discord', name: 'Discord', emoji: '🎮', placeholder: 'https://discord.gg/...' },
+  { id: 'twitch', name: 'Twitch', emoji: '🟣', placeholder: 'https://twitch.tv/...' },
+  { id: 'website', name: 'Сайт', emoji: '🌐', placeholder: 'https://...' },
+];
 
 export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onClose, onDelete }: NodeEditorProps) {
   const [local, setLocal] = useState<BotNodeData>({ ...data });
@@ -83,6 +120,24 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
     w.splice(i, 1);
     update({ randWeights: w });
   };
+
+  // Social links helpers
+  const addSocialLink = () => {
+    const links: SocialLink[] = [...(local.shareLinks || []), { id: generateId(), platform: 'telegram', label: 'Telegram', url: '' }];
+    update({ shareLinks: links });
+  };
+  const updateSocialLink = (id: string, field: keyof SocialLink, val: string) => {
+    const links = (local.shareLinks || []).map(l => {
+      if (l.id !== id) return l;
+      if (field === 'platform') {
+        const p = PLATFORMS.find(pl => pl.id === val as SocialLink['platform']);
+        return { ...l, platform: val as SocialLink['platform'], label: p?.name || val };
+      }
+      return { ...l, [field]: val };
+    });
+    update({ shareLinks: links });
+  };
+  const removeSocialLink = (id: string) => update({ shareLinks: (local.shareLinks || []).filter(l => l.id !== id) });
 
   return (
     <Card className="shadow-2xl border-2 border-primary/20 h-full flex flex-col overflow-hidden">
@@ -275,6 +330,7 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
                   <SelectItem value="webhook">🔗 Webhook запрос</SelectItem>
                   <SelectItem value="email">📧 Отправить Email</SelectItem>
                   <SelectItem value="saveToSheet">📊 Сохранить в Google Sheets</SelectItem>
+                  <SelectItem value="postToSocial">📱 Опубликовать в соц. сеть</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -339,6 +395,11 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
             {local.actionType === 'saveToSheet' && (
               <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
                 Подключение Google Sheets через Webhook — укажите URL Apps Script для передачи данных.
+              </div>
+            )}
+            {local.actionType === 'postToSocial' && (
+              <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+                Для публикации используйте Webhook с API нужной платформы (VK API, Buffer, Make.com и др.)
               </div>
             )}
           </>
@@ -520,6 +581,325 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
             </div>
           </>
         )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            TRANSLATE NODE
+        ══════════════════════════════════════════════════════════════════════ */}
+        {nodeType === 'translate' && (
+          <>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+              <Languages className="w-4 h-4 text-primary shrink-0" />
+              <p className="text-xs text-primary font-medium">Перевод текста с помощью ИИ</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Режим определения языка</Label>
+              <Select value={local.translateMode || 'fixed'} onValueChange={v => update({ translateMode: v as any })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">🔒 Фиксированный язык</SelectItem>
+                  <SelectItem value="userLang">👤 По языку пользователя (из {{user_lang}})</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {local.translateMode === 'userLang'
+                  ? 'Использует переменную user_lang для определения нужного языка'
+                  : 'Всегда переводит на выбранный язык'}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Исходный язык</Label>
+              <Select value={local.translateSourceLang || 'auto'} onValueChange={v => update({ translateSourceLang: v })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map(l => (
+                    <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {local.translateMode !== 'userLang' && (
+              <div>
+                <Label className="text-xs">Целевой язык</Label>
+                <Select value={local.translateTargetLang || 'ru'} onValueChange={v => update({ translateTargetLang: v })}>
+                  <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.filter(l => l.code !== 'auto').map(l => (
+                      <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs">Переменная с текстом для перевода</Label>
+              <Input
+                value={local.translateSourceVar || ''}
+                onChange={e => update({ translateSourceVar: e.target.value })}
+                placeholder="user_message"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Переменная содержит текст который нужно перевести</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Сохранить перевод в переменную</Label>
+              <Input
+                value={local.translateResultVar || ''}
+                onChange={e => update({ translateResultVar: e.target.value })}
+                placeholder="translated_text"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+            </div>
+
+            <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Пример использования:</p>
+              <p>1. Пользователь пишет на любом языке</p>
+              <p>2. Этот узел переводит {'{{user_message}}'} → {'{{translated_text}}'}</p>
+              <p>3. Используй {'{{translated_text}}'} в следующих узлах</p>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            LANG DETECT NODE
+        ══════════════════════════════════════════════════════════════════════ */}
+        {nodeType === 'langDetect' && (
+          <>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-accent/10 border border-accent/20">
+              <Globe className="w-4 h-4 text-accent-foreground shrink-0" />
+              <p className="text-xs text-accent-foreground font-medium">Автоматически определяет язык пользователя</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Переменная с текстом для анализа</Label>
+              <Input
+                value={local.langDetectVar || ''}
+                onChange={e => update({ langDetectVar: e.target.value })}
+                placeholder="user_message"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Обычно это первое сообщение пользователя</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Сохранить код языка в переменную</Label>
+              <Input
+                value={local.langResultVar || ''}
+                onChange={e => update({ langResultVar: e.target.value })}
+                placeholder="user_lang"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Будет сохранён код языка: ru, en, de, fr...</p>
+            </div>
+
+            <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+              <div>
+                <p className="text-xs font-medium">Установить как язык бота</p>
+                <p className="text-xs text-muted-foreground">Все переводы будут использовать этот язык</p>
+              </div>
+              <Switch
+                checked={local.langSetAsDefault ?? true}
+                onCheckedChange={v => update({ langSetAsDefault: v })}
+              />
+            </div>
+
+            <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Как это работает:</p>
+              <p>• Анализирует текст и определяет язык через ИИ</p>
+              <p>• Сохраняет код языка в {'{{user_lang}}'}</p>
+              <p>• Узел Перевод использует это значение автоматически</p>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            YOUTUBE MONITOR NODE
+        ══════════════════════════════════════════════════════════════════════ */}
+        {nodeType === 'youtubeMonitor' && (
+          <>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/5 border border-destructive/20">
+              <Youtube className="w-4 h-4 text-destructive shrink-0" />
+              <p className="text-xs text-destructive font-medium">Отслеживание YouTube канала</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">ID канала (UCxxxxxxxx...)</Label>
+              <Input
+                value={local.ytChannelId || ''}
+                onChange={e => update({ ytChannelId: e.target.value })}
+                placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxxx"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs">или URL канала</Label>
+              <Input
+                value={local.ytChannelUrl || ''}
+                onChange={e => update({ ytChannelUrl: e.target.value })}
+                placeholder="https://youtube.com/@channelname"
+                className="mt-1 h-8 text-xs"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Можно использовать ID или URL</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Интервал проверки</Label>
+              <Select value={String(local.ytCheckInterval || 30)} onValueChange={v => update({ ytCheckInterval: Number(v) })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">Каждые 15 минут</SelectItem>
+                  <SelectItem value="30">Каждые 30 минут</SelectItem>
+                  <SelectItem value="60">Каждый час</SelectItem>
+                  <SelectItem value="120">Каждые 2 часа</SelectItem>
+                  <SelectItem value="360">Каждые 6 часов</SelectItem>
+                  <SelectItem value="720">Каждые 12 часов</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs">Что отслеживать</Label>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">📹 Новые видео</span>
+                <Switch checked={local.ytNotifyVideos ?? true} onCheckedChange={v => update({ ytNotifyVideos: v })} />
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">🔴 Начало стрима / трансляции</span>
+                <Switch checked={local.ytNotifyStreams ?? true} onCheckedChange={v => update({ ytNotifyStreams: v })} />
+              </div>
+              <div className="flex items-center justify-between p-2 bg-muted/40 rounded-lg">
+                <span className="text-xs">🎬 Премьеры</span>
+                <Switch checked={local.ytNotifyPremiere ?? false} onCheckedChange={v => update({ ytNotifyPremiere: v })} />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Шаблон уведомления</Label>
+              <Textarea
+                value={local.ytMessageTemplate || ''}
+                onChange={e => update({ ytMessageTemplate: e.target.value })}
+                placeholder={'🎬 Новое видео от {{author}}!\n\n{{title}}\n\n▶️ {{url}}'}
+                rows={4}
+                className="mt-1 text-xs font-mono"
+              />
+              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                <p>Переменные: <span className="font-mono">{'{{title}}'}</span> <span className="font-mono">{'{{url}}'}</span> <span className="font-mono">{'{{author}}'}</span> <span className="font-mono">{'{{type}}'}</span></p>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Переменная для ID последнего видео</Label>
+              <Input
+                value={local.ytSaveLastIdVar || ''}
+                onChange={e => update({ ytSaveLastIdVar: e.target.value })}
+                placeholder="yt_last_video_id"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Используется для отслеживания новых публикаций</p>
+            </div>
+
+            <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-2 text-xs space-y-1">
+              <p className="font-medium">Для работы требуется:</p>
+              <p className="text-muted-foreground">• YouTube Data API v3 ключ (Google Cloud Console)</p>
+              <p className="text-muted-foreground">• Настройка периодического запуска бота</p>
+              <p className="text-muted-foreground">• Подключить через Webhook или Action узел</p>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            SOCIAL SHARE NODE
+        ══════════════════════════════════════════════════════════════════════ */}
+        {nodeType === 'socialShare' && (
+          <>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+              <Share2 className="w-4 h-4 text-primary shrink-0" />
+              <p className="text-xs text-primary font-medium">Отправить ссылки на соц. сети и каналы</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Текст перед ссылками</Label>
+              <Textarea
+                value={local.shareText || ''}
+                onChange={e => update({ shareText: e.target.value })}
+                placeholder="Подпишись на нас в соц. сетях! 👇"
+                rows={2}
+                className="mt-1 text-sm"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs">Отображение</Label>
+              <Select value={local.shareLayout || 'buttons'} onValueChange={v => update({ shareLayout: v as any })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="buttons">🔲 Кнопки (inline keyboard)</SelectItem>
+                  <SelectItem value="text">📝 Текстовые ссылки</SelectItem>
+                  <SelectItem value="mixed">🔀 Текст + кнопки</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-xs">Ссылки</Label>
+                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={addSocialLink}>
+                  <Plus className="w-3 h-3 mr-1" /> Добавить
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {(local.shareLinks || []).map(link => {
+                  const platform = PLATFORMS.find(p => p.id === link.platform);
+                  return (
+                    <div key={link.id} className="p-2 bg-muted/40 rounded-lg space-y-1.5">
+                      <div className="flex gap-1 items-center">
+                        <Select value={link.platform} onValueChange={v => updateSocialLink(link.id, 'platform', v)}>
+                          <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {PLATFORMS.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.emoji} {p.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => removeSocialLink(link.id)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <Input
+                        value={link.label}
+                        onChange={e => updateSocialLink(link.id, 'label', e.target.value)}
+                        placeholder="Название кнопки"
+                        className="h-7 text-xs"
+                      />
+                      <Input
+                        value={link.url}
+                        onChange={e => updateSocialLink(link.id, 'url', e.target.value)}
+                        placeholder={platform?.placeholder || 'https://...'}
+                        className="h-7 text-xs font-mono"
+                      />
+                    </div>
+                  );
+                })}
+                {(local.shareLinks || []).length === 0 && (
+                  <div className="text-center py-4 text-xs text-muted-foreground border-2 border-dashed rounded-lg">
+                    Нажмите «Добавить» чтобы добавить ссылку на соц. сеть
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground space-y-0.5">
+              <p className="font-medium text-foreground">Поддерживаемые платформы:</p>
+              <p>Telegram, YouTube, Instagram, TikTok, X, VK, Facebook, Discord, Twitch, сайт</p>
+            </div>
+          </>
+        )}
+
       </CardContent>
     </Card>
   );
