@@ -18,6 +18,7 @@ import 'reactflow/dist/style.css';
 import {
   MessageNode, UserInputNode, ConditionNode, ActionNode, StartNode,
   AiChatNode, DelayNode, MediaNode, VariableNode, RandomizerNode, JumpNode,
+  TranslateNode, LangDetectNode, YoutubeMonitorNode, SocialShareNode,
 } from './BotNodes';
 import { NodeEditor } from './NodeEditor';
 import { BotSimulator } from './BotSimulator';
@@ -27,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import {
   MessageSquare, GitBranch, Zap, HelpCircle, Save, Info,
   Brain, Clock, Image, SlidersHorizontal, Shuffle, CornerDownRight, Play,
+  Languages, Globe, Youtube, Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,6 +44,10 @@ const nodeTypes: NodeTypes = {
   variable: VariableNode,
   randomizer: RandomizerNode,
   jump: JumpNode,
+  translate: TranslateNode,
+  langDetect: LangDetectNode,
+  youtubeMonitor: YoutubeMonitorNode,
+  socialShare: SocialShareNode,
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -64,19 +70,27 @@ const defaultData: Record<BotNodeType, BotNodeData> = {
   variable: { varOperation: 'set', varName: '', varValue: '' },
   randomizer: { randWeights: [1, 1] },
   jump: { jumpTarget: '' },
+  translate: { translateSourceLang: 'auto', translateTargetLang: 'ru', translateMode: 'fixed', translateSourceVar: 'user_message', translateResultVar: 'translated_text' },
+  langDetect: { langDetectVar: 'user_message', langResultVar: 'user_lang', langSetAsDefault: true },
+  youtubeMonitor: { ytNotifyVideos: true, ytNotifyStreams: true, ytCheckInterval: 30, ytMessageTemplate: '🎬 Новое видео: {{title}}\n▶️ {{url}}' },
+  socialShare: { shareLinks: [], shareText: '', shareLayout: 'buttons' },
 };
 
 const nodeAddButtons: { type: BotNodeType; label: string; icon: React.ReactNode; color: string }[] = [
-  { type: 'message',    label: 'Сообщение',   icon: <MessageSquare className="w-3.5 h-3.5" />, color: 'bg-primary/10 text-primary border-primary/30' },
-  { type: 'userInput',  label: 'Ввод',         icon: <HelpCircle className="w-3.5 h-3.5" />,   color: 'bg-destructive/10 text-destructive border-destructive/30' },
-  { type: 'condition',  label: 'Условие',      icon: <GitBranch className="w-3.5 h-3.5" />,    color: 'bg-warning/10 text-warning border-warning/30' },
-  { type: 'action',     label: 'Действие',     icon: <Zap className="w-3.5 h-3.5" />,          color: 'bg-accent/10 text-accent-foreground border-accent/30' },
-  { type: 'aiChat',     label: '🤖 ИИ',        icon: <Brain className="w-3.5 h-3.5" />,        color: 'bg-primary/10 text-primary border-primary/30' },
-  { type: 'delay',      label: 'Пауза',        icon: <Clock className="w-3.5 h-3.5" />,         color: 'bg-muted text-muted-foreground border-border' },
-  { type: 'media',      label: 'Медиа',        icon: <Image className="w-3.5 h-3.5" />,         color: 'bg-secondary/80 text-secondary-foreground border-secondary' },
-  { type: 'variable',   label: 'Переменная',   icon: <SlidersHorizontal className="w-3.5 h-3.5" />, color: 'bg-secondary/80 text-secondary-foreground border-secondary' },
-  { type: 'randomizer', label: 'Рандом',       icon: <Shuffle className="w-3.5 h-3.5" />,       color: 'bg-primary/10 text-primary border-primary/30' },
-  { type: 'jump',       label: 'Переход',      icon: <CornerDownRight className="w-3.5 h-3.5" />, color: 'bg-muted text-muted-foreground border-border' },
+  { type: 'message',       label: 'Сообщение',   icon: <MessageSquare className="w-3.5 h-3.5" />,       color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'userInput',     label: 'Ввод',         icon: <HelpCircle className="w-3.5 h-3.5" />,          color: 'bg-destructive/10 text-destructive border-destructive/30' },
+  { type: 'condition',     label: 'Условие',      icon: <GitBranch className="w-3.5 h-3.5" />,           color: 'bg-warning/10 text-warning border-warning/30' },
+  { type: 'action',        label: 'Действие',     icon: <Zap className="w-3.5 h-3.5" />,                 color: 'bg-accent/10 text-accent-foreground border-accent/30' },
+  { type: 'aiChat',        label: '🤖 ИИ',        icon: <Brain className="w-3.5 h-3.5" />,               color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'translate',     label: '🌐 Перевод',   icon: <Languages className="w-3.5 h-3.5" />,           color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'langDetect',    label: '🔍 Язык',      icon: <Globe className="w-3.5 h-3.5" />,               color: 'bg-accent/10 text-accent-foreground border-accent/30' },
+  { type: 'youtubeMonitor',label: '▶ YouTube',    icon: <Youtube className="w-3.5 h-3.5" />,             color: 'bg-destructive/10 text-destructive border-destructive/30' },
+  { type: 'socialShare',   label: '📱 Соц.сети',  icon: <Share2 className="w-3.5 h-3.5" />,              color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'delay',         label: 'Пауза',        icon: <Clock className="w-3.5 h-3.5" />,               color: 'bg-muted text-muted-foreground border-border' },
+  { type: 'media',         label: 'Медиа',        icon: <Image className="w-3.5 h-3.5" />,               color: 'bg-secondary/80 text-secondary-foreground border-secondary' },
+  { type: 'variable',      label: 'Переменная',   icon: <SlidersHorizontal className="w-3.5 h-3.5" />,   color: 'bg-secondary/80 text-secondary-foreground border-secondary' },
+  { type: 'randomizer',    label: 'Рандом',       icon: <Shuffle className="w-3.5 h-3.5" />,             color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'jump',          label: 'Переход',      icon: <CornerDownRight className="w-3.5 h-3.5" />,     color: 'bg-muted text-muted-foreground border-border' },
 ];
 
 function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {

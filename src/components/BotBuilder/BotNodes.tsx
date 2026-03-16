@@ -1,7 +1,10 @@
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { BotNodeData } from '@/types/bot';
-import { MessageSquare, ChevronRight, Brain, Clock, Image, SlidersHorizontal, Shuffle, CornerDownRight } from 'lucide-react';
+import { BotNodeData, SocialLink } from '@/types/bot';
+import {
+  MessageSquare, ChevronRight, Brain, Clock, Image, SlidersHorizontal,
+  Shuffle, CornerDownRight, Languages, Youtube, Share2, Globe,
+} from 'lucide-react';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -14,7 +17,7 @@ const NodeShell = ({
   handles = 'both',
 }: {
   selected: boolean;
-  color: string; // tailwind border + ring color key e.g. 'primary'
+  color: string;
   icon: React.ReactNode;
   label: string;
   children: React.ReactNode;
@@ -63,6 +66,21 @@ const NodeShell = ({
 const EmptyText = ({ text }: { text: string }) => (
   <span className="text-muted-foreground italic">{text}</span>
 );
+
+// ─── Platform icons map ─────────────────────────────────────────────────────────
+
+const platformEmoji: Record<string, string> = {
+  telegram: '✈️',
+  youtube: '▶️',
+  instagram: '📸',
+  tiktok: '🎵',
+  twitter: '🐦',
+  vk: '💬',
+  facebook: '📘',
+  website: '🌐',
+  discord: '🎮',
+  twitch: '🟣',
+};
 
 // ─── START ─────────────────────────────────────────────────────────────────────
 
@@ -173,6 +191,7 @@ export const ActionNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
     webhook: '🔗 Webhook',
     email: '📧 Email',
     saveToSheet: '📊 Google Sheets',
+    postToSocial: '📱 Пост в соц. сеть',
   };
   return (
     <NodeShell selected={selected} color="accent" icon={<span className="text-xs">⚡</span>} label="Действие">
@@ -279,3 +298,90 @@ export const JumpNode = memo(({ data, selected }: NodeProps<BotNodeData>) => (
     </p>
   </NodeShell>
 ));
+
+// ─── TRANSLATE ─────────────────────────────────────────────────────────────────
+
+export const TranslateNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
+  const langName: Record<string, string> = {
+    auto: 'авто', ru: '🇷🇺 RU', en: '🇬🇧 EN', de: '🇩🇪 DE', fr: '🇫🇷 FR',
+    es: '🇪🇸 ES', it: '🇮🇹 IT', zh: '🇨🇳 ZH', ja: '🇯🇵 JA', ar: '🇸🇦 AR',
+    pt: '🇧🇷 PT', ko: '🇰🇷 KO', tr: '🇹🇷 TR', uk: '🇺🇦 UK', pl: '🇵🇱 PL',
+  };
+  return (
+    <NodeShell selected={selected} color="primary" icon={<Languages className="w-3 h-3 text-primary-foreground" />} label="🌐 Перевод">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">{langName[data.translateSourceLang || 'auto'] || 'авто'}</span>
+        <span className="text-primary font-bold">→</span>
+        <span className="font-medium">{langName[data.translateTargetLang || 'ru'] || data.translateTargetLang}</span>
+      </div>
+      {data.translateMode === 'userLang' && (
+        <div className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">По языку пользователя</div>
+      )}
+      {data.translateResultVar && (
+        <div className="text-xs bg-muted px-2 py-1 rounded font-mono text-muted-foreground">→ {data.translateResultVar}</div>
+      )}
+    </NodeShell>
+  );
+});
+
+// ─── LANG DETECT ───────────────────────────────────────────────────────────────
+
+export const LangDetectNode = memo(({ data, selected }: NodeProps<BotNodeData>) => (
+  <NodeShell selected={selected} color="accent" icon={<Globe className="w-3 h-3 text-accent-foreground" />} label="🔍 Определить язык">
+    <p className="text-xs text-muted-foreground">
+      {data.langDetectVar ? (
+        <>Анализ: <span className="font-mono text-foreground">{`{{${data.langDetectVar}}}`}</span></>
+      ) : (
+        <EmptyText text="Укажите переменную..." />
+      )}
+    </p>
+    {data.langResultVar && (
+      <div className="text-xs bg-muted px-2 py-1 rounded font-mono text-muted-foreground">→ {data.langResultVar}</div>
+    )}
+    {data.langSetAsDefault && (
+      <div className="text-xs text-primary">✓ Установить как язык бота</div>
+    )}
+  </NodeShell>
+));
+
+// ─── YOUTUBE MONITOR ───────────────────────────────────────────────────────────
+
+export const YoutubeMonitorNode = memo(({ data, selected }: NodeProps<BotNodeData>) => (
+  <NodeShell selected={selected} color="destructive" icon={<Youtube className="w-3 h-3 text-destructive-foreground" />} label="▶ YouTube Monitor">
+    {data.ytChannelId || data.ytChannelUrl ? (
+      <p className="text-xs text-muted-foreground truncate">{data.ytChannelId || data.ytChannelUrl}</p>
+    ) : (
+      <p className="text-xs"><EmptyText text="Канал не задан..." /></p>
+    )}
+    <div className="flex gap-1 flex-wrap">
+      {data.ytNotifyVideos && <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">📹 Видео</span>}
+      {data.ytNotifyStreams && <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">🔴 Стримы</span>}
+      {data.ytNotifyPremiere && <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">🎬 Премьеры</span>}
+    </div>
+    <div className="text-xs text-muted-foreground">
+      Каждые {data.ytCheckInterval || 30} мин
+    </div>
+  </NodeShell>
+));
+
+// ─── SOCIAL SHARE ──────────────────────────────────────────────────────────────
+
+export const SocialShareNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
+  const links: SocialLink[] = data.shareLinks || [];
+  return (
+    <NodeShell selected={selected} color="primary" icon={<Share2 className="w-3 h-3 text-primary-foreground" />} label="📱 Соц. сети">
+      {data.shareText && (
+        <p className="text-xs text-muted-foreground line-clamp-2">{data.shareText}</p>
+      )}
+      {links.length > 0 ? (
+        <div className="flex gap-1 flex-wrap">
+          {links.map(l => (
+            <span key={l.id} className="text-sm" title={l.label}>{platformEmoji[l.platform] || '🔗'}</span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs"><EmptyText text="Добавьте ссылки..." /></p>
+      )}
+    </NodeShell>
+  );
+});
