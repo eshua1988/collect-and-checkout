@@ -36,6 +36,10 @@ const typeLabel: Record<BotNodeType, string> = {
   variable: '📦 Переменная',
   randomizer: '🎲 Рандомайзер',
   jump: '↩ Переход',
+  translate: '🌐 Перевод',
+  langDetect: '🔍 Определить язык',
+  youtubeMonitor: '▶ YouTube Monitor',
+  socialShare: '📱 Соц. сети',
 };
 
 export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onClose, onDelete }: NodeEditorProps) {
