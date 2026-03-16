@@ -1,23 +1,36 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 import { useFormsStorage } from '@/hooks/useFormsStorage';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
 import { useDocsStorage } from '@/hooks/useDocsStorage';
+import { useProjectsStorage } from '@/hooks/useProjectsStorage';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SettingsPanel } from '@/components/SettingsPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Send, Bot, Settings, FileEdit } from 'lucide-react';
+import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Bot, Settings, FileEdit, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { useState } from 'react';
 
 const Home = () => {
   const navigate = useNavigate();
   const { forms, deleteForm, togglePublish } = useFormsStorage();
   const { bots, deleteBot } = useBotsStorage();
   const { docs, deleteDoc, togglePublish: toggleDocPublish } = useDocsStorage();
+  const { projects, deleteProject } = useProjectsStorage();
   const { t } = useLanguage();
-  const [tab, setTab] = useState<'forms' | 'bots' | 'docs'>('forms');
+  const [tab, setTab] = useState<'forms' | 'bots' | 'docs' | 'projects'>('forms');
+  const [showSettings, setShowSettings] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleDeleteForm = (formId: string) => {
     if (window.confirm(t('home.confirmDelete'))) {
@@ -71,6 +84,12 @@ const Home = () => {
               <Button onClick={() => navigate('/doc/new')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Новый документ
+              </Button>
+            )}
+            {tab === 'projects' && (
+              <Button onClick={() => navigate('/project/new')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Объединить
               </Button>
             )}
           </div>
