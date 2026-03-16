@@ -1,23 +1,36 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 import { useFormsStorage } from '@/hooks/useFormsStorage';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
 import { useDocsStorage } from '@/hooks/useDocsStorage';
+import { useProjectsStorage } from '@/hooks/useProjectsStorage';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SettingsPanel } from '@/components/SettingsPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Send, Bot, Settings, FileEdit } from 'lucide-react';
+import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Bot, Settings, FileEdit, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { useState } from 'react';
 
 const Home = () => {
   const navigate = useNavigate();
   const { forms, deleteForm, togglePublish } = useFormsStorage();
   const { bots, deleteBot } = useBotsStorage();
   const { docs, deleteDoc, togglePublish: toggleDocPublish } = useDocsStorage();
+  const { projects, deleteProject } = useProjectsStorage();
   const { t } = useLanguage();
-  const [tab, setTab] = useState<'forms' | 'bots' | 'docs'>('forms');
+  const [tab, setTab] = useState<'forms' | 'bots' | 'docs' | 'projects'>('forms');
+  const [showSettings, setShowSettings] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleDeleteForm = (formId: string) => {
     if (window.confirm(t('home.confirmDelete'))) {
@@ -73,9 +86,29 @@ const Home = () => {
                 Новый документ
               </Button>
             )}
+            {tab === 'projects' && (
+              <Button onClick={() => navigate('/project/new')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Объединить
+              </Button>
+            )}
+            {/* Settings button + User avatar */}
+            <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)} title="Настройки">
+              <Settings className="w-4 h-4" />
+            </Button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="w-8 h-8 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center font-bold text-primary text-sm transition-colors"
+              title="Профиль"
+            >
+              {user?.user_metadata?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Settings Panel */}
+      {showSettings && <SettingsPanel user={user} onClose={() => setShowSettings(false)} />}
 
       {/* Tabs */}
       <div className="border-b bg-card">
@@ -115,6 +148,18 @@ const Home = () => {
               Telegram Боты
               {bots.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{bots.length}</span>
+              )}
+            </button>
+            <button
+              onClick={() => setTab('projects')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                tab === 'projects' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              Объединить
+              {projects.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{projects.length}</span>
               )}
             </button>
           </div>
@@ -375,6 +420,76 @@ const Home = () => {
                         <Button
                           variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:text-destructive ml-auto"
                           onClick={() => { if (window.confirm('Удалить этого бота?')) { deleteBot(bot.id); toast.success('Бот удалён'); } }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* PROJECTS TAB */}
+        {tab === 'projects' && (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Объединённые проекты</h2>
+            <div className="mb-6 rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
+              <div className="text-2xl shrink-0">🔗</div>
+              <div>
+                <p className="font-medium text-sm mb-1">Объединитель форм, ботов и документов</p>
+                <p className="text-xs text-muted-foreground">
+                  Создайте проект и объедините в нём формы, Telegram-боты и документы. Управляйте всем в одном месте.
+                </p>
+              </div>
+            </div>
+            {projects.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-16 text-center">
+                  <Layers className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-xl font-medium mb-2">Нет проектов</h3>
+                  <p className="text-muted-foreground mb-6">Создайте первый проект, объединив формы, бота и документы</p>
+                  <Button onClick={() => navigate('/project/new')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Создать проект
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {projects.map((project) => (
+                  <Card key={project.id} className="group hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 border"
+                            style={{ backgroundColor: (project.color || '#3b82f6') + '20', borderColor: (project.color || '#3b82f6') + '40' }}>
+                            {project.icon || '🚀'}
+                          </div>
+                          <div className="min-w-0">
+                            <CardTitle className="text-base truncate">{project.name}</CardTitle>
+                            {project.description && (
+                              <CardDescription className="line-clamp-1 text-xs mt-0.5">{project.description}</CardDescription>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                        {project.formIds.length > 0 && <span className="flex items-center gap-1"><FileText className="w-3 h-3 text-blue-500" />{project.formIds.length} форм</span>}
+                        {project.botIds.length > 0 && <span className="flex items-center gap-1"><Bot className="w-3 h-3 text-violet-500" />{project.botIds.length} ботов</span>}
+                        {project.docIds.length > 0 && <span className="flex items-center gap-1"><FileEdit className="w-3 h-3 text-emerald-500" />{project.docIds.length} докум.</span>}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/project/${project.id}`)}>
+                          Редактировать
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:text-destructive ml-auto"
+                          onClick={() => { if (window.confirm('Удалить проект?')) { deleteProject(project.id); toast.success('Проект удалён'); } }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
