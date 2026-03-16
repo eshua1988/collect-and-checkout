@@ -8,6 +8,8 @@ import FormEditor from "./pages/FormEditor";
 import FormView from "./pages/FormView";
 import FormResults from "./pages/FormResults";
 import BotEditor from "./pages/BotEditor";
+import DocumentEditor from "./pages/DocumentEditor";
+import DocView from "./pages/DocView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,9 @@ const App = () => (
           <Route path="/f/:formId" element={<FormView />} />
           <Route path="/bot/new" element={<BotEditor />} />
           <Route path="/bot/:botId" element={<BotEditor />} />
+          <Route path="/doc/new" element={<DocumentEditor />} />
+          <Route path="/doc/:docId" element={<DocumentEditor />} />
+          <Route path="/d/:docId" element={<DocView />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
