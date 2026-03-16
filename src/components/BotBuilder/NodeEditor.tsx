@@ -598,7 +598,7 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
                 <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="fixed">🔒 Фиксированный язык</SelectItem>
-                  <SelectItem value="userLang">👤 По языку пользователя (из {{user_lang}})</SelectItem>
+                  <SelectItem value="userLang">{'👤 По языку пользователя (из {{user_lang}})'}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
