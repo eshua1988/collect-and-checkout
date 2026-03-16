@@ -15,8 +15,9 @@ const Home = () => {
   const navigate = useNavigate();
   const { forms, deleteForm, togglePublish } = useFormsStorage();
   const { bots, deleteBot } = useBotsStorage();
+  const { docs, deleteDoc, togglePublish: toggleDocPublish } = useDocsStorage();
   const { t } = useLanguage();
-  const [tab, setTab] = useState<'forms' | 'bots'>('forms');
+  const [tab, setTab] = useState<'forms' | 'bots' | 'docs'>('forms');
 
   const handleDeleteForm = (formId: string) => {
     if (window.confirm(t('home.confirmDelete'))) {
