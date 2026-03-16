@@ -92,9 +92,23 @@ const Home = () => {
                 Объединить
               </Button>
             )}
+            {/* Settings button + User avatar */}
+            <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)} title="Настройки">
+              <Settings className="w-4 h-4" />
+            </Button>
+            <button
+              onClick={() => setShowSettings(true)}
+              className="w-8 h-8 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center font-bold text-primary text-sm transition-colors"
+              title="Профиль"
+            >
+              {user?.user_metadata?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Settings Panel */}
+      {showSettings && <SettingsPanel user={user} onClose={() => setShowSettings(false)} />}
 
       {/* Tabs */}
       <div className="border-b bg-card">
