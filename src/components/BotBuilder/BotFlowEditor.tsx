@@ -297,6 +297,7 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
         <BotTemplatesPanel
           bot={bot}
           onLoad={handleLoadTemplate}
+          onMerge={handleMergeTemplate}
           onClose={() => setSidePanel(null)}
         />
       )}
