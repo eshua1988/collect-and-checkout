@@ -55,15 +55,22 @@ const Home = () => {
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            {tab === 'forms' ? (
+            {tab === 'forms' && (
               <Button onClick={() => navigate('/form/new')}>
                 <Plus className="w-4 h-4 mr-2" />
                 {t('home.newForm')}
               </Button>
-            ) : (
+            )}
+            {tab === 'bots' && (
               <Button onClick={() => navigate('/bot/new')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Новый бот
+              </Button>
+            )}
+            {tab === 'docs' && (
+              <Button onClick={() => navigate('/doc/new')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Новый документ
               </Button>
             )}
           </div>
