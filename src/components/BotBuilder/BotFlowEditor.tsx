@@ -18,6 +18,7 @@ import 'reactflow/dist/style.css';
 import {
   MessageNode, UserInputNode, ConditionNode, ActionNode, StartNode,
   AiChatNode, DelayNode, MediaNode, VariableNode, RandomizerNode, JumpNode,
+  TranslateNode, LangDetectNode, YoutubeMonitorNode, SocialShareNode,
 } from './BotNodes';
 import { NodeEditor } from './NodeEditor';
 import { BotSimulator } from './BotSimulator';
@@ -27,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import {
   MessageSquare, GitBranch, Zap, HelpCircle, Save, Info,
   Brain, Clock, Image, SlidersHorizontal, Shuffle, CornerDownRight, Play,
+  Languages, Globe, Youtube, Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,6 +44,10 @@ const nodeTypes: NodeTypes = {
   variable: VariableNode,
   randomizer: RandomizerNode,
   jump: JumpNode,
+  translate: TranslateNode,
+  langDetect: LangDetectNode,
+  youtubeMonitor: YoutubeMonitorNode,
+  socialShare: SocialShareNode,
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
