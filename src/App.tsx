@@ -28,6 +28,9 @@ const App = () => (
           <Route path="/f/:formId" element={<FormView />} />
           <Route path="/bot/new" element={<BotEditor />} />
           <Route path="/bot/:botId" element={<BotEditor />} />
+          <Route path="/doc/new" element={<DocumentEditor />} />
+          <Route path="/doc/:docId" element={<DocumentEditor />} />
+          <Route path="/d/:docId" element={<DocView />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
