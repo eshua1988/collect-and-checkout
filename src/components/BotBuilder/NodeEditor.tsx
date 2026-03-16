@@ -41,6 +41,9 @@ const typeLabel: Record<BotNodeType, string> = {
   langDetect: '🔍 Определить язык',
   youtubeMonitor: '▶ YouTube Monitor',
   socialShare: '📱 Соц. сети',
+  instagramMonitor: '📸 Instagram Monitor',
+  facebookMonitor: '📘 Facebook Monitor',
+  userLangPref: '🗣 Выбор языка',
 };
 
 const LANGUAGES = [
