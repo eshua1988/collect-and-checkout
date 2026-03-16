@@ -332,7 +332,7 @@ const tagColors: Record<string, string> = {
   'webhook': 'bg-accent/10 text-accent-foreground',
 };
 
-export function BotTemplatesPanel({ bot, onLoad, onClose }: BotTemplatesPanelProps) {
+export function BotTemplatesPanel({ bot, onLoad, onMerge, onClose }: BotTemplatesPanelProps) {
   const [search, setSearch] = useState('');
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
