@@ -409,7 +409,10 @@ export function BotTemplatesPanel({ bot, onLoad, onMerge, onClose }: BotTemplate
       <div className="px-3 py-2 border-b shrink-0">
         <div className="rounded-lg bg-muted/50 p-2.5 flex items-start gap-2">
           <Zap className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground">Загрузка шаблона <strong>заменит</strong> текущий поток. Убедитесь что сохранили важное.</p>
+          <p className="text-xs text-muted-foreground">
+            <strong>Добавить</strong> — вставляет узлы в текущий поток.<br />
+            <strong>Заменить</strong> — полностью перезаписывает поток.
+          </p>
         </div>
       </div>
 
