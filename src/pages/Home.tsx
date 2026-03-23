@@ -22,8 +22,9 @@ const Home = () => {
   const { bots, deleteBot } = useBotsStorage();
   const { docs, deleteDoc, togglePublish: toggleDocPublish } = useDocsStorage();
   const { projects, deleteProject } = useProjectsStorage();
+  const { websites, deleteWebsite, togglePublish: toggleSitePublish } = useWebsitesStorage();
   const { t } = useLanguage();
-  const [tab, setTab] = useState<'forms' | 'bots' | 'docs' | 'projects'>('forms');
+  const [tab, setTab] = useState<'forms' | 'bots' | 'docs' | 'projects' | 'websites'>('forms');
   const [showSettings, setShowSettings] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
