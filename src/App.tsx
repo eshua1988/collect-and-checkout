@@ -59,6 +59,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/f/:formId" element={<FormView />} />
             <Route path="/d/:docId" element={<DocView />} />
+            <Route path="/site/:siteId" element={<WebsiteView />} />
 
             {/* Protected */}
             <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
@@ -71,6 +72,8 @@ const App = () => (
             <Route path="/doc/:docId" element={<AuthGuard><DocumentEditor /></AuthGuard>} />
             <Route path="/project/new" element={<AuthGuard><ProjectEditor /></AuthGuard>} />
             <Route path="/project/:projectId" element={<AuthGuard><ProjectEditorRoute /></AuthGuard>} />
+            <Route path="/site/new" element={<AuthGuard><WebsiteEditor /></AuthGuard>} />
+            <Route path="/site/edit/:websiteId" element={<AuthGuard><WebsiteEditorRoute /></AuthGuard>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
