@@ -90,4 +90,9 @@ function ProjectEditorRoute() {
   return <ProjectEditor projectId={projectId} />;
 }
 
+function WebsiteEditorRoute() {
+  const { websiteId } = useParams<{ websiteId: string }>();
+  return <WebsiteEditor websiteId={websiteId} />;
+}
+
 export default App;
