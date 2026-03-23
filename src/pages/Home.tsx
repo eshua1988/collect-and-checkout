@@ -521,6 +521,99 @@ const Home = () => {
             )}
           </>
         )}
+
+        {/* WEBSITES TAB */}
+        {tab === 'websites' && (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Мои Сайты</h2>
+            <div className="mb-6 rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
+              <div className="text-2xl shrink-0">🌐</div>
+              <div>
+                <p className="font-medium text-sm mb-1">Конструктор сайтов</p>
+                <p className="text-xs text-muted-foreground">
+                  Создавайте полноценные сайты из блоков. 8+ готовых шаблонов: бизнес, портфолио, магазин, ресторан и др. Публикация по ссылке.
+                </p>
+              </div>
+            </div>
+            {websites.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-16 text-center">
+                  <Globe className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-xl font-medium mb-2">Нет сайтов</h3>
+                  <p className="text-muted-foreground mb-6">Создайте первый сайт или выберите готовый шаблон</p>
+                  <Button onClick={() => navigate('/site/new')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Создать сайт
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {websites.map((site) => (
+                  <Card key={site.id} className="group hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">🌐</div>
+                          <div className="min-w-0">
+                            <CardTitle className="text-base truncate">{site.name}</CardTitle>
+                            <CardDescription className="text-xs">{site.blocks.length} блоков</CardDescription>
+                          </div>
+                        </div>
+                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${site.published ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
+                          {site.published ? 'Опубликован' : 'Черновик'}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                        <span>Обновлён: {format(site.updatedAt, 'dd.MM.yyyy')}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/site/edit/${site.id}`)}>
+                          Редактировать
+                        </Button>
+                        <Button
+                          variant={site.published ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => {
+                            const updated = toggleSitePublish(site.id);
+                            if (updated?.published) {
+                              const url = `${window.location.origin}/site/${site.id}`;
+                              navigator.clipboard.writeText(url).catch(() => {});
+                              toast.success('Опубликован! Ссылка скопирована');
+                            } else {
+                              toast.info('Сайт снят с публикации');
+                            }
+                          }}
+                        >
+                          <Link className="w-4 h-4 mr-1" />
+                          {site.published ? 'Снять' : 'Публиковать'}
+                        </Button>
+                        {site.published && (
+                          <>
+                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/site/${site.id}`); toast.success('Ссылка скопирована'); }}>
+                              <Copy className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => window.open(`/site/${site.id}`, '_blank')}>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:text-destructive ml-auto"
+                          onClick={() => { if (window.confirm('Удалить сайт?')) { deleteWebsite(site.id); toast.success('Сайт удалён'); } }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </main>
     </div>
   );
