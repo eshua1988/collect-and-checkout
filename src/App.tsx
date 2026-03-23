@@ -15,6 +15,8 @@ import BotEditor from "./pages/BotEditor";
 import DocumentEditor from "./pages/DocumentEditor";
 import DocView from "./pages/DocView";
 import ProjectEditor from "./pages/ProjectEditor";
+import WebsiteEditor from "./pages/WebsiteEditor";
+import WebsiteView from "./pages/WebsiteView";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
