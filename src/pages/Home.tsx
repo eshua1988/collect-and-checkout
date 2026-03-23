@@ -6,12 +6,13 @@ import { useFormsStorage } from '@/hooks/useFormsStorage';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
 import { useDocsStorage } from '@/hooks/useDocsStorage';
 import { useProjectsStorage } from '@/hooks/useProjectsStorage';
+import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Bot, Settings, FileEdit, Layers } from 'lucide-react';
+import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Bot, Settings, FileEdit, Layers, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
