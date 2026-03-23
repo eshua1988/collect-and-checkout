@@ -15,6 +15,8 @@ import BotEditor from "./pages/BotEditor";
 import DocumentEditor from "./pages/DocumentEditor";
 import DocView from "./pages/DocView";
 import ProjectEditor from "./pages/ProjectEditor";
+import WebsiteEditor from "./pages/WebsiteEditor";
+import WebsiteView from "./pages/WebsiteView";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -57,6 +59,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/f/:formId" element={<FormView />} />
             <Route path="/d/:docId" element={<DocView />} />
+            <Route path="/site/:siteId" element={<WebsiteView />} />
 
             {/* Protected */}
             <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
@@ -69,6 +72,8 @@ const App = () => (
             <Route path="/doc/:docId" element={<AuthGuard><DocumentEditor /></AuthGuard>} />
             <Route path="/project/new" element={<AuthGuard><ProjectEditor /></AuthGuard>} />
             <Route path="/project/:projectId" element={<AuthGuard><ProjectEditorRoute /></AuthGuard>} />
+            <Route path="/site/new" element={<AuthGuard><WebsiteEditor /></AuthGuard>} />
+            <Route path="/site/edit/:websiteId" element={<AuthGuard><WebsiteEditorRoute /></AuthGuard>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
@@ -83,6 +88,11 @@ const App = () => (
 function ProjectEditorRoute() {
   const { projectId } = useParams<{ projectId: string }>();
   return <ProjectEditor projectId={projectId} />;
+}
+
+function WebsiteEditorRoute() {
+  const { websiteId } = useParams<{ websiteId: string }>();
+  return <WebsiteEditor websiteId={websiteId} />;
 }
 
 export default App;
