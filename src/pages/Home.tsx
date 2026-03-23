@@ -94,6 +94,12 @@ const Home = () => {
                 Объединить
               </Button>
             )}
+            {tab === 'websites' && (
+              <Button onClick={() => navigate('/site/new')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Новый сайт
+              </Button>
+            )}
             {/* Settings button + User avatar */}
             <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)} title="Настройки">
               <Settings className="w-4 h-4" />
