@@ -39,7 +39,7 @@ function MessageBubble({ msg, onExecuteAction }: { msg: ChatMessage; onExecuteAc
         'w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5',
         isUser
           ? 'bg-primary text-primary-foreground'
-          : 'bg-gradient-to-br from-violet-500 to-purple-600 text-white'
+          : 'bg-primary/80 text-primary-foreground'
       )}>
         {isUser ? <User className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
       </div>
