@@ -59,7 +59,7 @@ export function AIAssistantButton() {
               <>
                 <Sparkles className="w-5 h-5" />
                 {/* Pulse ring */}
-                <span className="absolute inset-0 rounded-2xl bg-violet-500/30 animate-ping" />
+                <span className="absolute inset-0 rounded-2xl bg-primary/30 animate-ping" />
               </>
             )
           }

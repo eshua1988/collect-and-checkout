@@ -6,16 +6,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChatMessage, ParsedAction, useAIAssistant } from './useAIAssistant';
 import {
   X, Send, Sparkles, RotateCcw, Bot, User,
-  Loader2, Zap, Plus, Globe, FileText, ChevronRight,
+  Loader2, Globe, FileText, ChevronRight,
   Minimize2, Maximize2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  CREATE_FORM: { label: 'Открыть форму', icon: <FileText className="w-3.5 h-3.5" />, color: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border-blue-500/20' },
-  CREATE_BOT: { label: 'Открыть бота', icon: <Bot className="w-3.5 h-3.5" />, color: 'bg-green-500/10 text-green-400 hover:bg-green-500/20 border-green-500/20' },
-  CREATE_WEBSITE: { label: 'Открыть сайт', icon: <Globe className="w-3.5 h-3.5" />, color: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border-purple-500/20' },
-  NAVIGATE_TO: { label: 'Перейти', icon: <ChevronRight className="w-3.5 h-3.5" />, color: 'bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border-orange-500/20' },
+  CREATE_FORM: { label: 'Открыть форму', icon: <FileText className="w-3.5 h-3.5" />, color: 'bg-primary/10 text-primary hover:bg-primary/20 border-primary/20' },
+  CREATE_BOT: { label: 'Открыть бота', icon: <Bot className="w-3.5 h-3.5" />, color: 'bg-secondary/40 text-secondary-foreground hover:bg-secondary/60 border-border' },
+  CREATE_WEBSITE: { label: 'Открыть сайт', icon: <Globe className="w-3.5 h-3.5" />, color: 'bg-accent/40 text-accent-foreground hover:bg-accent/60 border-border' },
+  NAVIGATE_TO: { label: 'Перейти', icon: <ChevronRight className="w-3.5 h-3.5" />, color: 'bg-muted text-muted-foreground hover:bg-muted/80 border-border' },
 };
 
 const SUGGESTIONS = [
