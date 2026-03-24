@@ -42,14 +42,13 @@ export function AIAssistantButton() {
       {!isExpanded && (
         <button
           onClick={() => setIsOpen(v => !v)}
-          className={cn(
+      className={cn(
             'fixed bottom-6 right-6 z-[200]',
             'w-14 h-14 rounded-2xl shadow-2xl',
             'flex items-center justify-center',
-            'bg-gradient-to-br from-violet-500 to-purple-600',
-            'hover:from-violet-600 hover:to-purple-700',
+            'bg-primary hover:bg-primary/90',
             'active:scale-95 transition-all duration-200',
-            'text-white',
+            'text-primary-foreground',
             isOpen && 'rotate-12'
           )}
           title="AI Ассистент"

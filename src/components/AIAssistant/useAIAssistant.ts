@@ -96,7 +96,6 @@ export function useAIAssistant() {
         token: action.data.token || '',
         nodes: action.data.nodes || [],
         edges: action.data.edges || [],
-        variables: action.data.variables || [],
         createdAt: now,
         updatedAt: now,
       };
