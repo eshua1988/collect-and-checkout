@@ -195,8 +195,8 @@ export function AIChat({ onClose, isExpanded, onToggleExpand }: AIChatProps) {
 
         {isLoading && (
           <div className="flex gap-3">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
             <div className="bg-muted/60 rounded-2xl rounded-tl-sm px-4 py-3 border border-border/50">
               <div className="flex items-center gap-1">
