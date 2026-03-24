@@ -19,6 +19,7 @@ import WebsiteEditor from "./pages/WebsiteEditor";
 import WebsiteView from "./pages/WebsiteView";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { AIAssistantButton } from "./components/AIAssistant/AIAssistantButton";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,8 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          {/* AI Assistant floating button — only for authenticated routes */}
+          <AIAssistantButton />
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
