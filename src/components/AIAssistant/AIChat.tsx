@@ -145,15 +145,15 @@ export function AIChat({ onClose, isExpanded, onToggleExpand }: AIChatProps) {
         : 'w-[380px] h-[580px]'
     )}>
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-violet-600/10 to-purple-600/10 border-b border-border/50 shrink-0">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
-          <Sparkles className="w-4 h-4 text-white" />
+      <div className="flex items-center gap-2.5 px-4 py-3 bg-primary/5 border-b border-border/50 shrink-0">
+        <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+          <Sparkles className="w-4 h-4 text-primary-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="font-semibold text-sm">AI Ассистент</span>
-            <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               Онлайн
             </span>
           </div>
