@@ -239,7 +239,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand }: AIChatProps) {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Опиши что хочешь создать..."
-              className="resize-none min-h-[44px] max-h-32 pr-2 text-sm bg-background border-border/60 rounded-xl focus:ring-violet-500/30 focus:border-violet-500/50"
+              className="resize-none min-h-[44px] max-h-32 pr-2 text-sm bg-background border-border/60 rounded-xl"
               rows={1}
               disabled={isLoading}
             />
@@ -248,7 +248,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand }: AIChatProps) {
             size="icon"
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="h-11 w-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 shrink-0 shadow-lg"
+            className="h-11 w-11 rounded-xl shrink-0 shadow-lg"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
