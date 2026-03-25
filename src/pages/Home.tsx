@@ -12,9 +12,22 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink, Bot, Settings, FileEdit, Layers, Globe } from 'lucide-react';
+import {
+  FileText, Plus, Trash2, BarChart3, Copy, Link, ExternalLink,
+  Bot, Settings, FileEdit, Layers, Globe, Menu, X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+
+type TabKey = 'forms' | 'bots' | 'docs' | 'projects' | 'websites';
+
+const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: 'forms',    label: 'Формы',    icon: <FileText className="w-4 h-4" /> },
+  { key: 'docs',     label: 'Документы', icon: <FileEdit className="w-4 h-4" /> },
+  { key: 'bots',     label: 'Боты',     icon: <Bot className="w-4 h-4" /> },
+  { key: 'projects', label: 'Проекты',  icon: <Layers className="w-4 h-4" /> },
+  { key: 'websites', label: 'Сайты',    icon: <Globe className="w-4 h-4" /> },
+];
 
 const Home = () => {
   const navigate = useNavigate();
@@ -24,8 +37,9 @@ const Home = () => {
   const { projects, deleteProject } = useProjectsStorage();
   const { websites, deleteWebsite, togglePublish: toggleSitePublish } = useWebsitesStorage();
   const { t } = useLanguage();
-  const [tab, setTab] = useState<'forms' | 'bots' | 'docs' | 'projects' | 'websites'>('forms');
+  const [tab, setTab] = useState<TabKey>('forms');
   const [showSettings, setShowSettings] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -33,6 +47,16 @@ const Home = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
     return () => subscription.unsubscribe();
   }, []);
+
+  const getCounts = () => ({
+    forms: forms.length,
+    docs: docs.length,
+    bots: bots.length,
+    projects: projects.length,
+    websites: websites.length,
+  });
+
+  const counts = getCounts();
 
   const handleDeleteForm = (formId: string) => {
     if (window.confirm(t('home.confirmDelete'))) {
@@ -53,152 +77,131 @@ const Home = () => {
     toast.success(t('home.linkCopied'));
   };
 
+  const newRoutes: Record<TabKey, string> = {
+    forms: '/form/new',
+    bots: '/bot/new',
+    docs: '/doc/new',
+    projects: '/project/new',
+    websites: '/site/new',
+  };
+
+  const newLabels: Record<TabKey, string> = {
+    forms: t('home.newForm'),
+    bots: 'Новый бот',
+    docs: 'Новый документ',
+    projects: 'Объединить',
+    websites: 'Новый сайт',
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-primary-foreground" />
+        <div className="container mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2">
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="font-semibold text-lg">{t('header.title')}</h1>
-              <p className="text-xs text-muted-foreground">{t('header.subtitle')}</p>
+            <div className="hidden sm:block">
+              <h1 className="font-semibold text-base sm:text-lg leading-tight">{t('header.title')}</h1>
+              <p className="text-xs text-muted-foreground hidden md:block">{t('header.subtitle')}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher />
-            {tab === 'forms' && (
-              <Button onClick={() => navigate('/form/new')}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('home.newForm')}
-              </Button>
-            )}
-            {tab === 'bots' && (
-              <Button onClick={() => navigate('/bot/new')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Новый бот
-              </Button>
-            )}
-            {tab === 'docs' && (
-              <Button onClick={() => navigate('/doc/new')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Новый документ
-              </Button>
-            )}
-            {tab === 'projects' && (
-              <Button onClick={() => navigate('/project/new')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Объединить
-              </Button>
-            )}
-            {tab === 'websites' && (
-              <Button onClick={() => navigate('/site/new')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Новый сайт
-              </Button>
-            )}
-            {/* Settings button + User avatar */}
-            <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)} title="Настройки">
+          {/* Right side actions */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
+
+            {/* New item button — desktop */}
+            <Button
+              size="sm"
+              className="hidden sm:flex"
+              onClick={() => navigate(newRoutes[tab])}
+            >
+              <Plus className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden md:inline">{newLabels[tab]}</span>
+            </Button>
+
+            {/* Settings */}
+            <Button variant="ghost" size="icon" className="w-8 h-8 sm:w-9 sm:h-9" onClick={() => setShowSettings(true)} title="Настройки">
               <Settings className="w-4 h-4" />
             </Button>
+
+            {/* User avatar */}
             <button
               onClick={() => setShowSettings(true)}
-              className="w-8 h-8 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center font-bold text-primary text-sm transition-colors"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center font-bold text-primary text-xs sm:text-sm transition-colors"
               title="Профиль"
             >
               {user?.user_metadata?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
             </button>
+
+            {/* Mobile hamburger */}
+            <button
+              className="sm:hidden w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors"
+              onClick={() => setMobileMenuOpen(v => !v)}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-t bg-card px-3 pb-3 space-y-2">
+            <LanguageSwitcher />
+            <Button className="w-full" onClick={() => { navigate(newRoutes[tab]); setMobileMenuOpen(false); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              {newLabels[tab]}
+            </Button>
+          </div>
+        )}
       </header>
 
       {/* Settings Panel */}
       {showSettings && <SettingsPanel user={user} onClose={() => setShowSettings(false)} />}
 
-      {/* Tabs */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-4">
-          <div className="flex gap-1">
-            <button
-              onClick={() => setTab('forms')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === 'forms' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              {t('home.myForms')}
-              {forms.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{forms.length}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setTab('docs')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === 'docs' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <FileEdit className="w-4 h-4" />
-              Документы
-              {docs.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{docs.length}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setTab('bots')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === 'bots' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Bot className="w-4 h-4" />
-              Telegram Боты
-              {bots.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{bots.length}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setTab('projects')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === 'projects' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              Объединить
-              {projects.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{projects.length}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setTab('websites')}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === 'websites' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Globe className="w-4 h-4" />
-              Сайты
-              {websites.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{websites.length}</span>
-              )}
-            </button>
+      {/* Tabs — horizontally scrollable on mobile */}
+      <div className="border-b bg-card overflow-x-auto">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex gap-0 min-w-max sm:min-w-0">
+            {TABS.map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => { setTab(key); setMobileMenuOpen(false); }}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  tab === key
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {icon}
+                <span className="hidden xs:inline sm:inline">{label}</span>
+                {counts[key] > 0 && (
+                  <span className="px-1.5 py-0.5 text-xs rounded-full bg-primary/10 text-primary">{counts[key]}</span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
 
         {/* FORMS TAB */}
         {tab === 'forms' && (
           <>
-            <h2 className="text-2xl font-bold mb-6">{t('home.myForms')}</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">{t('home.myForms')}</h2>
             {forms.length === 0 ? (
               <Card className="border-dashed">
-                <CardContent className="py-16 text-center">
-                  <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-xl font-medium mb-2">{t('home.noForms')}</h3>
-                  <p className="text-muted-foreground mb-6">{t('home.noFormsHint')}</p>
+                <CardContent className="py-12 sm:py-16 text-center">
+                  <FileText className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg sm:text-xl font-medium mb-2">{t('home.noForms')}</h3>
+                  <p className="text-muted-foreground mb-6 text-sm">{t('home.noFormsHint')}</p>
                   <Button onClick={() => navigate('/form/new')}>
                     <Plus className="w-4 h-4 mr-2" />
                     {t('home.createFirst')}
@@ -206,18 +209,18 @@ const Home = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {forms.map((form) => (
                   <Card key={form.id} className="group hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-lg truncate">{form.title}</CardTitle>
-                          <CardDescription className="line-clamp-2 mt-1">
+                          <CardTitle className="text-base sm:text-lg truncate">{form.title}</CardTitle>
+                          <CardDescription className="line-clamp-2 mt-1 text-xs sm:text-sm">
                             {form.description || t('home.noDescription')}
                           </CardDescription>
                         </div>
-                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${
+                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ${
                           form.published ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
                         }`}>
                           {form.published ? t('home.published') : t('home.draft')}
@@ -225,25 +228,26 @@ const Home = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                         <span>{t('home.fields')}: {form.fields.length}</span>
                         <span>•</span>
                         <span>{t('home.updated')}: {format(form.updatedAt, 'dd.MM.yyyy')}</span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/form/${form.id}`)}>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                        <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => navigate(`/form/${form.id}`)}>
                           {t('home.edit')}
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/form/${form.id}/results`)}>
-                          <BarChart3 className="w-4 h-4 mr-1" />
+                        <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => navigate(`/form/${form.id}/results`)}>
+                          <BarChart3 className="w-3.5 h-3.5 mr-1" />
                           {t('home.results')}
                         </Button>
                         <Button
                           variant={form.published ? 'default' : 'outline'}
                           size="sm"
+                          className="text-xs sm:text-sm"
                           onClick={() => handlePublish(form.id)}
                         >
-                          <Link className="w-4 h-4 mr-1" />
+                          <Link className="w-3.5 h-3.5 mr-1" />
                           {form.published ? t('home.unpublish') : t('home.publish')}
                         </Button>
                         {form.published && (
@@ -274,22 +278,22 @@ const Home = () => {
         {/* DOCS TAB */}
         {tab === 'docs' && (
           <>
-            <h2 className="text-2xl font-bold mb-6">Мои Документы</h2>
-            <div className="mb-6 rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
-              <div className="text-2xl shrink-0">📄</div>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мои Документы</h2>
+            <div className="mb-4 sm:mb-6 rounded-xl bg-primary/5 border border-primary/20 p-3 sm:p-4 flex gap-3">
+              <div className="text-xl sm:text-2xl shrink-0">📄</div>
               <div>
-                <p className="font-medium text-sm mb-1">Конструктор документов, форм и таблиц</p>
+                <p className="font-medium text-xs sm:text-sm mb-1">Конструктор документов, форм и таблиц</p>
                 <p className="text-xs text-muted-foreground">
-                  Создавайте документы, заполняемые формы и таблицы. 18+ готовых шаблонов. Экспорт в PDF и HTML. Подписи, изображения, видео.
+                  Создавайте документы, заполняемые формы и таблицы. 18+ готовых шаблонов. Экспорт в PDF и HTML.
                 </p>
               </div>
             </div>
             {docs.length === 0 ? (
               <Card className="border-dashed">
-                <CardContent className="py-16 text-center">
-                  <FileEdit className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-xl font-medium mb-2">Нет документов</h3>
-                  <p className="text-muted-foreground mb-6">Создайте первый документ или выберите готовый шаблон</p>
+                <CardContent className="py-12 sm:py-16 text-center">
+                  <FileEdit className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg sm:text-xl font-medium mb-2">Нет документов</h3>
+                  <p className="text-muted-foreground mb-6 text-sm">Создайте первый документ или выберите готовый шаблон</p>
                   <Button onClick={() => navigate('/doc/new')}>
                     <Plus className="w-4 h-4 mr-2" />
                     Создать документ
@@ -297,18 +301,18 @@ const Home = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {docs.map((doc) => (
                   <Card key={doc.id} className="group hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <CardTitle className="text-lg truncate">{doc.title}</CardTitle>
-                          <CardDescription className="mt-1">
+                          <CardTitle className="text-base sm:text-lg truncate">{doc.title}</CardTitle>
+                          <CardDescription className="mt-1 text-xs sm:text-sm">
                             {doc.blocks.length} блоков{doc.allowFill ? ' · Форма для заполнения' : ''}
                           </CardDescription>
                         </div>
-                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${
+                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ${
                           doc.published ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
                         }`}>
                           {doc.published ? 'Опубликован' : 'Черновик'}
@@ -316,16 +320,17 @@ const Home = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                         <span>Обновлён: {format(doc.updatedAt, 'dd.MM.yyyy')}</span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/doc/${doc.id}`)}>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                        <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => navigate(`/doc/${doc.id}`)}>
                           Редактировать
                         </Button>
                         <Button
                           variant={doc.published ? 'default' : 'outline'}
                           size="sm"
+                          className="text-xs sm:text-sm"
                           onClick={() => {
                             const updated = toggleDocPublish(doc.id);
                             if (updated?.published) {
@@ -337,15 +342,12 @@ const Home = () => {
                             }
                           }}
                         >
-                          <Link className="w-4 h-4 mr-1" />
+                          <Link className="w-3.5 h-3.5 mr-1" />
                           {doc.published ? 'Снять' : 'Публиковать'}
                         </Button>
                         {doc.published && (
                           <>
-                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => {
-                              navigator.clipboard.writeText(`${window.location.origin}/d/${doc.id}`);
-                              toast.success('Ссылка скопирована');
-                            }}>
+                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/d/${doc.id}`); toast.success('Ссылка скопирована'); }}>
                               <Copy className="w-3.5 h-3.5" />
                             </Button>
                             <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => window.open(`/d/${doc.id}`, '_blank')}>
@@ -371,26 +373,22 @@ const Home = () => {
         {/* BOTS TAB */}
         {tab === 'bots' && (
           <>
-            <h2 className="text-2xl font-bold mb-6">Мои Telegram Боты</h2>
-
-            {/* Tip banner */}
-            <div className="mb-6 rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
-              <div className="text-2xl shrink-0">🤖</div>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мои Telegram Боты</h2>
+            <div className="mb-4 sm:mb-6 rounded-xl bg-primary/5 border border-primary/20 p-3 sm:p-4 flex gap-3">
+              <div className="text-xl sm:text-2xl shrink-0">🤖</div>
               <div>
-                <p className="font-medium text-sm mb-1">Конструктор Telegram-ботов</p>
+                <p className="font-medium text-xs sm:text-sm mb-1">Конструктор Telegram-ботов</p>
                 <p className="text-xs text-muted-foreground">
-                  Создавайте визуальные сценарии диалогов. Подключите бота к своим формам — 
-                  он будет автоматически отправлять ссылки пользователям и уведомлять вас об ответах.
+                  Создавайте визуальные сценарии диалогов. Подключите бота к своим формам — он будет автоматически отправлять ссылки и уведомлять об ответах.
                 </p>
               </div>
             </div>
-
             {bots.length === 0 ? (
               <Card className="border-dashed">
-                <CardContent className="py-16 text-center">
-                  <Bot className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-xl font-medium mb-2">Нет ботов</h3>
-                  <p className="text-muted-foreground mb-6">Создайте первого Telegram-бота и подключите его к формам</p>
+                <CardContent className="py-12 sm:py-16 text-center">
+                  <Bot className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg sm:text-xl font-medium mb-2">Нет ботов</h3>
+                  <p className="text-muted-foreground mb-6 text-sm">Создайте первого Telegram-бота и подключите его к формам</p>
                   <Button onClick={() => navigate('/bot/new')}>
                     <Plus className="w-4 h-4 mr-2" />
                     Создать бота
@@ -398,41 +396,38 @@ const Home = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {bots.map((bot) => (
                   <Card key={bot.id} className="group hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">🤖</div>
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg sm:text-xl shrink-0">🤖</div>
                           <div className="min-w-0">
-                            <CardTitle className="text-base truncate">{bot.name}</CardTitle>
+                            <CardTitle className="text-sm sm:text-base truncate">{bot.name}</CardTitle>
                             {bot.username && (
                               <CardDescription className="text-xs">@{bot.username}</CardDescription>
                             )}
                           </div>
                         </div>
-                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${bot.token ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
+                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ${bot.token ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
                           {bot.token ? 'Настроен' : 'Нет токена'}
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                         <span>Узлов: {bot.nodes.length}</span>
                         <span>•</span>
                         <span>Обновлён: {format(bot.updatedAt, 'dd.MM.yyyy')}</span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/bot/${bot.id}`)}>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                        <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => navigate(`/bot/${bot.id}`)}>
                           <Settings className="w-3.5 h-3.5 mr-1" />
                           Настроить
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => { navigate(`/bot/${bot.id}`); }}>
-                          Поток
-                        </Button>
                         {bot.username && (
-                          <Button variant="outline" size="sm" onClick={() => window.open(`https://t.me/${bot.username}`, '_blank')}>
+                          <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => window.open(`https://t.me/${bot.username}`, '_blank')}>
                             <ExternalLink className="w-3.5 h-3.5 mr-1" />
                             Открыть
                           </Button>
@@ -455,22 +450,22 @@ const Home = () => {
         {/* PROJECTS TAB */}
         {tab === 'projects' && (
           <>
-            <h2 className="text-2xl font-bold mb-6">Объединённые проекты</h2>
-            <div className="mb-6 rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
-              <div className="text-2xl shrink-0">🔗</div>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Объединённые проекты</h2>
+            <div className="mb-4 sm:mb-6 rounded-xl bg-primary/5 border border-primary/20 p-3 sm:p-4 flex gap-3">
+              <div className="text-xl sm:text-2xl shrink-0">🔗</div>
               <div>
-                <p className="font-medium text-sm mb-1">Объединитель форм, ботов и документов</p>
+                <p className="font-medium text-xs sm:text-sm mb-1">Объединитель форм, ботов и документов</p>
                 <p className="text-xs text-muted-foreground">
-                  Создайте проект и объедините в нём формы, Telegram-боты и документы. Управляйте всем в одном месте.
+                  Создайте проект и объедините в нём формы, Telegram-боты и документы.
                 </p>
               </div>
             </div>
             {projects.length === 0 ? (
               <Card className="border-dashed">
-                <CardContent className="py-16 text-center">
-                  <Layers className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-xl font-medium mb-2">Нет проектов</h3>
-                  <p className="text-muted-foreground mb-6">Создайте первый проект, объединив формы, бота и документы</p>
+                <CardContent className="py-12 sm:py-16 text-center">
+                  <Layers className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg sm:text-xl font-medium mb-2">Нет проектов</h3>
+                  <p className="text-muted-foreground mb-6 text-sm">Создайте первый проект, объединив формы, бота и документы</p>
                   <Button onClick={() => navigate('/project/new')}>
                     <Plus className="w-4 h-4 mr-2" />
                     Создать проект
@@ -478,18 +473,18 @@ const Home = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {projects.map((project) => (
                   <Card key={project.id} className="group hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 border"
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0 border"
                             style={{ backgroundColor: (project.color || '#3b82f6') + '20', borderColor: (project.color || '#3b82f6') + '40' }}>
                             {project.icon || '🚀'}
                           </div>
                           <div className="min-w-0">
-                            <CardTitle className="text-base truncate">{project.name}</CardTitle>
+                            <CardTitle className="text-sm sm:text-base truncate">{project.name}</CardTitle>
                             {project.description && (
                               <CardDescription className="line-clamp-1 text-xs mt-0.5">{project.description}</CardDescription>
                             )}
@@ -498,13 +493,13 @@ const Home = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
                         {project.formIds.length > 0 && <span className="flex items-center gap-1"><FileText className="w-3 h-3 text-blue-500" />{project.formIds.length} форм</span>}
                         {project.botIds.length > 0 && <span className="flex items-center gap-1"><Bot className="w-3 h-3 text-violet-500" />{project.botIds.length} ботов</span>}
                         {project.docIds.length > 0 && <span className="flex items-center gap-1"><FileEdit className="w-3 h-3 text-emerald-500" />{project.docIds.length} докум.</span>}
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/project/${project.id}`)}>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                        <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => navigate(`/project/${project.id}`)}>
                           Редактировать
                         </Button>
                         <Button
@@ -525,22 +520,22 @@ const Home = () => {
         {/* WEBSITES TAB */}
         {tab === 'websites' && (
           <>
-            <h2 className="text-2xl font-bold mb-6">Мои Сайты</h2>
-            <div className="mb-6 rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
-              <div className="text-2xl shrink-0">🌐</div>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Мои Сайты</h2>
+            <div className="mb-4 sm:mb-6 rounded-xl bg-primary/5 border border-primary/20 p-3 sm:p-4 flex gap-3">
+              <div className="text-xl sm:text-2xl shrink-0">🌐</div>
               <div>
-                <p className="font-medium text-sm mb-1">Конструктор сайтов</p>
+                <p className="font-medium text-xs sm:text-sm mb-1">Конструктор сайтов</p>
                 <p className="text-xs text-muted-foreground">
-                  Создавайте полноценные сайты из блоков. 8+ готовых шаблонов: бизнес, портфолио, магазин, ресторан и др. Публикация по ссылке.
+                  Создавайте полноценные сайты из блоков. 8+ готовых шаблонов. Публикация по ссылке.
                 </p>
               </div>
             </div>
             {websites.length === 0 ? (
               <Card className="border-dashed">
-                <CardContent className="py-16 text-center">
-                  <Globe className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-xl font-medium mb-2">Нет сайтов</h3>
-                  <p className="text-muted-foreground mb-6">Создайте первый сайт или выберите готовый шаблон</p>
+                <CardContent className="py-12 sm:py-16 text-center">
+                  <Globe className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-lg sm:text-xl font-medium mb-2">Нет сайтов</h3>
+                  <p className="text-muted-foreground mb-6 text-sm">Создайте первый сайт или выберите готовый шаблон</p>
                   <Button onClick={() => navigate('/site/new')}>
                     <Plus className="w-4 h-4 mr-2" />
                     Создать сайт
@@ -548,34 +543,35 @@ const Home = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {websites.map((site) => (
                   <Card key={site.id} className="group hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">🌐</div>
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg sm:text-xl shrink-0">🌐</div>
                           <div className="min-w-0">
-                            <CardTitle className="text-base truncate">{site.name}</CardTitle>
+                            <CardTitle className="text-sm sm:text-base truncate">{site.name}</CardTitle>
                             <CardDescription className="text-xs">{site.blocks.length} блоков</CardDescription>
                           </div>
                         </div>
-                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${site.published ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
+                        <div className={`px-2 py-1 text-xs rounded-full shrink-0 ${site.published ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'}`}>
                           {site.published ? 'Опубликован' : 'Черновик'}
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                         <span>Обновлён: {format(site.updatedAt, 'dd.MM.yyyy')}</span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/site/edit/${site.id}`)}>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                        <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => navigate(`/site/edit/${site.id}`)}>
                           Редактировать
                         </Button>
                         <Button
                           variant={site.published ? 'default' : 'outline'}
                           size="sm"
+                          className="text-xs sm:text-sm"
                           onClick={() => {
                             const updated = toggleSitePublish(site.id);
                             if (updated?.published) {
@@ -587,7 +583,7 @@ const Home = () => {
                             }
                           }}
                         >
-                          <Link className="w-4 h-4 mr-1" />
+                          <Link className="w-3.5 h-3.5 mr-1" />
                           {site.published ? 'Снять' : 'Публиковать'}
                         </Button>
                         {site.published && (
