@@ -1,20 +1,23 @@
 import { useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { AIChat } from './AIChat';
 import { AIContext } from './useAIAssistant';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
 
-function AIAssistantButtonInner() {
+export function AIAssistantButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const location = useLocation();
-  const { botId } = useParams<{ botId?: string }>();
   const { getBot } = useBotsStorage();
 
-  // Build context if we're on a bot editor page
+  // Detect bot editor: /bot/:botId (not "new")
+  const botMatch = location.pathname.match(/^\/bot\/([^/]+)$/);
+  const botId = botMatch ? botMatch[1] : null;
+
+  // Build AI context if on bot page
   const aiContext: AIContext | undefined = (() => {
     if (!botId || botId === 'new') return undefined;
     const bot = getBot(botId);
@@ -28,7 +31,6 @@ function AIAssistantButtonInner() {
     };
   })();
 
-  // Show bot indicator on button when in bot editor
   const isBotMode = !!aiContext;
 
   return (
@@ -68,21 +70,21 @@ function AIAssistantButtonInner() {
             'fixed bottom-6 right-6 z-[200]',
             'w-14 h-14 rounded-2xl shadow-2xl',
             'flex items-center justify-center',
-            isBotMode ? 'bg-primary' : 'bg-primary hover:bg-primary/90',
+            'bg-primary hover:bg-primary/90',
             'active:scale-95 transition-all duration-200',
             'text-primary-foreground',
             isOpen && 'rotate-12'
           )}
-          title={isBotMode ? `AI: редактор бота "${aiContext!.botName}"` : 'AI Ассистент'}
+          title={isBotMode ? `AI ассистент бота "${aiContext!.botName}"` : 'AI Ассистент'}
         >
           {isOpen ? (
             <X className="w-5 h-5" />
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
-              {/* Bot mode indicator dot */}
+              {/* Bot mode green dot */}
               {isBotMode && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-background flex items-center justify-center text-[8px]">
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-success rounded-full border-2 border-background flex items-center justify-center text-[9px]">
                   🤖
                 </span>
               )}
@@ -94,8 +96,4 @@ function AIAssistantButtonInner() {
       )}
     </>
   );
-}
-
-export function AIAssistantButton() {
-  return <AIAssistantButtonInner />;
 }
