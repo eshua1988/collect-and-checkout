@@ -1,11 +1,11 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useFormsStorage } from '@/hooks/useFormsStorage';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
 import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
 import { FormData, FormField } from '@/types/form';
-import { TelegramBot } from '@/types/bot';
+import { TelegramBot, BotNode, BotEdge } from '@/types/bot';
 import { AppWebsite } from '@/types/website';
 
 export interface ChatMessage {
@@ -16,34 +16,44 @@ export interface ChatMessage {
 }
 
 export interface ParsedAction {
-  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO';
+  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES';
   data: any;
   executed?: boolean;
 }
 
+/** Context injected into AI when user is on a specific page */
+export interface AIContext {
+  type: 'bot';
+  botId: string;
+  botName: string;
+  nodeCount: number;
+  nodeTypes: string[];
+}
+
 const ASSISTANT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
 
-export function useAIAssistant() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: `👋 Привет! Я **AI-ассистент** этой платформы.
+const genId = () => Math.random().toString(36).substring(2, 12);
+
+const WELCOME = `👋 Привет! Я **AI-ассистент** этой платформы.
 
 Я могу создавать и редактировать:
 - 📋 **Формы** — опросы, анкеты, заявки
-- 🤖 **Telegram-боты** — с логикой, кнопками, AI
+- 🤖 **Telegram-боты** — добавляю узлы, логику, ветвления
 - 🌐 **Сайты** — лендинги, портфолио, магазины
 - 📄 **Документы** — договоры, шаблоны
 
-Просто опиши что хочешь создать!`,
-    }
+Если ты сейчас в редакторе бота — я могу **добавить новые узлы и логику** прямо в твой поток!`;
+
+export function useAIAssistant(aiContext?: AIContext) {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { id: 'welcome', role: 'assistant', content: WELCOME }
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { saveForm } = useFormsStorage();
-  const { saveBot } = useBotsStorage();
+  const { saveBot, getBot } = useBotsStorage();
   const { saveWebsite } = useWebsitesStorage();
 
   const parseActions = useCallback((text: string): ParsedAction[] => {
@@ -53,29 +63,22 @@ export function useAIAssistant() {
     while ((match = regex.exec(text)) !== null) {
       try {
         const parsed = JSON.parse(match[1].trim());
-        if (parsed.type && parsed.data) {
-          actions.push(parsed);
-        }
-      } catch {
-        // skip malformed
-      }
+        if (parsed.type && parsed.data) actions.push(parsed);
+      } catch { /* skip */ }
     }
     return actions;
   }, []);
 
   const executeAction = useCallback(async (action: ParsedAction) => {
-    const genId = () => Math.random().toString(36).substring(2, 12);
     const now = Date.now();
 
+    // ── CREATE FORM ────────────────────────────────────────────────
     if (action.type === 'CREATE_FORM') {
       const form: FormData = {
         id: genId(),
         title: action.data.title || 'Новая форма',
         description: action.data.description || '',
-        fields: (action.data.fields || []).map((f: any) => ({
-          ...f,
-          id: f.id || genId(),
-        })) as FormField[],
+        fields: (action.data.fields || []).map((f: any) => ({ ...f, id: f.id || genId() })) as FormField[],
         completionMessage: action.data.completionMessage || 'Спасибо!',
         paymentEnabled: action.data.paymentEnabled || false,
         totalAmount: action.data.totalAmount || 0,
@@ -89,13 +92,14 @@ export function useAIAssistant() {
       return form.id;
     }
 
+    // ── CREATE BOT ─────────────────────────────────────────────────
     if (action.type === 'CREATE_BOT') {
       const bot: TelegramBot = {
         id: genId(),
         name: action.data.name || 'Новый бот',
         token: action.data.token || '',
-        nodes: action.data.nodes || [],
-        edges: action.data.edges || [],
+        nodes: (action.data.nodes || []).map((n: any) => ({ ...n, id: n.id || genId() })),
+        edges: (action.data.edges || []).map((e: any) => ({ ...e, id: e.id || genId() })),
         createdAt: now,
         updatedAt: now,
       };
@@ -105,16 +109,72 @@ export function useAIAssistant() {
       return bot.id;
     }
 
+    // ── ADD NODES TO EXISTING BOT ──────────────────────────────────
+    if (action.type === 'ADD_BOT_NODES') {
+      const targetBotId = action.data.botId || aiContext?.botId;
+      if (!targetBotId) {
+        toast.error('Не указан ID бота для добавления узлов');
+        return;
+      }
+
+      const existingBot = getBot(targetBotId);
+      if (!existingBot) {
+        toast.error('Бот не найден');
+        return;
+      }
+
+      // Remap IDs to avoid collisions with existing nodes
+      const idMap: Record<string, string> = {};
+      const newNodes: BotNode[] = (action.data.nodes || []).map((n: any) => {
+        const newId = genId();
+        idMap[n.id] = newId;
+        // Offset position to avoid overlap with existing nodes
+        const offsetX = 400 + Math.random() * 100;
+        const offsetY = 200 + Math.random() * 100;
+        return {
+          ...n,
+          id: newId,
+          position: {
+            x: (n.position?.x || 200) + offsetX,
+            y: (n.position?.y || 100) + offsetY,
+          },
+        };
+      });
+
+      const newEdges: BotEdge[] = (action.data.edges || []).map((e: any) => ({
+        ...e,
+        id: genId(),
+        source: idMap[e.source] || e.source,
+        target: idMap[e.target] || e.target,
+      }));
+
+      const updatedBot: TelegramBot = {
+        ...existingBot,
+        nodes: [...existingBot.nodes, ...newNodes],
+        edges: [...existingBot.edges, ...newEdges],
+        updatedAt: now,
+      };
+
+      saveBot(updatedBot);
+      toast.success(`Добавлено ${newNodes.length} узлов в бот "${existingBot.name}"! Переключись на вкладку "Поток".`);
+
+      // Navigate to bot flow tab
+      const currentPath = location.pathname;
+      const botPath = `/bot/${targetBotId}`;
+      if (!currentPath.startsWith('/bot/')) {
+        navigate(botPath);
+      }
+      return targetBotId;
+    }
+
+    // ── CREATE WEBSITE ─────────────────────────────────────────────
     if (action.type === 'CREATE_WEBSITE') {
       const site: AppWebsite = {
         id: genId(),
         name: action.data.name || 'Новый сайт',
         description: action.data.description || '',
         published: false,
-        blocks: (action.data.blocks || []).map((b: any) => ({
-          ...b,
-          id: b.id || genId(),
-        })),
+        blocks: (action.data.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
         createdAt: now,
         updatedAt: now,
       };
@@ -124,10 +184,11 @@ export function useAIAssistant() {
       return site.id;
     }
 
+    // ── NAVIGATE ───────────────────────────────────────────────────
     if (action.type === 'NAVIGATE_TO') {
       navigate(action.data.path);
     }
-  }, [saveForm, saveBot, saveWebsite, navigate]);
+  }, [saveForm, saveBot, saveWebsite, navigate, location, aiContext, getBot]);
 
   const sendMessage = useCallback(async (userText: string) => {
     if (!userText.trim() || isLoading) return;
@@ -138,28 +199,39 @@ export function useAIAssistant() {
       content: userText,
     };
 
-    const history = [...messages, userMsg].filter(m => m.id !== 'welcome').map(m => ({
-      role: m.role,
-      content: m.content,
-    }));
+    // Build history (exclude welcome)
+    const history = [...messages, userMsg]
+      .filter(m => m.id !== 'welcome')
+      .map(m => ({ role: m.role, content: m.content }));
 
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
     let assistantContent = '';
     const assistantId = (Date.now() + 1).toString();
-
-    // Add placeholder
     setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
 
     try {
+      const body: any = { messages: history };
+
+      // Inject bot context if available
+      if (aiContext?.type === 'bot') {
+        body.context = {
+          type: 'bot_editor',
+          botId: aiContext.botId,
+          botName: aiContext.botName,
+          nodeCount: aiContext.nodeCount,
+          nodeTypes: aiContext.nodeTypes,
+        };
+      }
+
       const resp = await fetch(ASSISTANT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify(body),
       });
 
       if (!resp.ok || !resp.body) {
@@ -204,7 +276,6 @@ export function useAIAssistant() {
         }
       }
 
-      // Parse and attach actions
       const actions = parseActions(assistantContent);
       setMessages(prev => prev.map(m =>
         m.id === assistantId ? { ...m, content: assistantContent, actions } : m
@@ -216,14 +287,10 @@ export function useAIAssistant() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading, parseActions]);
+  }, [messages, isLoading, parseActions, aiContext]);
 
   const clearMessages = useCallback(() => {
-    setMessages([{
-      id: 'welcome',
-      role: 'assistant',
-      content: `👋 Привет! Я **AI-ассистент** этой платформы.\n\nЯ могу создавать и редактировать:\n- 📋 **Формы** — опросы, анкеты, заявки\n- 🤖 **Telegram-боты** — с логикой, кнопками, AI\n- 🌐 **Сайты** — лендинги, портфолио, магазины\n- 📄 **Документы** — договоры, шаблоны\n\nПросто опиши что хочешь создать!`,
-    }]);
+    setMessages([{ id: 'welcome', role: 'assistant', content: WELCOME }]);
   }, []);
 
   return { messages, isLoading, sendMessage, executeAction, clearMessages };
