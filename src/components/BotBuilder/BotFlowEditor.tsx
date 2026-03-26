@@ -89,6 +89,9 @@ interface BotFlowEditorProps {
   bot: TelegramBot;
   forms: FormData[];
   onSave: (bot: TelegramBot) => void;
+  sidePanel: SidePanel;
+  onSidePanelChange: (panel: SidePanel) => void;
+  saveRef: React.MutableRefObject<(() => void) | null>;
 }
 
 const defaultData: Record<BotNodeType, BotNodeData> = {
@@ -132,9 +135,9 @@ const nodeAddButtons: { type: BotNodeType; label: string; icon: React.ReactNode;
   { type: 'jump',             label: 'Переход',      icon: <CornerDownRight className="w-3.5 h-3.5" />,   color: 'bg-muted text-muted-foreground border-border' },
 ];
 
-type SidePanel = 'nodeEditor' | 'simulator' | 'tips' | 'templates' | null;
+export type SidePanel = 'nodeEditor' | 'simulator' | 'tips' | 'templates' | null;
 
-function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
+function BotFlowEditorInner({ bot, forms, onSave, sidePanel, onSidePanelChange, saveRef }: BotFlowEditorProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
@@ -170,12 +173,14 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(bot.edges as Edge[]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [sidePanel, setSidePanel] = useState<SidePanel>(null);
+
+  // sidePanel is controlled by parent via props
+  const setSidePanel = onSidePanelChange;
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
 
   const togglePanel = (panel: SidePanel) => {
-    setSidePanel(prev => prev === panel ? null : panel);
+    setSidePanel(sidePanel === panel ? null : panel);
     if (panel !== 'nodeEditor') setSelectedNodeId(null);
   };
 
@@ -211,6 +216,9 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
     toast.success('Поток бота сохранён!');
   };
 
+  // Always keep saveRef up-to-date so the parent header button can trigger save
+  saveRef.current = handleSave;
+
   const handleLoadTemplate = (tplNodes: BotNode[], tplEdges: BotEdge[]) => {
     setNodes(tplNodes as Node[]);
     setEdges(tplEdges as Edge[]);
@@ -239,41 +247,6 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
               {btn.label}
             </button>
           ))}
-        </div>
-
-        {/* Toolbar: actions */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-          <Button
-            size="sm"
-            variant={sidePanel === 'tips' ? 'default' : 'outline'}
-            onClick={() => togglePanel('tips')}
-            className="shadow-md"
-          >
-            <Lightbulb className="w-4 h-4 mr-1.5" />
-            Подсказки
-          </Button>
-          <Button
-            size="sm"
-            variant={sidePanel === 'templates' ? 'default' : 'outline'}
-            onClick={() => togglePanel('templates')}
-            className="shadow-md"
-          >
-            <Layers className="w-4 h-4 mr-1.5" />
-            Шаблоны
-          </Button>
-          <Button
-            size="sm"
-            variant={sidePanel === 'simulator' ? 'default' : 'outline'}
-            onClick={() => togglePanel('simulator')}
-            className="shadow-md"
-          >
-            <Play className="w-4 h-4 mr-1.5" />
-            Симулятор
-          </Button>
-          <Button size="sm" onClick={handleSave} className="shadow-md">
-            <Save className="w-4 h-4 mr-1.5" />
-            Сохранить
-          </Button>
         </div>
 
         {/* Hint */}

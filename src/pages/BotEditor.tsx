@@ -1,14 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
 import { useFormsStorage } from '@/hooks/useFormsStorage';
-import { BotFlowEditor } from '@/components/BotBuilder/BotFlowEditor';
+import { BotFlowEditor, type SidePanel } from '@/components/BotBuilder/BotFlowEditor';
 import { TelegramBot } from '@/types/bot';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Send, Eye, EyeOff, Info, ChevronRight, Rocket, CheckCircle2, AlertCircle, RefreshCw, StopCircle } from 'lucide-react';
+import { ArrowLeft, Send, Eye, EyeOff, Info, ChevronRight, Rocket, CheckCircle2, AlertCircle, RefreshCw, StopCircle, Lightbulb, Layers, Play, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
@@ -49,6 +49,13 @@ const BotEditor = () => {
     existing?.launchedBotName ?? '',
   );
   const [launchError, setLaunchError] = useState('');
+
+  // Flow panel state lifted up so header buttons can control it
+  const [flowSidePanel, setFlowSidePanel] = useState<SidePanel>(null);
+  const flowSaveRef = useRef<(() => void) | null>(null);
+  const toggleFlowPanel = (panel: Exclude<SidePanel, null>) => {
+    setFlowSidePanel(prev => prev === panel ? null : panel);
+  };
 
   const handleSaveBot = useCallback((updatedBot: TelegramBot) => {
     saveBot(updatedBot);
@@ -165,7 +172,7 @@ const BotEditor = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0 flex-wrap justify-end">
             <div className="hidden sm:block">
               <LanguageSwitcher />
             </div>
@@ -183,6 +190,22 @@ const BotEditor = () => {
                 Поток
               </button>
             </div>
+            {activeTab === 'flow' && (
+              <>
+                <Button size="sm" variant={flowSidePanel === 'tips' ? 'default' : 'outline'} onClick={() => toggleFlowPanel('tips')}>
+                  <Lightbulb className="w-4 h-4 mr-1.5" />Подсказки
+                </Button>
+                <Button size="sm" variant={flowSidePanel === 'templates' ? 'default' : 'outline'} onClick={() => toggleFlowPanel('templates')}>
+                  <Layers className="w-4 h-4 mr-1.5" />Шаблоны
+                </Button>
+                <Button size="sm" variant={flowSidePanel === 'simulator' ? 'default' : 'outline'} onClick={() => toggleFlowPanel('simulator')}>
+                  <Play className="w-4 h-4 mr-1.5" />Симулятор
+                </Button>
+                <Button size="sm" onClick={() => flowSaveRef.current?.()}>
+                  <Save className="w-4 h-4 mr-1.5" />Сохранить
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -364,7 +387,14 @@ const BotEditor = () => {
                 </div>
               </div>
             ) : (
-              <BotFlowEditor bot={bot} forms={forms} onSave={handleSaveBot} />
+              <BotFlowEditor
+                bot={bot}
+                forms={forms}
+                onSave={handleSaveBot}
+                sidePanel={flowSidePanel}
+                onSidePanelChange={setFlowSidePanel}
+                saveRef={flowSaveRef}
+              />
             )}
           </div>
         )}
