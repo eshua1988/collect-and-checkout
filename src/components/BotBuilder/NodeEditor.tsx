@@ -191,16 +191,21 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
                   <Plus className="w-3 h-3 mr-1" /> Кнопка
                 </Button>
               </div>
+              <div className="text-xs text-muted-foreground bg-muted/50 rounded p-1.5 mb-1">
+                Каждая кнопка имеет выход <span className="font-mono text-primary">→0</span>, <span className="font-mono text-primary">→1</span>... — соедините с нужным узлом в конструкторе
+              </div>
               <div className="space-y-1.5">
-                {(local.buttons || []).map(btn => (
+                {(local.buttons || []).map((btn, idx) => (
                   <div key={btn.id} className="space-y-1 p-2 bg-muted/40 rounded-lg">
-                    <div className="flex gap-1">
-                      <Input value={btn.label} onChange={e => updateButton(btn.id, 'label', e.target.value)} placeholder="Текст кнопки" className="h-7 text-xs" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-mono text-primary bg-primary/10 px-1 py-0.5 rounded shrink-0">→{idx}</span>
+                      <Input value={btn.label} onChange={e => updateButton(btn.id, 'label', e.target.value)} placeholder="Текст кнопки" className="h-7 text-xs flex-1" />
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => removeButton(btn.id)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
-                    <Input value={btn.url || ''} onChange={e => updateButton(btn.id, 'url', e.target.value)} placeholder="URL (необязательно)" className="h-7 text-xs" />
+                    <Input value={btn.url || ''} onChange={e => updateButton(btn.id, 'url', e.target.value)} placeholder="URL (для внешней ссылки)" className="h-7 text-xs" />
+                    <Input value={btn.callbackData || ''} onChange={e => updateButton(btn.id, 'callbackData', e.target.value)} placeholder="callback_data (ID для Telegram API)" className="h-7 text-xs font-mono" />
                   </div>
                 ))}
               </div>

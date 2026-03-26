@@ -64,9 +64,11 @@ const SYSTEM_PROMPT = `Ты — AI-конструктор платформы For
 
 ## СТРУКТУРА УЗЛОВ:
 - nodes: [{id:"unique_id",type:"nodeType",position:{x:100,y:100},data:{...}}]
-- edges: [{id:"e1",source:"id1",target:"id2",sourceHandle?:"yes"|"no"|"0"}]
+- edges: [{id:"e1",source:"id1",target:"id2",sourceHandle?:"yes"|"no"|"0"|"1"}]
 - Отступ между узлами: ~180px по Y, ~300px по X для ветвлений
-- condition → ОБЯЗАТЕЛЬНО 2 связи: yes и no
+- condition → ОБЯЗАТЕЛЬНО 2 связи: sourceHandle "yes" и "no"
+- message с кнопками → sourceHandle = "0","1",... (индекс кнопки, 0-based); без кнопок — нет sourceHandle
+- randomizer → sourceHandle = "0","1",... (индекс ветки, 0-based)
 
 ## ТИПЫ ПОЛЕЙ ФОРМЫ: text,textarea,number,email,phone,select,radio,checkbox,image,payment
 ## ТИПЫ БЛОКОВ САЙТА: navbar,hero,features,text,image,gallery,pricing,testimonials,faq,team,contact,countdown,video,cta,footer,divider,html,button,map

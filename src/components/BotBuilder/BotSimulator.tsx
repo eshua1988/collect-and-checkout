@@ -221,7 +221,7 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
         rand -= weights[i];
         if (rand <= 0) { chosen = i; break; }
       }
-      const edge = edges.find(e => e.source === nodeId && e.sourceHandle === `rand-${chosen}`);
+      const edge = edges.find(e => e.source === nodeId && e.sourceHandle === String(chosen));
       return processNode(edge?.target || null, vars);
     }
 
@@ -261,6 +261,28 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
     setInputValue('');
     setIsRunning(true);
     const nextId = getNextNodeId(currentNodeId, edges);
+    await processNode(nextId, newVars);
+    setIsRunning(false);
+  };
+
+  // Handle button click with per-button routing (handle ID = button index)
+  const handleButtonClick = async (btnIndex: number, btnLabel: string) => {
+    if (!currentNodeId || isRunning) return;
+    addUserMessage(btnLabel);
+    setWaitingInput(false);
+    setWaitingChoice(null);
+
+    const node = nodes.find(n => n.id === currentNodeId);
+    const newVars = { ...variables, _lastUserInput: btnLabel, _lastButtonClick: btnLabel, _lastButtonIndex: String(btnIndex) };
+    if (node?.type === 'userInput' && node.data.variableName) {
+      newVars[node.data.variableName] = btnLabel;
+    }
+    setVariables(newVars);
+    setInputValue('');
+    setIsRunning(true);
+    // Try per-button edge (sourceHandle = index), then fall back to default edge
+    const btnEdge = edges.find(e => e.source === currentNodeId && e.sourceHandle === String(btnIndex));
+    const nextId = btnEdge ? btnEdge.target : getNextNodeId(currentNodeId, edges);
     await processNode(nextId, newVars);
     setIsRunning(false);
   };
@@ -331,7 +353,7 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
                           {msg.buttons.map((btn, i) => (
                             <button
                               key={i}
-                              onClick={() => !isRunning && handleUserInput(btn)}
+                              onClick={() => !isRunning && handleButtonClick(i, btn)}
                               disabled={isRunning || !waitingChoice}
                               className="px-2 py-1 text-xs rounded-lg border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
                             >
