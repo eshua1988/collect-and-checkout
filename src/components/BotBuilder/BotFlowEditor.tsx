@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, memo, useMemo } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -13,6 +13,7 @@ import ReactFlow, {
   BackgroundVariant,
   ReactFlowProvider,
   useReactFlow,
+  NodeProps,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
@@ -32,11 +33,35 @@ import {
   MessageSquare, GitBranch, Zap, HelpCircle, Save, Info,
   Brain, Clock, Image, SlidersHorizontal, Shuffle, CornerDownRight, Play,
   Languages, Globe, Youtube, Share2, Instagram, Facebook, Flag,
-  Lightbulb, Layers,
+  Lightbulb, Layers, Handle, Position,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getCustomNodeTypes } from '@/components/AIAssistant/useAIAssistant';
 
-const nodeTypes: NodeTypes = {
+// ── Generic custom node renderer for AI-registered types ───────────────────────
+function makeCustomNode(label: string, icon: string, colorClass: string) {
+  return memo(({ data, selected }: NodeProps<BotNodeData>) => (
+    <div
+      className={`min-w-[200px] max-w-[260px] rounded-xl border-2 shadow-md bg-card transition-all ${selected ? 'shadow-lg border-primary' : 'border-border'}`}
+    >
+      <Handle type="target" position={Position.Left} className="!w-3 !h-3 !border-2 !border-background !bg-primary" />
+      <div className="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-primary/10">
+        <span className="text-base">{icon}</span>
+        <span className="text-xs font-semibold text-primary truncate">{label}</span>
+      </div>
+      <div className="p-3 space-y-1">
+        {data.text && <p className="text-sm text-foreground truncate">{data.text}</p>}
+        {data.label && <p className="text-xs text-muted-foreground truncate">{data.label}</p>}
+        {!data.text && !data.label && (
+          <span className="text-xs text-muted-foreground italic">Нет данных</span>
+        )}
+      </div>
+      <Handle type="source" position={Position.Right} className="!w-3 !h-3 !border-2 !border-background !bg-primary" />
+    </div>
+  ));
+}
+
+const BASE_NODE_TYPES: NodeTypes = {
   message: MessageNode,
   userInput: UserInputNode,
   condition: ConditionNode,
