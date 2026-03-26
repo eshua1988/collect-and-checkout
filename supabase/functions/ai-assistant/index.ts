@@ -200,9 +200,22 @@ serve(async (req) => {
     }
 
     // --- Multi-provider fallback chain ---
-    // Priority: Groq (14400/day) → GitHub Models (GPT-4o-mini, 150/day) → OpenRouter → Together → Gemini
-    type Provider = { name: string; url: string; model: string; key: string | undefined; extraHeaders?: Record<string, string> };
+    type Provider = { name: string; url: string; model: string; key: string | undefined; isAnthropic?: boolean; extraHeaders?: Record<string, string> };
     const providers: Provider[] = [
+      {
+        name: "claude-haiku",
+        url: "https://api.anthropic.com/v1/messages",
+        model: "claude-3-5-haiku-20241022",
+        key: Deno.env.get("ANTHROPIC_API_KEY"),
+        isAnthropic: true,
+      },
+      {
+        name: "claude-sonnet",
+        url: "https://api.anthropic.com/v1/messages",
+        model: "claude-3-5-sonnet-20241022",
+        key: Deno.env.get("ANTHROPIC_API_KEY"),
+        isAnthropic: true,
+      },
       {
         name: "groq",
         url: "https://api.groq.com/openai/v1/chat/completions",
@@ -267,6 +280,74 @@ serve(async (req) => {
 
       console.log(`Trying provider: ${provider.name}`);
       try {
+        // ── Anthropic API (different format) ────────────────────────
+        if (provider.isAnthropic) {
+          // Anthropic requires system separate from messages
+          const anthropicMessages = messages.filter((m: any) => m.role !== "system");
+          const response = await fetch(provider.url, {
+            method: "POST",
+            headers: {
+              "x-api-key": provider.key,
+              "anthropic-version": "2023-06-01",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              model: provider.model,
+              max_tokens: 6000,
+              stream: true,
+              system: systemContent,
+              messages: anthropicMessages,
+            }),
+          });
+
+          if (response.ok && response.body) {
+            console.log(`Success with provider: ${provider.name}`);
+            // Transform Anthropic SSE → OpenAI SSE format
+            const transformedStream = new ReadableStream({
+              async start(controller) {
+                const reader = response.body!.getReader();
+                const decoder = new TextDecoder();
+                const encoder = new TextEncoder();
+                let buf = "";
+                try {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buf += decoder.decode(value, { stream: true });
+                    let nl: number;
+                    while ((nl = buf.indexOf("\n")) !== -1) {
+                      const line = buf.slice(0, nl).trim();
+                      buf = buf.slice(nl + 1);
+                      if (!line.startsWith("data: ")) continue;
+                      try {
+                        const d = JSON.parse(line.slice(6));
+                        if (d.type === "content_block_delta" && d.delta?.type === "text_delta") {
+                          const chunk = JSON.stringify({ choices: [{ delta: { content: d.delta.text } }] });
+                          controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+                        } else if (d.type === "message_stop") {
+                          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                        }
+                      } catch { /* skip malformed */ }
+                    }
+                  }
+                } finally {
+                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                  controller.close();
+                }
+              },
+            });
+            return new Response(transformedStream, {
+              headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+            });
+          }
+
+          const txt = await response.text().catch(() => "");
+          console.error(`Provider ${provider.name} failed: ${response.status} ${txt}`);
+          lastError = `Ошибка ${provider.name}: ${response.status}`;
+          continue;
+        }
+
+        // ── OpenAI-compatible API ────────────────────────────────────
         const response = await fetch(provider.url, {
           method: "POST",
           headers: {
