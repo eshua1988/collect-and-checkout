@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, memo } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -13,6 +13,7 @@ import ReactFlow, {
   BackgroundVariant,
   ReactFlowProvider,
   useReactFlow,
+  NodeProps,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
@@ -34,9 +35,34 @@ import {
   Languages, Globe, Youtube, Share2, Instagram, Facebook, Flag,
   Lightbulb, Layers,
 } from 'lucide-react';
+import { Handle, Position } from 'reactflow';
 import { toast } from 'sonner';
+import { getCustomNodeTypes } from '@/components/AIAssistant/useAIAssistant';
 
-const nodeTypes: NodeTypes = {
+// ── Generic custom node renderer for AI-registered types ───────────────────────
+function makeCustomNode(label: string, icon: string) {
+  return memo(({ data, selected }: NodeProps<BotNodeData>) => (
+    <div
+      className={`min-w-[200px] max-w-[260px] rounded-xl border-2 shadow-md bg-card transition-all ${selected ? 'shadow-lg border-primary' : 'border-border'}`}
+    >
+      <Handle type="target" position={Position.Left} className="!w-3 !h-3 !border-2 !border-background !bg-primary" />
+      <div className="flex items-center gap-2 px-3 py-2 rounded-t-xl border-b border-border bg-primary/10">
+        <span className="text-base">{icon}</span>
+        <span className="text-xs font-semibold text-primary truncate">{label}</span>
+      </div>
+      <div className="p-3 space-y-1">
+        {data.text && <p className="text-sm text-foreground truncate">{data.text}</p>}
+        {data.label && <p className="text-xs text-muted-foreground truncate">{data.label}</p>}
+        {!data.text && !data.label && (
+          <span className="text-xs text-muted-foreground italic">Нет данных</span>
+        )}
+      </div>
+      <Handle type="source" position={Position.Right} className="!w-3 !h-3 !border-2 !border-background !bg-primary" />
+    </div>
+  ));
+}
+
+const BASE_NODE_TYPES: NodeTypes = {
   message: MessageNode,
   userInput: UserInputNode,
   condition: ConditionNode,
@@ -112,6 +138,25 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
+  // Build merged node types: base + AI-registered custom types
+  const [customNodeMeta, setCustomNodeMeta] = useState<Record<string, { label: string; icon: string; color: string; description: string }>>(() => getCustomNodeTypes());
+
+  // Re-read custom types from localStorage (when AI adds new ones)
+  const nodeTypes: NodeTypes = {
+    ...BASE_NODE_TYPES,
+    ...Object.fromEntries(
+      Object.entries(customNodeMeta).map(([type, meta]) => [type, makeCustomNode(meta.label, meta.icon)])
+    ),
+  };
+
+  // Custom node buttons for toolbar
+  const customNodeButtons = Object.entries(customNodeMeta).map(([type, meta]) => ({
+    type: type as BotNodeType,
+    label: meta.label,
+    icon: <span>{meta.icon}</span>,
+    color: meta.color || 'bg-muted text-muted-foreground border-border',
+  }));
+
   const [nodes, setNodes, onNodesChange] = useNodesState(
     bot.nodes.length > 0 ? bot.nodes as Node[] : [
       { id: 'start', type: 'start', position: { x: 60, y: 200 }, data: {} }
@@ -132,12 +177,16 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
     setEdges(eds => addEdge({ ...connection, animated: true, style: { stroke: 'hsl(var(--primary))' } }, eds));
   }, [setEdges]);
 
-  const addNode = useCallback((type: BotNodeType) => {
+  const addNode = useCallback((type: BotNodeType | string) => {
     const id = generateId();
     const pos = { x: 200 + Math.random() * 400, y: 100 + Math.random() * 300 };
-    setNodes(nds => [...nds, { id, type, position: pos, data: { ...defaultData[type] } }]);
+    const data = defaultData[type as BotNodeType] ?? {};
+    setNodes(nds => [...nds, { id, type, position: pos, data: { ...data } }]);
     setSelectedNodeId(id);
     setSidePanel('nodeEditor');
+
+    // Refresh custom nodes in case new ones were added
+    setCustomNodeMeta(getCustomNodeTypes());
   }, [setNodes]);
 
   const updateNodeData = useCallback((nodeId: string, data: BotNodeData) => {
@@ -174,7 +223,7 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
       <div className="flex-1 relative" ref={reactFlowWrapper}>
         {/* Toolbar: node types */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 flex-wrap max-w-[calc(100%-260px)]">
-          {nodeAddButtons.map(btn => (
+          {[...nodeAddButtons, ...customNodeButtons].map(btn => (
             <button
               key={btn.type}
               onClick={() => addNode(btn.type)}
