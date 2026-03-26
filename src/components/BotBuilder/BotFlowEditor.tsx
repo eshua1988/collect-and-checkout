@@ -144,6 +144,13 @@ function BotFlowEditorInner({ bot, forms, onSave, sidePanel, onSidePanelChange, 
   // Build merged node types: base + AI-registered custom types
   const [customNodeMeta, setCustomNodeMeta] = useState<Record<string, { label: string; icon: string; color: string; description: string }>>(() => getCustomNodeTypes());
 
+  // Live-refresh toolbar when AI registers a new node type (via CustomEvent from saveCustomNodeType)
+  useEffect(() => {
+    const handler = () => setCustomNodeMeta(getCustomNodeTypes());
+    window.addEventListener('customNodeTypesUpdated', handler);
+    return () => window.removeEventListener('customNodeTypesUpdated', handler);
+  }, []);
+
   // Re-read custom types from localStorage (when AI adds new ones)
   const nodeTypes: NodeTypes = {
     ...BASE_NODE_TYPES,

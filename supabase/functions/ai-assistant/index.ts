@@ -15,7 +15,7 @@ const SYSTEM_PROMPT = `Ты — AI-конструктор платформы For
 
 ### CREATE_BOT — создать бота:
 \`\`\`action
-{"type":"CREATE_BOT","data":{"name":"Название","nodes":[...],"edges":[...]}}
+{"type":"CREATE_BOT","data":{"name":"Название","newNodeTypes":[],"nodes":[...],"edges":[...]}}
 \`\`\`
 
 ### ADD_BOT_NODES — добавить узлы в существующий бот:
@@ -86,7 +86,13 @@ const SYSTEM_PROMPT = `Ты — AI-конструктор платформы For
 - youtubeMonitor — {data:{ytChannelUrl:"",ytCheckInterval:30,ytNotifyVideos:true,ytNotifyStreams:true}}
 - socialShare — {data:{shareLinks:[{id,platform,label,url}],shareText:"",shareLayout:"buttons"}}
 
-Новый тип: добавь в newNodeTypes: [{nodeType:"myType",label:"",icon:"🎯",color:"bg-purple-500/10 text-purple-400 border-purple-500/30",description:""}]
+## 🔧 КАСТОМНЫЕ ТИПЫ УЗЛОВ (авторегистрация):
+Если задача требует специфического узла — ИЗОБРЕТИ новый тип! Примеры: paymentNode, ratingNode, subscriptionNode, calendarNode, notificationNode, qrCodeNode, pollNode, bookingNode, reviewNode.
+- Придумай уникальное camelCase имя для поля type (paymentNode, ratingNode...)
+- Добавь в data поля: {label:"User label",icon:"💳",description:"Описание", любые другие нужные поля}
+- Объяви в newNodeTypes: [{"nodeType":"paymentNode","label":"Оплата","icon":"💳","color":"bg-green-500/10 text-green-400 border-green-500/30","description":"Приём платежа"}]
+- Узел автоматически появится в панели инструментов! Работает в CREATE_BOT и ADD_BOT_NODES.
+- Даже без newNodeTypes — если узел использует неизвестный type, он авторегистрируется по data.label/data.icon.
 
 ## ПЕРЕМЕННЫЕ: {{user_name}}, {{user_id}}, {{user_message}} + любые кастомные
 
@@ -110,7 +116,8 @@ const SYSTEM_PROMPT = `Ты — AI-конструктор платформы For
 6. Если есть botId в контексте → используй ADD_BOT_NODES, не CREATE_BOT
 7. ⚡ ОБЯЗАТЕЛЬНО: массив edges НИКОГДА не должен быть пустым! Каждый узел должен быть соединён хотя бы одной связью. Без edges бот не работает!
 8. Проверяй: для N узлов должно быть минимум N-1 edges (связей) — каждый узел кроме последнего имеет исходящую связь
-9. start → первый message/userInput ОБЯЗАТЕЛЬНО связан edge {"id":"e1","source":"n1","target":"n2"}`;
+9. start → первый message/userInput ОБЯЗАТЕЛЬНО связан edge {"id":"e1","source":"n1","target":"n2"}
+10. Если задача требует специфического узла (оплата, галерея, бронь времени...) — ИЗОБРЕТИ кастомный тип, объяви его в newNodeTypes и используй в nodes`;
 
 
 serve(async (req) => {

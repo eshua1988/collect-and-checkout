@@ -63,6 +63,35 @@ function saveCustomNodeType(type: string, meta: { label: string; icon: string; c
   const existing = getCustomNodeTypes();
   existing[type] = meta;
   localStorage.setItem(CUSTOM_NODES_KEY, JSON.stringify(existing));
+  // Notify BotFlowEditor in the same tab to refresh its toolbar immediately
+  window.dispatchEvent(new CustomEvent('customNodeTypesUpdated'));
+}
+
+// Built-in node types — nodes with any other type are auto-registered as custom
+const BASE_NODE_TYPES_SET = new Set([
+  'start', 'message', 'userInput', 'condition', 'action',
+  'aiChat', 'delay', 'media', 'variable', 'randomizer', 'jump',
+  'translate', 'langDetect', 'youtubeMonitor', 'socialShare',
+  'instagramMonitor', 'facebookMonitor', 'userLangPref',
+]);
+
+/** Scans nodes for unknown types and auto-registers them in the toolbar. Returns count of new registrations. */
+function autoRegisterUnknownNodeTypes(nodes: any[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    const t = node.type as string;
+    if (!t || BASE_NODE_TYPES_SET.has(t)) continue;
+    const existing = getCustomNodeTypes();
+    if (existing[t]) continue; // already registered
+    saveCustomNodeType(t, {
+      label: node.data?.label || node.data?.title || t,
+      icon: node.data?.icon || '🔧',
+      color: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+      description: node.data?.description || '',
+    });
+    count++;
+  }
+  return count;
 }
 
 export function useAIAssistant(aiContext?: AIContext) {
@@ -158,6 +187,26 @@ export function useAIAssistant(aiContext?: AIContext) {
         source: idMap[e.source] || e.source,
         target: idMap[e.target] || e.target,
       }));
+
+      // Register explicitly declared custom node types (newNodeTypes field)
+      const explicitNewTypes: any[] = action.data.newNodeTypes || [];
+      for (const nt of explicitNewTypes) {
+        if (nt.nodeType && nt.label) {
+          saveCustomNodeType(nt.nodeType, {
+            label: nt.label,
+            icon: nt.icon || '🔧',
+            color: nt.color || 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+            description: nt.description || '',
+          });
+        }
+      }
+      // Auto-register any unknown node types found in the nodes list
+      const autoNewCount = autoRegisterUnknownNodeTypes(mappedNodes);
+      const totalNewTypes = autoNewCount + explicitNewTypes.filter((n: any) => n.nodeType && n.label).length;
+      if (totalNewTypes > 0) {
+        toast.info(`🔧 ${totalNewTypes} новых типа узлов добавлено в панель инструментов`);
+      }
+
       const bot: TelegramBot = {
         id: genId(),
         name: action.data.name || 'Новый бот',
@@ -225,6 +274,9 @@ export function useAIAssistant(aiContext?: AIContext) {
         source: idMap[e.source] || e.source,
         target: idMap[e.target] || e.target,
       }));
+
+      // Auto-register unknown node types from the newly added nodes
+      autoRegisterUnknownNodeTypes(newNodes);
 
       const updatedBot: TelegramBot = {
         ...existingBot,
