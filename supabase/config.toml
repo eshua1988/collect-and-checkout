@@ -12,3 +12,6 @@ verify_jwt = false
 [functions.ai-assistant]
 verify_jwt = false
 
+[functions.telegram-runner]
+verify_jwt = false
+

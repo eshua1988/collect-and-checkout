@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Send, Eye, EyeOff, Info, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Send, Eye, EyeOff, Info, ChevronRight, Rocket, CheckCircle2, AlertCircle, RefreshCw, StopCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -37,6 +39,16 @@ const BotEditor = () => {
   const [showToken, setShowToken] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'flow'>('settings');
   const [saving, setSaving] = useState(false);
+
+  // Telegram launch state
+  type LaunchStatus = 'idle' | 'loading' | 'launched' | 'error';
+  const [launchStatus, setLaunchStatus] = useState<LaunchStatus>(
+    existing?.isLaunched ? 'launched' : 'idle',
+  );
+  const [launchedBotName, setLaunchedBotName] = useState<string>(
+    existing?.launchedBotName ?? '',
+  );
+  const [launchError, setLaunchError] = useState('');
 
   const handleSaveBot = useCallback((updatedBot: TelegramBot) => {
     saveBot(updatedBot);
@@ -67,6 +79,73 @@ const BotEditor = () => {
     if (isNew) navigate(`/bot/${bot.id}`, { replace: true });
     setActiveTab('flow');
   }, [bot, saveBot, isNew, navigate]);
+
+  const handleLaunch = useCallback(async () => {
+    if (!bot.token.trim()) {
+      toast.error('Сначала введите Bot Token');
+      return;
+    }
+    setLaunchStatus('loading');
+    setLaunchError('');
+    try {
+      // Save settings first
+      const savedBot = { ...bot, updatedAt: Date.now() };
+      saveBot(savedBot);
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/telegram-runner?action=setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id:     bot.id,
+          name:   bot.name,
+          token:  bot.token,
+          nodes:  bot.nodes,
+          edges:  bot.edges,
+          userId: '',
+        }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        const bname = data.botName || '';
+        setLaunchStatus('launched');
+        setLaunchedBotName(bname);
+        const updatedBot = { ...savedBot, isLaunched: true, launchedBotName: bname };
+        saveBot(updatedBot);
+        setBot(updatedBot);
+        toast.success(`Бот ${bname} запущен в Telegram!`);
+      } else {
+        setLaunchStatus('error');
+        setLaunchError(data.error || 'Неизвестная ошибка');
+        toast.error(data.error || 'Ошибка запуска бота');
+      }
+    } catch (e: any) {
+      setLaunchStatus('error');
+      setLaunchError(e.message || 'Ошибка сети');
+      toast.error('Ошибка соединения с сервером');
+    }
+  }, [bot, saveBot]);
+
+  const handleStop = useCallback(async () => {
+    if (!bot.token.trim()) return;
+    setLaunchStatus('loading');
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/telegram-runner?action=stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: bot.id, token: bot.token }),
+      });
+      const updatedBot = { ...bot, isLaunched: false, launchedBotName: '' };
+      saveBot(updatedBot);
+      setBot(updatedBot);
+      setLaunchStatus('idle');
+      setLaunchedBotName('');
+      toast.success('Бот отключён от Telegram');
+    } catch {
+      setLaunchStatus('error');
+      toast.error('Ошибка при остановке бота');
+    }
+  }, [bot, saveBot]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -203,6 +282,72 @@ const BotEditor = () => {
                   Перейти к конструктору потока
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
+
+                {/* ── Telegram Launch ───────────────────────────────────────── */}
+                <div className="border-t pt-4 space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Rocket className="w-4 h-4 text-primary" />
+                    Запуск в Telegram
+                  </h3>
+
+                  {/* Status indicator */}
+                  {launchStatus === 'launched' && (
+                    <div className="flex items-center gap-2 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg px-3 py-2 text-sm">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>Бот активен{launchedBotName ? ` (${launchedBotName})` : ''}</span>
+                    </div>
+                  )}
+                  {launchStatus === 'error' && (
+                    <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-lg px-3 py-2 text-sm">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{launchError}</span>
+                    </div>
+                  )}
+                  {launchStatus === 'idle' && (
+                    <p className="text-xs text-muted-foreground">
+                      После запуска бот начнёт отвечать в Telegram согласно построенному потоку.
+                    </p>
+                  )}
+
+                  {/* Launch / Update / Stop buttons */}
+                  {launchStatus !== 'launched' ? (
+                    <Button
+                      onClick={handleLaunch}
+                      disabled={launchStatus === 'loading' || !bot.token.trim()}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {launchStatus === 'loading' ? (
+                        <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Запуск...</>
+                      ) : (
+                        <><Rocket className="w-4 h-4 mr-2" />Запустить бота в Telegram</>
+                      )}
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleLaunch}
+                        disabled={launchStatus === 'loading'}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        {launchStatus === 'loading' ? (
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                        )}
+                        Обновить поток
+                      </Button>
+                      <Button
+                        onClick={handleStop}
+                        disabled={launchStatus === 'loading'}
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <StopCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>

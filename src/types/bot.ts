@@ -180,4 +180,8 @@ export interface TelegramBot {
   edges: BotEdge[];
   createdAt: number;
   updatedAt: number;
+  /** Whether the bot is currently deployed to Telegram */
+  isLaunched?: boolean;
+  /** Telegram @username of the launched bot */
+  launchedBotName?: string;
 }
