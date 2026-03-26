@@ -137,11 +137,19 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── CREATE BOT ─────────────────────────────────────────────────
     if (action.type === 'CREATE_BOT') {
+      const rawNodes: any[] = action.data.nodes || [];
       const bot: TelegramBot = {
         id: genId(),
         name: action.data.name || 'Новый бот',
         token: action.data.token || '',
-        nodes: (action.data.nodes || []).map((n: any) => ({ ...n, id: n.id || genId() })),
+        nodes: rawNodes.map((n: any, i: number) => ({
+          ...n,
+          id: n.id || genId(),
+          position: {
+            x: n.position?.x ?? 100 + (i % 3) * 250,
+            y: n.position?.y ?? 100 + Math.floor(i / 3) * 180,
+          },
+        })),
         edges: (action.data.edges || []).map((e: any) => ({ ...e, id: e.id || genId() })),
         createdAt: now,
         updatedAt: now,
@@ -185,18 +193,16 @@ export function useAIAssistant(aiContext?: AIContext) {
 
       // Remap IDs to avoid collisions with existing nodes
       const idMap: Record<string, string> = {};
-      const newNodes: BotNode[] = (action.data.nodes || []).map((n: any) => {
+      const newNodes: BotNode[] = (action.data.nodes || []).map((n: any, i: number) => {
         const newId = genId();
         idMap[n.id] = newId;
-        const offsetX = 400 + Math.random() * 100;
-        const offsetY = 200 + Math.random() * 100;
+        // Place new nodes to the right of existing ones, with safe fallback for missing position
+        const baseX = n.position?.x ?? (100 + (i % 3) * 240);
+        const baseY = n.position?.y ?? (100 + Math.floor(i / 3) * 180);
         return {
           ...n,
           id: newId,
-          position: {
-            x: (n.position?.x || 200) + offsetX,
-            y: (n.position?.y || 100) + offsetY,
-          },
+          position: { x: baseX + 250, y: baseY },
         };
       });
 
