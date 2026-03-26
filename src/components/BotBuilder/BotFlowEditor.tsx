@@ -223,7 +223,7 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
       <div className="flex-1 relative" ref={reactFlowWrapper}>
         {/* Toolbar: node types */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 flex-wrap max-w-[calc(100%-260px)]">
-          {nodeAddButtons.map(btn => (
+          {[...nodeAddButtons, ...customNodeButtons].map(btn => (
             <button
               key={btn.type}
               onClick={() => addNode(btn.type)}
