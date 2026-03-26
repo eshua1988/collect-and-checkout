@@ -166,9 +166,9 @@ serve(async (req) => {
     const body = await req.json();
     const { messages, context } = body;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -180,23 +180,26 @@ serve(async (req) => {
       systemContent += `\n\n---\n## ТЕКУЩИЙ КОНТЕКСТ:\nПользователь сейчас в редакторе бота.\n- **botId:** ${context.botId}\n- **botName:** "${context.botName}"\n- **Существующих узлов:** ${context.nodeCount}\n- **Типы узлов в боте:** ${(context.nodeTypes || []).join(", ")}\n\nЕсли пользователь просит добавить что-то — используй ADD_BOT_NODES с botId = "${context.botId}"`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemContent },
-          ...messages,
-        ],
-        stream: true,
-        temperature: 0.7,
-        max_tokens: 6000,
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${GEMINI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gemini-2.0-flash",
+          messages: [
+            { role: "system", content: systemContent },
+            ...messages,
+          ],
+          stream: true,
+          temperature: 0.7,
+          max_tokens: 6000,
+        }),
+      }
+    );
 
     if (!response.ok) {
       const txt = await response.text();
