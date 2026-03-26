@@ -158,9 +158,15 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
   }));
 
   const [nodes, setNodes, onNodesChange] = useNodesState(
-    bot.nodes.length > 0 ? bot.nodes as Node[] : [
-      { id: 'start', type: 'start', position: { x: 60, y: 200 }, data: {} }
-    ]
+    bot.nodes.length > 0
+      ? (bot.nodes as Node[]).map((n, i) => ({
+          ...n,
+          position: {
+            x: n.position?.x ?? 100 + (i % 3) * 250,
+            y: n.position?.y ?? 100 + Math.floor(i / 3) * 180,
+          },
+        }))
+      : [{ id: 'start', type: 'start', position: { x: 60, y: 200 }, data: {} }]
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(bot.edges as Edge[]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
