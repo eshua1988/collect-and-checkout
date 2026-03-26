@@ -3,13 +3,26 @@ import { TelegramBot } from '@/types/bot';
 
 const BOTS_KEY = 'formbuilder_bots';
 
+// Ensure every node has a valid position — fixes bots saved without positions (e.g. from AI generation)
+function sanitizeBot(bot: TelegramBot): TelegramBot {
+  return {
+    ...bot,
+    nodes: (bot.nodes || []).map((n, i) => ({
+      ...n,
+      position: {
+        x: (n.position as any)?.x ?? 100 + (i % 3) * 250,
+        y: (n.position as any)?.y ?? 100 + Math.floor(i / 3) * 180,
+      },
+    })),
+  };
+}
+
 // Read directly from localStorage (sync) so getBot works on first render
 function readBots(): TelegramBot[] {
   try {
     const saved = localStorage.getItem(BOTS_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch {
-    return [];
+    const bots: TelegramBot[] = saved ? JSON.parse(saved) : [];
+    return bots.map(sanitizeBot);
   }
 }
 
