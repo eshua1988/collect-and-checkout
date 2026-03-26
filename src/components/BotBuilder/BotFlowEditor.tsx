@@ -33,13 +33,14 @@ import {
   MessageSquare, GitBranch, Zap, HelpCircle, Save, Info,
   Brain, Clock, Image, SlidersHorizontal, Shuffle, CornerDownRight, Play,
   Languages, Globe, Youtube, Share2, Instagram, Facebook, Flag,
-  Lightbulb, Layers, Handle, Position,
+  Lightbulb, Layers,
 } from 'lucide-react';
+import { Handle, Position } from 'reactflow';
 import { toast } from 'sonner';
 import { getCustomNodeTypes } from '@/components/AIAssistant/useAIAssistant';
 
 // ── Generic custom node renderer for AI-registered types ───────────────────────
-function makeCustomNode(label: string, icon: string, colorClass: string) {
+function makeCustomNode(label: string, icon: string) {
   return memo(({ data, selected }: NodeProps<BotNodeData>) => (
     <div
       className={`min-w-[200px] max-w-[260px] rounded-xl border-2 shadow-md bg-card transition-all ${selected ? 'shadow-lg border-primary' : 'border-border'}`}
