@@ -23,6 +23,8 @@ function readBots(): TelegramBot[] {
     const saved = localStorage.getItem(BOTS_KEY);
     const bots: TelegramBot[] = saved ? JSON.parse(saved) : [];
     return bots.map(sanitizeBot);
+  } catch {
+    return [];
   }
 }
 
