@@ -138,24 +138,37 @@ export function useAIAssistant(aiContext?: AIContext) {
     // ── CREATE BOT ─────────────────────────────────────────────────
     if (action.type === 'CREATE_BOT') {
       const rawNodes: any[] = action.data.nodes || [];
-      const bot: TelegramBot = {
-        id: genId(),
-        name: action.data.name || 'Новый бот',
-        token: action.data.token || '',
-        nodes: rawNodes.map((n: any, i: number) => ({
+      // Remap node IDs to avoid collisions, keep AI-supplied IDs if stable
+      const idMap: Record<string, string> = {};
+      const mappedNodes = rawNodes.map((n: any, i: number) => {
+        const newId = n.id || genId();
+        idMap[n.id] = newId;
+        return {
           ...n,
-          id: n.id || genId(),
+          id: newId,
           position: {
             x: n.position?.x ?? 100 + (i % 3) * 250,
             y: n.position?.y ?? 100 + Math.floor(i / 3) * 180,
           },
-        })),
-        edges: (action.data.edges || []).map((e: any) => ({ ...e, id: e.id || genId() })),
+        };
+      });
+      const mappedEdges = (action.data.edges || []).map((e: any) => ({
+        ...e,
+        id: e.id || genId(),
+        source: idMap[e.source] || e.source,
+        target: idMap[e.target] || e.target,
+      }));
+      const bot: TelegramBot = {
+        id: genId(),
+        name: action.data.name || 'Новый бот',
+        token: action.data.token || '',
+        nodes: mappedNodes,
+        edges: mappedEdges,
         createdAt: now,
         updatedAt: now,
       };
       saveBot(bot);
-      toast.success(`Бот "${bot.name}" создан!`);
+      toast.success(`Бот "${bot.name}" создан! ${mappedNodes.length} узлов, ${mappedEdges.length} связей.`);
       navigate(`/bot/${bot.id}`);
       return bot.id;
     }

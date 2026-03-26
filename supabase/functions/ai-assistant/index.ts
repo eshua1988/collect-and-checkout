@@ -38,13 +38,41 @@ const SYSTEM_PROMPT = `Ты — AI-конструктор платформы For
 {"type":"NAVIGATE_TO","data":{"path":"/bot/new"}}
 \`\`\`
 
+## ГОТОВЫЙ ПРИМЕР БОТА (ОБЯЗАТЕЛЬНЫЙ ШАБЛОН — копируй структуру edges!):
+\`\`\`action
+{
+  "type": "CREATE_BOT",
+  "data": {
+    "name": "Пример бота",
+    "nodes": [
+      {"id":"n1","type":"start","position":{"x":60,"y":200},"data":{}},
+      {"id":"n2","type":"message","position":{"x":300,"y":200},"data":{"text":"Привет! Как тебя зовут?","buttons":[],"parseMode":"Markdown"}},
+      {"id":"n3","type":"userInput","position":{"x":300,"y":380},"data":{"text":"Введи своё имя:","inputType":"text","variableName":"user_name"}},
+      {"id":"n4","type":"message","position":{"x":300,"y":560},"data":{"text":"Приятно познакомиться, {{user_name}}! Что хочешь узнать?","buttons":[{"id":"b1","label":"О нас","callbackData":"about"},{"id":"b2","label":"Контакты","callbackData":"contacts"}],"parseMode":"Markdown"}},
+      {"id":"n5","type":"condition","position":{"x":300,"y":740},"data":{"variable":"user_message","operator":"equals","value":"about"}},
+      {"id":"n6","type":"message","position":{"x":100,"y":920},"data":{"text":"Мы — компания по разработке ботов 🚀","buttons":[],"parseMode":"Markdown"}},
+      {"id":"n7","type":"message","position":{"x":500,"y":920},"data":{"text":"Наш контакт: @support","buttons":[],"parseMode":"Markdown"}}
+    ],
+    "edges": [
+      {"id":"e1","source":"n1","target":"n2"},
+      {"id":"e2","source":"n2","target":"n3"},
+      {"id":"e3","source":"n3","target":"n4"},
+      {"id":"e4","source":"n4","target":"n5","sourceHandle":"0"},
+      {"id":"e5","source":"n4","target":"n5","sourceHandle":"1"},
+      {"id":"e6","source":"n5","target":"n6","sourceHandle":"yes"},
+      {"id":"e7","source":"n5","target":"n7","sourceHandle":"no"}
+    ]
+  }
+}
+\`\`\`
+
 ## ТИПЫ УЗЛОВ БОТА (nodeType):
 - start — {data:{}}
 - message — {data:{text:"",buttons:[{id,label,callbackData}],parseMode:"Markdown"}}
 - userInput — {data:{text:"",inputType:"text"|"number"|"email"|"phone"|"date"|"choice",variableName:"",choices:[]}}
 - condition — {data:{variable:"",operator:"equals"|"notEquals"|"contains"|"greater"|"less"|"isEmpty"|"isNotEmpty",value:""}} → edges с sourceHandle:"yes" и "no"
 - action — {data:{actionType:"webhook"|"sendMessage"|"email"|"saveToSheet",webhookUrl?,webhookMethod?,webhookBody?,message?,emailTo?}}
-- aiChat — {data:{aiPrompt:"",aiModel:"google/gemini-2.5-flash",aiResponseVar:"ai_response",aiTemperature:0.7}}
+- aiChat — {data:{aiPrompt:"",aiModel:"llama-3.3-70b-versatile",aiResponseVar:"ai_response",aiTemperature:0.7}}
 - delay — {data:{delaySeconds:3,delayMessage:""}}
 - variable — {data:{varOperation:"set"|"increment"|"decrement"|"append"|"clear",varName:"",varValue:""}}
 - media — {data:{mediaType:"photo"|"video"|"audio"|"document",mediaUrl:"",caption:""}}
@@ -79,7 +107,11 @@ const SYSTEM_PROMPT = `Ты — AI-конструктор платформы For
 3. ВСЕГДА оборачивай команды в \`\`\`action блок — без этого ничего не создастся
 4. Сначала 2-3 предложения описания, потом \`\`\`action блок
 5. condition → всегда два выхода yes+no
-6. Если есть botId в контексте → используй ADD_BOT_NODES, не CREATE_BOT`;
+6. Если есть botId в контексте → используй ADD_BOT_NODES, не CREATE_BOT
+7. ⚡ ОБЯЗАТЕЛЬНО: массив edges НИКОГДА не должен быть пустым! Каждый узел должен быть соединён хотя бы одной связью. Без edges бот не работает!
+8. Проверяй: для N узлов должно быть минимум N-1 edges (связей) — каждый узел кроме последнего имеет исходящую связь
+9. start → первый message/userInput ОБЯЗАТЕЛЬНО связан edge {"id":"e1","source":"n1","target":"n2"}`;
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
