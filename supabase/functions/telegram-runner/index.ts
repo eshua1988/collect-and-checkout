@@ -250,7 +250,8 @@ async function runFlow(
               body: JSON.stringify({ text: src, targetLang: node.data.translateTargetLang || "en" }),
             });
             const d = await r.json();
-            if (d.translated) vars = { ...vars, [node.data.translateResultVar as string || "translated_text"]: d.translated };
+            const tResult = d.translatedText || d.translated || "";
+            if (tResult) vars = { ...vars, [node.data.translateResultVar as string || "translated_text"]: tResult };
           } catch { /* ignore */ }
         }
         cur = edge(id)?.target ?? null;
@@ -286,7 +287,8 @@ async function runFlow(
               body: JSON.stringify({ prompt, model: node.data.aiModel, temperature: node.data.aiTemperature }),
             });
             const d = await r.json();
-            if (d.response) vars = { ...vars, [node.data.aiResponseVar as string || "ai_response"]: d.response };
+            const aiResult = d.reply || d.response || "";
+            if (aiResult) vars = { ...vars, [node.data.aiResponseVar as string || "ai_response"]: aiResult };
           } catch { /* ignore */ }
         }
         cur = edge(id)?.target ?? null;

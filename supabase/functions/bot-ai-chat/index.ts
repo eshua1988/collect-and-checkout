@@ -11,22 +11,22 @@ serve(async (req) => {
   try {
     const { systemPrompt, userMessage, model, temperature } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) {
+      return new Response(JSON.stringify({ error: "GROQ_API_KEY not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: model || "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt || "Ты — полезный ассистент Telegram-бота. Отвечай кратко и по делу." },
           { role: "user", content: userMessage || "Привет" },
@@ -38,20 +38,8 @@ serve(async (req) => {
 
     if (!response.ok) {
       const txt = await response.text();
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Превышен лимит запросов. Попробуйте позже." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Недостаточно кредитов Lovable AI." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      console.error("AI gateway error:", response.status, txt);
-      return new Response(JSON.stringify({ error: "Ошибка AI gateway: " + txt }), {
+      console.error("Groq API error:", response.status, txt);
+      return new Response(JSON.stringify({ error: "Ошибка AI: " + txt }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -60,7 +48,8 @@ serve(async (req) => {
     const data = await response.json();
     const reply = data.choices?.[0]?.message?.content || "";
 
-    return new Response(JSON.stringify({ reply }), {
+    // Return both `reply` and `response` for compatibility
+    return new Response(JSON.stringify({ reply, response: reply }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

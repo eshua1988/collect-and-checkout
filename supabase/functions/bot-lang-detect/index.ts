@@ -18,9 +18,9 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) {
+      return new Response(JSON.stringify({ error: "GROQ_API_KEY not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -33,17 +33,17 @@ Where "lang" is the ISO 639-1 two-letter language code (e.g., "ru", "en", "de", 
 "name" is the English name of the language.
 Do not include any other text.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: model || "google/gemini-2.5-flash-lite",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: text.slice(0, 500) }, // limit to 500 chars for detection
+          { role: "user", content: text.slice(0, 500) },
         ],
         temperature: 0.1,
         max_tokens: 100,
@@ -51,18 +51,10 @@ Do not include any other text.`;
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Lovable AI credits exhausted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const txt = await response.text();
+      console.error("Groq API error:", response.status, txt);
+      return new Response(JSON.stringify({ lang: "en", confidence: 0.5, name: "English" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 

@@ -26,9 +26,9 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) {
+      return new Response(JSON.stringify({ error: "GROQ_API_KEY not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -68,11 +68,11 @@ Return ONLY the translated transcript.`;
     // If there's a caption to translate separately (for media posts)
     let translatedCaption: string | undefined;
     if (caption) {
-      const captionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const captionResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "llama-3.3-70b-versatile",
           messages: [
             { role: "system", content: `Translate this social media caption to ${targetLanguage}. Preserve emoji, hashtags, mentions. Return ONLY translated text.` },
             { role: "user", content: caption },
@@ -87,14 +87,14 @@ Return ONLY the translated transcript.`;
       }
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages,
         temperature: 0.3,
         max_tokens: 2000,
@@ -102,19 +102,9 @@ Return ONLY the translated transcript.`;
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Lovable AI credits exhausted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const txt = await response.text();
-      console.error("AI gateway error:", response.status, txt);
-      return new Response(JSON.stringify({ error: "AI translation error: " + txt }), {
+      console.error("Groq API error:", response.status, txt);
+      return new Response(JSON.stringify({ error: "Translation error: " + txt }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
