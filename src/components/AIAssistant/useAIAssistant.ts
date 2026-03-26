@@ -188,6 +188,19 @@ export function useAIAssistant(aiContext?: AIContext) {
         target: idMap[e.target] || e.target,
       }));
 
+      // FALLBACK: if AI returned 0 edges but there are 2+ nodes — auto-wire a linear chain
+      // so the bot is never left with disconnected nodes
+      let finalEdges = mappedEdges;
+      if (finalEdges.length === 0 && mappedNodes.length > 1) {
+        finalEdges = mappedNodes.slice(0, -1).map((n: any, i: number) => ({
+          id: genId(),
+          source: n.id,
+          target: mappedNodes[i + 1].id,
+          animated: true,
+        }));
+        toast.warning(`⚠️ ИИ не создал связи — авто-создано ${finalEdges.length} линейных связей. Проверь в редакторе.`);
+      }
+
       // Register explicitly declared custom node types (newNodeTypes field)
       const explicitNewTypes: any[] = action.data.newNodeTypes || [];
       for (const nt of explicitNewTypes) {
@@ -212,12 +225,12 @@ export function useAIAssistant(aiContext?: AIContext) {
         name: action.data.name || 'Новый бот',
         token: action.data.token || '',
         nodes: mappedNodes,
-        edges: mappedEdges,
+        edges: finalEdges,
         createdAt: now,
         updatedAt: now,
       };
       saveBot(bot);
-      toast.success(`Бот "${bot.name}" создан! ${mappedNodes.length} узлов, ${mappedEdges.length} связей.`);
+      toast.success(`Бот "${bot.name}" создан! ${mappedNodes.length} узлов, ${finalEdges.length} связей.`);
       navigate(`/bot/${bot.id}`);
       return bot.id;
     }
@@ -278,10 +291,21 @@ export function useAIAssistant(aiContext?: AIContext) {
       // Auto-register unknown node types from the newly added nodes
       autoRegisterUnknownNodeTypes(newNodes);
 
+      // FALLBACK: if AI returned 0 edges but added 2+ nodes — auto-wire linearly
+      let finalNewEdges: BotEdge[] = newEdges;
+      if (finalNewEdges.length === 0 && newNodes.length > 1) {
+        finalNewEdges = newNodes.slice(0, -1).map((n: BotNode, i: number) => ({
+          id: genId(),
+          source: n.id,
+          target: newNodes[i + 1].id,
+          animated: true,
+        })) as BotEdge[];
+      }
+
       const updatedBot: TelegramBot = {
         ...existingBot,
         nodes: [...existingBot.nodes, ...newNodes],
-        edges: [...existingBot.edges, ...newEdges],
+        edges: [...existingBot.edges, ...finalNewEdges],
         updatedAt: now,
       };
 

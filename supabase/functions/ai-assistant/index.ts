@@ -117,7 +117,35 @@ const SYSTEM_PROMPT = `Ты — AI-конструктор платформы For
 7. ⚡ ОБЯЗАТЕЛЬНО: массив edges НИКОГДА не должен быть пустым! Каждый узел должен быть соединён хотя бы одной связью. Без edges бот не работает!
 8. Проверяй: для N узлов должно быть минимум N-1 edges (связей) — каждый узел кроме последнего имеет исходящую связь
 9. start → первый message/userInput ОБЯЗАТЕЛЬНО связан edge {"id":"e1","source":"n1","target":"n2"}
-10. Если задача требует специфического узла (оплата, галерея, бронь времени...) — ИЗОБРЕТИ кастомный тип, объяви его в newNodeTypes и используй в nodes`;
+10. Если задача требует специфического узла (оплата, галерея, бронь времени...) — ИЗОБРЕТИ кастомный тип, объяви его в newNodeTypes и используй в nodes
+
+## ПРИМЕР БОТА-ПЕРЕВОДЧИКА (используй как шаблон для переводов):
+\`\`\`action
+{
+  "type": "CREATE_BOT",
+  "data": {
+    "name": "Переводчик текста",
+    "newNodeTypes": [],
+    "nodes": [
+      {"id":"n1","type":"start","position":{"x":60,"y":200},"data":{}},
+      {"id":"n2","type":"message","position":{"x":300,"y":200},"data":{"text":"👋 Привет! Я бот-переводчик. Введи текст и я переведу его на нужный язык.","buttons":[]}},
+      {"id":"n3","type":"userInput","position":{"x":300,"y":380},"data":{"text":"✍️ Введи текст для перевода:","inputType":"text","variableName":"input_text"}},
+      {"id":"n4","type":"userLangPref","position":{"x":300,"y":560},"data":{"ulpQuestion":"🌐 Выбери язык перевода:","ulpSaveVar":"target_lang","ulpLanguages":["ru","en","de","fr","es"]}},
+      {"id":"n5","type":"translate","position":{"x":300,"y":740},"data":{"translateSourceVar":"input_text","translateTargetLang":"en","translateMode":"userLang","translateResultVar":"translated_text"}},
+      {"id":"n6","type":"message","position":{"x":300,"y":920},"data":{"text":"✅ Перевод: {{translated_text}}","buttons":[{"id":"b1","label":"Перевести ещё","callbackData":"more"}]}},
+      {"id":"n7","type":"jump","position":{"x":300,"y":1100},"data":{"jumpTarget":"n3"}}
+    ],
+    "edges": [
+      {"id":"e1","source":"n1","target":"n2"},
+      {"id":"e2","source":"n2","target":"n3"},
+      {"id":"e3","source":"n3","target":"n4"},
+      {"id":"e4","source":"n4","target":"n5"},
+      {"id":"e5","source":"n5","target":"n6"},
+      {"id":"e6","source":"n6","target":"n7","sourceHandle":"0"}
+    ]
+  }
+}
+\`\`\``;
 
 
 serve(async (req) => {
