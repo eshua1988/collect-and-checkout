@@ -138,6 +138,25 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
+  // Build merged node types: base + AI-registered custom types
+  const [customNodeMeta, setCustomNodeMeta] = useState<Record<string, { label: string; icon: string; color: string; description: string }>>(() => getCustomNodeTypes());
+
+  // Re-read custom types from localStorage (when AI adds new ones)
+  const nodeTypes: NodeTypes = {
+    ...BASE_NODE_TYPES,
+    ...Object.fromEntries(
+      Object.entries(customNodeMeta).map(([type, meta]) => [type, makeCustomNode(meta.label, meta.icon)])
+    ),
+  };
+
+  // Custom node buttons for toolbar
+  const customNodeButtons = Object.entries(customNodeMeta).map(([type, meta]) => ({
+    type: type as BotNodeType,
+    label: meta.label,
+    icon: <span>{meta.icon}</span>,
+    color: meta.color || 'bg-muted text-muted-foreground border-border',
+  }));
+
   const [nodes, setNodes, onNodesChange] = useNodesState(
     bot.nodes.length > 0 ? bot.nodes as Node[] : [
       { id: 'start', type: 'start', position: { x: 60, y: 200 }, data: {} }
@@ -158,12 +177,16 @@ function BotFlowEditorInner({ bot, forms, onSave }: BotFlowEditorProps) {
     setEdges(eds => addEdge({ ...connection, animated: true, style: { stroke: 'hsl(var(--primary))' } }, eds));
   }, [setEdges]);
 
-  const addNode = useCallback((type: BotNodeType) => {
+  const addNode = useCallback((type: BotNodeType | string) => {
     const id = generateId();
     const pos = { x: 200 + Math.random() * 400, y: 100 + Math.random() * 300 };
-    setNodes(nds => [...nds, { id, type, position: pos, data: { ...defaultData[type] } }]);
+    const data = defaultData[type as BotNodeType] ?? {};
+    setNodes(nds => [...nds, { id, type, position: pos, data: { ...data } }]);
     setSelectedNodeId(id);
     setSidePanel('nodeEditor');
+
+    // Refresh custom nodes in case new ones were added
+    setCustomNodeMeta(getCustomNodeTypes());
   }, [setNodes]);
 
   const updateNodeData = useCallback((nodeId: string, data: BotNodeData) => {
