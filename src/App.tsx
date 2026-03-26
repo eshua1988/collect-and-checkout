@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -80,7 +80,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           {/* AI Assistant floating button — only for authenticated routes */}
-          <AIAssistantButton />
+          <AIAssistantButtonGuard />
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
@@ -96,6 +96,12 @@ function ProjectEditorRoute() {
 function WebsiteEditorRoute() {
   const { websiteId } = useParams<{ websiteId: string }>();
   return <WebsiteEditor websiteId={websiteId} />;
+}
+
+function AIAssistantButtonGuard() {
+  const { pathname } = useLocation();
+  if (pathname === '/auth') return null;
+  return <AIAssistantButton />;
 }
 
 export default App;
