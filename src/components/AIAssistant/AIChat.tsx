@@ -10,9 +10,23 @@ import {
   Loader2, Globe, FileText, ChevronRight,
   Minimize2, Maximize2, Plus, ChevronLeft,
   History, Trash2, MessageSquare, Copy, Check,
-  Zap, Code2, LayoutTemplate, BrainCircuit,
+  Zap, Code2, LayoutTemplate, BrainCircuit, ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// ── AI providers list (must match edge function provider names) ─────────────
+export const AI_PROVIDERS = [
+  { id: 'auto',                label: 'Авто',          icon: '✨', desc: 'Лучший доступный' },
+  { id: 'groq',                label: 'Groq Llama',    icon: '⚡', desc: 'llama-3.3-70b-versatile' },
+  { id: 'github-gpt4o-mini',   label: 'GPT-4o mini',   icon: '🤖', desc: 'gpt-4o-mini' },
+  { id: 'github-llama',        label: 'GitHub Llama',  icon: '🦙', desc: 'meta-llama-3.3-70b' },
+  { id: 'openrouter',          label: 'OpenRouter',    icon: '🔀', desc: 'llama-3.3-70b:free' },
+  { id: 'openrouter-deepseek', label: 'DeepSeek R1',   icon: '🧠', desc: 'deepseek-r1:free' },
+  { id: 'together',            label: 'Together',      icon: '🤝', desc: 'Llama-3.3-70B-Free' },
+  { id: 'gemini',              label: 'Gemini',        icon: '💫', desc: 'gemini-2.0-flash' },
+] as const;
+
+export type AIProviderId = (typeof AI_PROVIDERS)[number]['id'];
 
 const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   CREATE_FORM:        { label: 'Открыть форму',       icon: <FileText className="w-3.5 h-3.5" />,    color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30 dark:text-blue-400' },
@@ -239,12 +253,26 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
 
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [provider, setProvider] = useState<AIProviderId>('auto');
+  const [showProviderMenu, setShowProviderMenu] = useState(false);
+  const providerMenuRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isBotContext = aiContext?.type === 'bot';
   const suggestions = isBotContext ? BOT_SUGGESTIONS : DEFAULT_SUGGESTIONS;
   const showSuggestions = messages.length === 1 && !isLoading;
+
+  // Close provider menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (providerMenuRef.current && !providerMenuRef.current.contains(e.target as Node)) {
+        setShowProviderMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -258,10 +286,10 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
 
   const handleSend = useCallback(() => {
     if (!input.trim() || isLoading) return;
-    sendMessage(input);
+    sendMessage(input, provider === 'auto' ? undefined : provider);
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-  }, [input, isLoading, sendMessage]);
+  }, [input, isLoading, sendMessage, provider]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -408,8 +436,46 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
               rows={1}
               disabled={isLoading}
             />
-            <div className="flex items-center justify-between px-3 pb-2.5">
-              <span className="text-[10px] text-muted-foreground/50 hidden sm:block">Enter — отправить · Shift+Enter — перенос</span>
+            <div className="flex items-center justify-between px-3 pb-2.5 gap-2">
+              {/* Provider selector */}
+              <div className="relative" ref={providerMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowProviderMenu(v => !v)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium border border-border/50 bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all"
+                >
+                  <span>{AI_PROVIDERS.find(p => p.id === provider)?.icon ?? '✨'}</span>
+                  <span className="hidden sm:inline">{AI_PROVIDERS.find(p => p.id === provider)?.label ?? 'Авто'}</span>
+                  <ChevronDown className="w-3 h-3 opacity-60" />
+                </button>
+                {showProviderMenu && (
+                  <div className="absolute bottom-full mb-2 left-0 z-50 w-52 bg-popover border border-border/60 rounded-xl shadow-xl overflow-hidden">
+                    <div className="px-3 py-2 border-b border-border/40">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Выбор модели ИИ</p>
+                    </div>
+                    <div className="py-1 max-h-64 overflow-y-auto">
+                      {AI_PROVIDERS.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => { setProvider(p.id); setShowProviderMenu(false); }}
+                          className={cn(
+                            'w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-muted/60 transition-colors',
+                            provider === p.id && 'bg-primary/10 text-primary'
+                          )}
+                        >
+                          <span className="text-base leading-none">{p.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium leading-tight">{p.label}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{p.desc}</div>
+                          </div>
+                          {provider === p.id && <Check className="w-3 h-3 shrink-0 text-primary" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button
                 size="sm"
                 onClick={handleSend}

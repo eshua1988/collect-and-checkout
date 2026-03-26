@@ -153,7 +153,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { messages, context } = body;
+    const { messages, context, preferredProvider } = body;
 
     // Build system prompt with injected context
     let systemContent = SYSTEM_PROMPT;
@@ -251,8 +251,18 @@ serve(async (req) => {
 
     const baseMessages = [{ role: "system", content: systemContent }, ...messages];
 
+    // If user selected a specific provider, move it to front
+    let orderedProviders = [...providers];
+    if (preferredProvider && preferredProvider !== "auto") {
+      const idx = orderedProviders.findIndex(p => p.name === preferredProvider);
+      if (idx > 0) {
+        const [preferred] = orderedProviders.splice(idx, 1);
+        orderedProviders = [preferred, ...orderedProviders];
+      }
+    }
+
     let lastError = "Нет доступных AI провайдеров. Настройте хотя бы один API ключ.";
-    for (const provider of providers) {
+    for (const provider of orderedProviders) {
       if (!provider.key) continue; // skip providers without key
 
       console.log(`Trying provider: ${provider.name}`);

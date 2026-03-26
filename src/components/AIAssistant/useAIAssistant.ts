@@ -343,7 +343,7 @@ export function useAIAssistant(aiContext?: AIContext) {
     }
   }, [saveForm, saveBot, saveWebsite, navigate, location, aiContext, getBot]);
 
-  const sendMessage = useCallback(async (userText: string) => {
+  const sendMessage = useCallback(async (userText: string, preferredProvider?: string) => {
     if (!userText.trim() || isLoading) return;
 
     const userMsg: ChatMessage = {
@@ -366,6 +366,7 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     try {
       const body: any = { messages: history_msgs };
+      if (preferredProvider) body.preferredProvider = preferredProvider;
 
       if (aiContext?.type === 'bot') {
         // Include available node types so AI can reuse them
