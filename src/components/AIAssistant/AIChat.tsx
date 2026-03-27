@@ -11,7 +11,7 @@ import {
   Minimize2, Maximize2, Plus, ChevronLeft,
   History, Trash2, MessageSquare, Copy, Check,
   Zap, Code2, LayoutTemplate, BrainCircuit, ChevronDown,
-  Wand2, ArrowRight,
+  Wand2, ArrowRight, ImagePlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
@@ -154,6 +154,14 @@ function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove }: {
             ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-tr-sm'
             : 'bg-card text-card-foreground rounded-tl-sm border border-border/60'
         )}>
+          {/* User images */}
+          {msg.images && msg.images.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {msg.images.map((img, idx) => (
+                <img key={idx} src={img} alt="Прикреплённое изображение" className="max-w-[200px] max-h-[160px] rounded-lg border border-white/20 object-cover" />
+              ))}
+            </div>
+          )}
           {displayContent ? (
             <div className={cn('prose prose-sm max-w-none break-words', isUser ? 'prose-invert' : 'dark:prose-invert')}>
               <ReactMarkdown
@@ -342,9 +350,11 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
   const [showHistory, setShowHistory] = useState(false);
   const [provider, setProvider] = useState<AIProviderId>('auto');
   const [showProviderMenu, setShowProviderMenu] = useState(false);
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const providerMenuRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImproveBot = useCallback((botName: string) => {
     const prompt = botName
@@ -352,6 +362,45 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
       : 'Улучши последнего созданного бота: добавь больше узлов, логики, ветвлений и связей.';
     sendMessage(prompt, provider === 'auto' ? undefined : provider);
   }, [sendMessage, provider]);
+
+  // ── Image handling ────────────────────────────────────────────
+  const handleImageFiles = useCallback((files: FileList | File[]) => {
+    const fileArr = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (fileArr.length === 0) return;
+    for (const file of fileArr) {
+      if (file.size > 4 * 1024 * 1024) { // 4MB limit
+        toast.error('Изображение слишком большое (макс 4MB)');
+        continue;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setAttachedImages(prev => [...prev, reader.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      handleImageFiles(imageFiles);
+    }
+  }, [handleImageFiles]);
+
+  const removeImage = useCallback((idx: number) => {
+    setAttachedImages(prev => prev.filter((_, i) => i !== idx));
+  }, []);
 
   const isBotContext = aiContext?.type === 'bot';
   const suggestions = isBotContext ? BOT_SUGGESTIONS : DEFAULT_SUGGESTIONS;
@@ -379,11 +428,12 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
   };
 
   const handleSend = useCallback(() => {
-    if (!input.trim() || isLoading) return;
-    sendMessage(input, provider === 'auto' ? undefined : provider);
+    if ((!input.trim() && attachedImages.length === 0) || isLoading) return;
+    sendMessage(input, provider === 'auto' ? undefined : provider, attachedImages.length > 0 ? attachedImages : undefined);
     setInput('');
+    setAttachedImages([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-  }, [input, isLoading, sendMessage, provider]);
+  }, [input, isLoading, sendMessage, provider, attachedImages]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -526,60 +576,99 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
         {/* Input */}
         <div className="p-3 border-t border-border/50 bg-muted/10 shrink-0">
           <div className="flex flex-col bg-background rounded-2xl border border-border/60 shadow-sm overflow-hidden focus-within:border-violet-500/50 focus-within:shadow-md focus-within:shadow-violet-500/10 transition-all">
+            {/* Attached images preview */}
+            {attachedImages.length > 0 && (
+              <div className="flex gap-2 px-3 pt-2.5 flex-wrap">
+                {attachedImages.map((img, i) => (
+                  <div key={i} className="relative group/img">
+                    <img src={img} alt="" className="w-16 h-16 rounded-lg object-cover border border-border/40" />
+                    <button
+                      onClick={() => removeImage(i)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover/img:opacity-100 transition-opacity shadow-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <Textarea
               ref={textareaRef}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={isBotContext ? 'Что добавить в бота?' : 'Опиши что хочешь создать...'}
               className="resize-none min-h-[44px] max-h-[120px] px-4 pt-3 pb-1 text-sm bg-transparent border-0 shadow-none focus-visible:ring-0 rounded-none leading-relaxed"
               rows={1}
               disabled={isLoading}
             />
             <div className="flex items-center justify-between px-3 pb-2.5 gap-2">
-              {/* Provider selector */}
-              <div className="relative" ref={providerMenuRef}>
+              {/* Provider selector + image upload */}
+              <div className="flex items-center gap-1.5">
+                <div className="relative" ref={providerMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowProviderMenu(v => !v)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium border border-border/50 bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all"
+                  >
+                    <span>{AI_PROVIDERS.find(p => p.id === provider)?.icon ?? '✨'}</span>
+                    <span className="hidden sm:inline">{AI_PROVIDERS.find(p => p.id === provider)?.label ?? 'Авто'}</span>
+                    <ChevronDown className="w-3 h-3 opacity-60" />
+                  </button>
+                  {showProviderMenu && (
+                    <div className="absolute bottom-full mb-2 left-0 z-50 w-52 bg-popover border border-border/60 rounded-xl shadow-xl overflow-hidden">
+                      <div className="px-3 py-2 border-b border-border/40">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Выбор модели ИИ</p>
+                      </div>
+                      <div className="py-1 max-h-64 overflow-y-auto">
+                        {AI_PROVIDERS.map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => { setProvider(p.id); setShowProviderMenu(false); }}
+                            className={cn(
+                              'w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-muted/60 transition-colors',
+                              provider === p.id && 'bg-primary/10 text-primary'
+                            )}
+                          >
+                            <span className="text-base leading-none">{p.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium leading-tight">{p.label}</div>
+                              <div className="text-[10px] text-muted-foreground truncate">{p.desc}</div>
+                            </div>
+                            {provider === p.id && <Check className="w-3 h-3 shrink-0 text-primary" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* Image upload */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => { if (e.target.files) handleImageFiles(e.target.files); e.target.value = ''; }}
+                />
                 <button
                   type="button"
-                  onClick={() => setShowProviderMenu(v => !v)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium border border-border/50 bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn(
+                    'p-1.5 rounded-xl border border-border/50 hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all',
+                    attachedImages.length > 0 && 'text-violet-500 border-violet-500/30 bg-violet-500/10'
+                  )}
+                  title="Прикрепить изображение (Ctrl+V)"
                 >
-                  <span>{AI_PROVIDERS.find(p => p.id === provider)?.icon ?? '✨'}</span>
-                  <span className="hidden sm:inline">{AI_PROVIDERS.find(p => p.id === provider)?.label ?? 'Авто'}</span>
-                  <ChevronDown className="w-3 h-3 opacity-60" />
+                  <ImagePlus className="w-4 h-4" />
                 </button>
-                {showProviderMenu && (
-                  <div className="absolute bottom-full mb-2 left-0 z-50 w-52 bg-popover border border-border/60 rounded-xl shadow-xl overflow-hidden">
-                    <div className="px-3 py-2 border-b border-border/40">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Выбор модели ИИ</p>
-                    </div>
-                    <div className="py-1 max-h-64 overflow-y-auto">
-                      {AI_PROVIDERS.map(p => (
-                        <button
-                          key={p.id}
-                          onClick={() => { setProvider(p.id); setShowProviderMenu(false); }}
-                          className={cn(
-                            'w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-muted/60 transition-colors',
-                            provider === p.id && 'bg-primary/10 text-primary'
-                          )}
-                        >
-                          <span className="text-base leading-none">{p.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium leading-tight">{p.label}</div>
-                            <div className="text-[10px] text-muted-foreground truncate">{p.desc}</div>
-                          </div>
-                          {provider === p.id && <Check className="w-3 h-3 shrink-0 text-primary" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <Button
                 size="sm"
                 onClick={handleSend}
-                disabled={!input.trim() || isLoading}
+                disabled={(!input.trim() && attachedImages.length === 0) || isLoading}
                 className="ml-auto h-8 px-4 rounded-xl text-xs font-medium bg-gradient-to-r from-violet-500 to-blue-600 hover:from-violet-600 hover:to-blue-700 border-0 shadow-md shadow-violet-500/25 transition-all active:scale-95 disabled:opacity-40"
               >
                 {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-1.5" />Отправить</>}

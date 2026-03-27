@@ -14,6 +14,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   actions?: ParsedAction[];
+  images?: string[]; // base64 data URLs for display
 }
 
 export interface ParsedAction {
@@ -419,19 +420,36 @@ export function useAIAssistant(aiContext?: AIContext) {
     }
   }, [saveForm, saveBot, saveWebsite, navigate, location, aiContext, getBot]);
 
-  const sendMessage = useCallback(async (userText: string, preferredProvider?: string) => {
-    if (!userText.trim() || isLoading) return;
+  const sendMessage = useCallback(async (userText: string, preferredProvider?: string, images?: string[]) => {
+    if ((!userText.trim() && (!images || images.length === 0)) || isLoading) return;
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: userText,
+      images,
     };
 
     const currentMessages = messagesRef.current;
+    // Build history messages — for vision support, include image content
     const history_msgs = [...currentMessages, userMsg]
       .filter(m => m.id !== 'welcome')
-      .map(m => ({ role: m.role, content: m.content }));
+      .map(m => {
+        if (m.images && m.images.length > 0) {
+          // Multimodal message: text + images
+          const content: any[] = [];
+          if (m.content) content.push({ type: 'text', text: m.content });
+          for (const img of m.images) {
+            // img is data:image/...;base64,...
+            const match = img.match(/^data:(image\/[^;]+);base64,(.+)$/);
+            if (match) {
+              content.push({ type: 'image_url', image_url: { url: img } });
+            }
+          }
+          return { role: m.role, content };
+        }
+        return { role: m.role, content: m.content };
+      });
 
     updateMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
