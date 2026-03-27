@@ -409,9 +409,10 @@ interface AIChatProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   aiContext?: AIContext;
+  onDragStart?: (e: React.MouseEvent | React.TouchEvent) => void;
 }
 
-export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AIChatProps) {
+export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragStart }: AIChatProps) {
   const {
     messages, isLoading, sendMessage, executeAction, clearMessages,
     historyState, loadHistorySession, goToPrevSession, goToNextSession,
@@ -573,7 +574,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
   return (
     <div className={cn(
       'flex bg-background border border-border/60 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300',
-      isExpanded ? 'fixed inset-4 md:inset-8 z-[200]' : 'w-[440px] h-[620px]'
+      isExpanded ? 'fixed inset-4 md:inset-8 z-[200]' : 'w-full h-full'
     )}>
       {showHistory && (
         <HistorySidebar
@@ -588,7 +589,14 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
 
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-gradient-to-r from-violet-500/5 via-blue-500/5 to-transparent shrink-0">
+        <div
+          className={cn(
+            'flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-gradient-to-r from-violet-500/5 via-blue-500/5 to-transparent shrink-0',
+            !isExpanded && onDragStart && 'cursor-move'
+          )}
+          onMouseDown={!isExpanded ? onDragStart : undefined}
+          onTouchStart={!isExpanded ? onDragStart : undefined}
+        >
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center shadow-md shadow-violet-500/20 shrink-0">
             <Sparkles className="w-[18px] h-[18px] text-white" />
           </div>
