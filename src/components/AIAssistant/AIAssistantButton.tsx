@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { AIChat } from './AIChat';
 import { AIContext } from './useAIAssistant';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
+import { useFormsStorage } from '@/hooks/useFormsStorage';
+import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
 
 const DEFAULT_W = 440;
 const DEFAULT_H = 620;
@@ -26,18 +28,38 @@ export function AIAssistantButton() {
 
   const location = useLocation();
   const { getBot } = useBotsStorage();
+  const { getForm } = useFormsStorage();
+  const { getWebsite } = useWebsitesStorage();
 
   const botMatch = location.pathname.match(/^\/bot\/([^/]+)$/);
   const botId = botMatch ? botMatch[1] : null;
 
+  const formMatch = location.pathname.match(/^\/form\/([^/]+)$/);
+  const formId = formMatch ? formMatch[1] : null;
+
+  const siteMatch = location.pathname.match(/^\/site\/edit\/([^/]+)$/);
+  const siteId = siteMatch ? siteMatch[1] : null;
+
   const aiContext: AIContext | undefined = (() => {
-    if (!botId || botId === 'new') return undefined;
-    const bot = getBot(botId);
-    if (!bot) return undefined;
-    return { type: 'bot', botId: bot.id, botName: bot.name, nodeCount: bot.nodes.length, nodeTypes: [...new Set(bot.nodes.map(n => n.type))], nodes: bot.nodes, edges: bot.edges };
+    if (botId && botId !== 'new') {
+      const bot = getBot(botId);
+      if (bot) return { type: 'bot' as const, botId: bot.id, botName: bot.name, nodeCount: bot.nodes.length, nodeTypes: [...new Set(bot.nodes.map(n => n.type))], nodes: bot.nodes, edges: bot.edges };
+    }
+    if (formId && formId !== 'new') {
+      const form = getForm(formId);
+      if (form) return { type: 'form' as const, formId: form.id, formTitle: form.title, fieldCount: form.fields.length, fields: form.fields };
+    }
+    if (siteId && siteId !== 'new') {
+      const site = getWebsite(siteId);
+      if (site) {
+        const allBlocks = site.pages ? site.pages.reduce((acc, p) => acc + p.blocks.length, 0) : site.blocks.length;
+        return { type: 'website' as const, websiteId: site.id, websiteName: site.name, blockCount: allBlocks, pageCount: site.pages?.length || 1, blocks: site.blocks, pages: site.pages };
+      }
+    }
+    return undefined;
   })();
 
-  const isBotMode = !!aiContext;
+  const isContextMode = !!aiContext;
 
   const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (isExpanded) return;
@@ -161,16 +183,16 @@ export function AIAssistantButton() {
             'text-white',
             isOpen && 'from-slate-600 to-slate-700'
           )}
-          title={isBotMode ? `AI ассистент бота "${aiContext!.botName}"` : 'AI Ассистент'}
+          title={aiContext?.type === 'bot' ? `AI ассистент бота "${(aiContext as any).botName}"` : aiContext?.type === 'form' ? `AI ассистент формы "${(aiContext as any).formTitle}"` : aiContext?.type === 'website' ? `AI ассистент сайта "${(aiContext as any).websiteName}"` : 'AI Ассистент'}
         >
           {isOpen ? (
             <X className="w-5 h-5" />
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
-              {isBotMode && (
+              {isContextMode && (
                 <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-emerald-500 rounded-full border-2 border-background flex items-center justify-center text-[9px]">
-                  🤖
+                  {aiContext?.type === 'bot' ? '🤖' : aiContext?.type === 'form' ? '📋' : '🌐'}
                 </span>
               )}
               <span className="absolute inset-0 rounded-2xl bg-violet-400/30 animate-ping" />

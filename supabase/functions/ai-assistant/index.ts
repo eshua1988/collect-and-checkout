@@ -75,6 +75,21 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 {"type":"CREATE_FORM","data":{"title":"Новые поля","fields":[{"type":"phone","label":"Телефон","required":true},{"type":"select","label":"Услуга","options":[{"id":"o1","label":"Вариант 1","value":0}],"required":true}]}}
 \`\`\`
 
+### REPLACE_FORM — полностью обновить все поля формы:
+\`\`\`action
+{"type":"REPLACE_FORM","data":{"formId":"ID","title":"Новое название","fields":[{"type":"text","label":"Имя","required":true}],"completionMessage":"Спасибо!"}}
+\`\`\`
+
+### EDIT_FORM_FIELD — изменить данные одного поля:
+\`\`\`action
+{"type":"EDIT_FORM_FIELD","data":{"formId":"ID","fieldId":"ID_ПОЛЯ","newData":{"label":"Новый текст","required":true}}}
+\`\`\`
+
+### REMOVE_FORM_FIELDS — удалить поля:
+\`\`\`action
+{"type":"REMOVE_FORM_FIELDS","data":{"formId":"ID","fieldIds":["id1","id2"]}}
+\`\`\`
+
 ### CREATE_WEBSITE:
 \`\`\`action
 {"type":"CREATE_WEBSITE","data":{"name":"","description":"","pages":[{"slug":"home","title":"Главная","blocks":[...]},{"slug":"about","title":"О нас","blocks":[...]}]}}
@@ -89,6 +104,21 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 Фронтенд покажет кнопку "В существующий сайт" с выбором сайта. Формат блоков — такой же как в CREATE_WEBSITE.
 \`\`\`action
 {"type":"ADD_WEBSITE_BLOCKS","data":{"name":"Новые секции","blocks":[{"type":"pricing","content":{...}},{"type":"testimonials","content":{...}}]}}
+\`\`\`
+
+### REPLACE_WEBSITE — полностью перестроить все страницы/блоки сайта:
+\`\`\`action
+{"type":"REPLACE_WEBSITE","data":{"websiteId":"ID","name":"Новое название","pages":[{"slug":"home","title":"Главная","blocks":[...]}]}}
+\`\`\`
+
+### EDIT_WEBSITE_BLOCK — изменить данные одного блока:
+\`\`\`action
+{"type":"EDIT_WEBSITE_BLOCK","data":{"websiteId":"ID","blockId":"ID_БЛОКА","newContent":{"title":"Новый заголовок"},"pageSlug":"home"}}
+\`\`\`
+
+### REMOVE_WEBSITE_BLOCKS — удалить блоки:
+\`\`\`action
+{"type":"REMOVE_WEBSITE_BLOCKS","data":{"websiteId":"ID","blockIds":["id1","id2"]}}
 \`\`\`
 
 ## ❺a СОЗДАНИЕ САЙТОВ — ДЕТАЛЬНЫЕ ИНСТРУКЦИИ
@@ -273,6 +303,70 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
 4. "Добавь ..." → ADD_BOT_NODES
 5. "Измени текст/кнопку..." → EDIT_BOT_NODE
 6. НЕ используй CREATE_BOT когда есть botId
+7. После ЛЮБОГО действия — предложи что ещё можно улучшить`;
+    }
+
+    // Form editor context
+    if (context?.type === "form_editor") {
+      const fieldsJson = context.fields && context.fields.length > 0 ? JSON.stringify(context.fields) : null;
+      systemContent += `
+
+---
+## 🔵 АКТИВНЫЙ КОНТЕКСТ: РЕДАКТОР ФОРМЫ
+
+- **formId:** ${context.formId}
+- **Название формы:** "${context.formTitle}"
+- **Полей:** ${context.fieldCount}
+${fieldsJson ? `\n### ТЕКУЩИЕ ПОЛЯ ФОРМЫ:\n\`\`\`json\n${fieldsJson}\n\`\`\`\n` : ''}
+### ЧТО ДЕЛАТЬ В ЭТОМ РЕЖИМЕ:
+
+**Анализ:** Просмотри текущие поля. Если видишь проблемы (дублирование, отсутствие важных полей, неправильные типы) — предложи исправление.
+
+**Добавление:** ADD_FORM_FIELDS для добавления новых полей
+**Изменение:** EDIT_FORM_FIELD для правки одного поля
+**Замена:** REPLACE_FORM для полной переделки формы
+**Удаление:** REMOVE_FORM_FIELDS для удаления лишних полей
+
+### ПРАВИЛА:
+1. **formId = "${context.formId}"** — всегда используй это значение
+2. "Улучши форму" → REPLACE_FORM с полностью новой улучшенной версией
+3. "Добавь поля" → ADD_FORM_FIELDS
+4. "Измени поле" → EDIT_FORM_FIELD
+5. "Удали поля" → REMOVE_FORM_FIELDS
+6. НЕ используй CREATE_FORM когда есть formId
+7. После ЛЮБОГО действия — предложи что ещё можно улучшить`;
+    }
+
+    // Website editor context
+    if (context?.type === "website_editor") {
+      const blocksJson = context.blocks && context.blocks.length > 0 ? JSON.stringify(context.blocks) : null;
+      const pagesJson = context.pages && context.pages.length > 0 ? JSON.stringify(context.pages) : null;
+      systemContent += `
+
+---
+## 🟢 АКТИВНЫЙ КОНТЕКСТ: РЕДАКТОР САЙТА
+
+- **websiteId:** ${context.websiteId}
+- **Название сайта:** "${context.websiteName}"
+- **Блоков:** ${context.blockCount}
+- **Страниц:** ${context.pageCount}
+${pagesJson ? `\n### ТЕКУЩИЕ СТРАНИЦЫ САЙТА:\n\`\`\`json\n${pagesJson}\n\`\`\`\n` : blocksJson ? `\n### ТЕКУЩИЕ БЛОКИ САЙТА:\n\`\`\`json\n${blocksJson}\n\`\`\`\n` : ''}
+### ЧТО ДЕЛАТЬ В ЭТОМ РЕЖИМЕ:
+
+**Анализ:** Просмотри текущие блоки/страницы. Если видишь проблемы (нет navbar, отсутствует footer, мало контента) — предложи исправление.
+
+**Добавление:** ADD_WEBSITE_BLOCKS для добавления новых секций
+**Изменение:** EDIT_WEBSITE_BLOCK для правки одного блока
+**Замена:** REPLACE_WEBSITE для полной переделки сайта
+**Удаление:** REMOVE_WEBSITE_BLOCKS для удаления лишних блоков
+
+### ПРАВИЛА:
+1. **websiteId = "${context.websiteId}"** — всегда используй это значение
+2. "Улучши сайт" → REPLACE_WEBSITE с полностью новой улучшенной версией
+3. "Добавь секции" → ADD_WEBSITE_BLOCKS
+4. "Измени блок" → EDIT_WEBSITE_BLOCK
+5. "Удали блоки" → REMOVE_WEBSITE_BLOCKS
+6. НЕ используй CREATE_WEBSITE когда есть websiteId
 7. После ЛЮБОГО действия — предложи что ещё можно улучшить`;
     }
 

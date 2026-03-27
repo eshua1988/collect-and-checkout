@@ -18,21 +18,16 @@ export interface ChatMessage {
 }
 
 export interface ParsedAction {
-  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS' | 'ADD_FORM_FIELDS';
+  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS' | 'ADD_FORM_FIELDS' | 'REPLACE_FORM' | 'EDIT_FORM_FIELD' | 'REMOVE_FORM_FIELDS' | 'REPLACE_WEBSITE' | 'EDIT_WEBSITE_BLOCK' | 'REMOVE_WEBSITE_BLOCKS';
   data: any;
   executed?: boolean;
 }
 
 /** Context injected into AI when user is on a specific page */
-export interface AIContext {
-  type: 'bot';
-  botId: string;
-  botName: string;
-  nodeCount: number;
-  nodeTypes: string[];
-  nodes?: BotNode[];
-  edges?: BotEdge[];
-}
+export type AIContext =
+  | { type: 'bot'; botId: string; botName: string; nodeCount: number; nodeTypes: string[]; nodes?: BotNode[]; edges?: BotEdge[] }
+  | { type: 'form'; formId: string; formTitle: string; fieldCount: number; fields?: FormField[] }
+  | { type: 'website'; websiteId: string; websiteName: string; blockCount: number; pageCount: number; blocks?: any[]; pages?: any[] };
 
 const ASSISTANT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
 
@@ -194,7 +189,7 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── ADD FORM FIELDS (добавление полей в существующую форму) ───
     if (action.type === 'ADD_FORM_FIELDS') {
-      const targetFormId = action.data.formId;
+      const targetFormId = action.data.formId || (aiContext?.type === 'form' ? aiContext.formId : null);
       if (!targetFormId) { toast.error('Не указан ID формы'); return; }
       const existingForm = getForm(targetFormId);
       if (!existingForm) { toast.error('Форма не найдена'); return; }
@@ -211,6 +206,65 @@ export function useAIAssistant(aiContext?: AIContext) {
       toast.success(`Добавлено ${newFields.length} полей в форму "${existingForm.title}"`);
       navigate(`/form/${existingForm.id}`);
       return existingForm.id;
+    }
+
+    // ── REPLACE FORM (полная замена полей формы) ───────────────────
+    if (action.type === 'REPLACE_FORM') {
+      const targetFormId = action.data.formId || (aiContext?.type === 'form' ? aiContext.formId : null);
+      if (!targetFormId) { toast.error('Не указан ID формы'); return; }
+      const existingForm = getForm(targetFormId);
+      if (!existingForm) { toast.error('Форма не найдена'); return; }
+
+      const newFields = (action.data.fields || []).map((f: any) => ({ ...f, id: f.id || genId() })) as FormField[];
+      const updatedForm: FormData = {
+        ...existingForm,
+        title: action.data.title || existingForm.title,
+        description: action.data.description ?? existingForm.description,
+        fields: newFields,
+        completionMessage: action.data.completionMessage || existingForm.completionMessage,
+        updatedAt: now,
+      };
+      saveForm(updatedForm);
+      toast.success(`Форма "${updatedForm.title}" полностью обновлена! ${newFields.length} полей.`);
+      return targetFormId;
+    }
+
+    // ── EDIT FORM FIELD (изменение данных одного поля) ─────────────
+    if (action.type === 'EDIT_FORM_FIELD') {
+      const targetFormId = action.data.formId || (aiContext?.type === 'form' ? aiContext.formId : null);
+      if (!targetFormId) { toast.error('Не указан ID формы'); return; }
+      const existingForm = getForm(targetFormId);
+      if (!existingForm) { toast.error('Форма не найдена'); return; }
+
+      const { fieldId, newData } = action.data;
+      if (!fieldId || !newData) { toast.error('Не указан fieldId или newData'); return; }
+
+      const patchedCount = existingForm.fields.filter(f => f.id === fieldId).length;
+      if (patchedCount === 0) { toast.error(`Поле "${fieldId}" не найдено`); return; }
+
+      const updatedFields = existingForm.fields.map(f =>
+        f.id === fieldId ? { ...f, ...newData } : f
+      );
+      saveForm({ ...existingForm, fields: updatedFields, updatedAt: now });
+      toast.success(`Поле "${fieldId}" обновлено.`);
+      return targetFormId;
+    }
+
+    // ── REMOVE FORM FIELDS (удаление полей по ID) ──────────────────
+    if (action.type === 'REMOVE_FORM_FIELDS') {
+      const targetFormId = action.data.formId || (aiContext?.type === 'form' ? aiContext.formId : null);
+      if (!targetFormId) { toast.error('Не указан ID формы'); return; }
+      const existingForm = getForm(targetFormId);
+      if (!existingForm) { toast.error('Форма не найдена'); return; }
+
+      const removeIds: string[] = Array.isArray(action.data.fieldIds) ? action.data.fieldIds : [];
+      if (removeIds.length === 0) { toast.error('Не указаны fieldIds для удаления'); return; }
+
+      const removeSet = new Set(removeIds);
+      const filteredFields = existingForm.fields.filter(f => !removeSet.has(f.id));
+      saveForm({ ...existingForm, fields: filteredFields, updatedAt: now });
+      toast.success(`Удалено ${removeIds.length} полей из формы "${existingForm.title}".`);
+      return targetFormId;
     }
 
     // ── CREATE BOT ─────────────────────────────────────────────────
@@ -476,7 +530,7 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── ADD WEBSITE BLOCKS (добавление блоков в существующий сайт) ─
     if (action.type === 'ADD_WEBSITE_BLOCKS') {
-      const targetSiteId = action.data.websiteId;
+      const targetSiteId = action.data.websiteId || (aiContext?.type === 'website' ? aiContext.websiteId : null);
       if (!targetSiteId) { toast.error('Не указан ID сайта'); return; }
       const existingSite = getWebsite(targetSiteId);
       if (!existingSite) { toast.error('Сайт не найден'); return; }
@@ -514,6 +568,97 @@ export function useAIAssistant(aiContext?: AIContext) {
       toast.success(`Добавлено ${addedCount} блоков в сайт "${existingSite.name}"`);
       navigate(`/site/edit/${existingSite.id}`);
       return existingSite.id;
+    }
+
+    // ── REPLACE WEBSITE (полная замена блоков сайта) ────────────────
+    if (action.type === 'REPLACE_WEBSITE') {
+      const targetSiteId = action.data.websiteId || (aiContext?.type === 'website' ? aiContext.websiteId : null);
+      if (!targetSiteId) { toast.error('Не указан ID сайта'); return; }
+      const existingSite = getWebsite(targetSiteId);
+      if (!existingSite) { toast.error('Сайт не найден'); return; }
+
+      const pages = action.data.pages
+        ? (action.data.pages as any[]).map((p: any) => ({
+            id: p.id || genId(),
+            slug: p.slug || 'home',
+            title: p.title || p.slug || 'Страница',
+            blocks: (p.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
+          }))
+        : undefined;
+
+      const updatedSite: AppWebsite = {
+        ...existingSite,
+        name: action.data.name || existingSite.name,
+        description: action.data.description ?? existingSite.description,
+        blocks: pages
+          ? (pages.find(p => p.slug === 'home')?.blocks || pages[0]?.blocks || [])
+          : (action.data.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
+        pages,
+        updatedAt: now,
+      };
+      saveWebsite(updatedSite);
+      const blockCount = pages ? pages.reduce((s: number, p: any) => s + p.blocks.length, 0) : updatedSite.blocks.length;
+      toast.success(`Сайт "${updatedSite.name}" полностью обновлён! ${blockCount} блоков.`);
+      return targetSiteId;
+    }
+
+    // ── EDIT WEBSITE BLOCK (изменение данных одного блока) ──────────
+    if (action.type === 'EDIT_WEBSITE_BLOCK') {
+      const targetSiteId = action.data.websiteId || (aiContext?.type === 'website' ? aiContext.websiteId : null);
+      if (!targetSiteId) { toast.error('Не указан ID сайта'); return; }
+      const existingSite = getWebsite(targetSiteId);
+      if (!existingSite) { toast.error('Сайт не найден'); return; }
+
+      const { blockId, newContent, pageSlug } = action.data;
+      if (!blockId || !newContent) { toast.error('Не указан blockId или newContent'); return; }
+
+      let found = false;
+      if (pageSlug && existingSite.pages) {
+        const updatedPages = existingSite.pages.map(p => {
+          if (p.slug === pageSlug) {
+            return { ...p, blocks: p.blocks.map(b => {
+              if (b.id === blockId) { found = true; return { ...b, content: { ...b.content, ...newContent } }; }
+              return b;
+            }) };
+          }
+          return p;
+        });
+        if (!found) { toast.error(`Блок "${blockId}" не найден на странице "${pageSlug}"`); return; }
+        saveWebsite({ ...existingSite, pages: updatedPages, updatedAt: now });
+      } else {
+        const updatedBlocks = existingSite.blocks.map(b => {
+          if (b.id === blockId) { found = true; return { ...b, content: { ...b.content, ...newContent } }; }
+          return b;
+        });
+        if (!found) { toast.error(`Блок "${blockId}" не найден`); return; }
+        saveWebsite({ ...existingSite, blocks: updatedBlocks, updatedAt: now });
+      }
+      toast.success(`Блок "${blockId}" обновлён.`);
+      return targetSiteId;
+    }
+
+    // ── REMOVE WEBSITE BLOCKS (удаление блоков по ID) ──────────────
+    if (action.type === 'REMOVE_WEBSITE_BLOCKS') {
+      const targetSiteId = action.data.websiteId || (aiContext?.type === 'website' ? aiContext.websiteId : null);
+      if (!targetSiteId) { toast.error('Не указан ID сайта'); return; }
+      const existingSite = getWebsite(targetSiteId);
+      if (!existingSite) { toast.error('Сайт не найден'); return; }
+
+      const removeIds: string[] = Array.isArray(action.data.blockIds) ? action.data.blockIds : [];
+      if (removeIds.length === 0) { toast.error('Не указаны blockIds для удаления'); return; }
+
+      const removeSet = new Set(removeIds);
+      if (existingSite.pages) {
+        const updatedPages = existingSite.pages.map(p => ({
+          ...p,
+          blocks: p.blocks.filter(b => !removeSet.has(b.id)),
+        }));
+        saveWebsite({ ...existingSite, pages: updatedPages, blocks: existingSite.blocks.filter(b => !removeSet.has(b.id)), updatedAt: now });
+      } else {
+        saveWebsite({ ...existingSite, blocks: existingSite.blocks.filter(b => !removeSet.has(b.id)), updatedAt: now });
+      }
+      toast.success(`Удалено ${removeIds.length} блоков из сайта "${existingSite.name}".`);
+      return targetSiteId;
     }
 
     // ── NAVIGATE ───────────────────────────────────────────────────
@@ -581,6 +726,28 @@ export function useAIAssistant(aiContext?: AIContext) {
           // Full nodes/edges for AI analysis and fixes
           nodes: aiContext.nodes || [],
           edges: aiContext.edges || [],
+        };
+      }
+
+      if (aiContext?.type === 'form') {
+        body.context = {
+          type: 'form_editor',
+          formId: aiContext.formId,
+          formTitle: aiContext.formTitle,
+          fieldCount: aiContext.fieldCount,
+          fields: aiContext.fields || [],
+        };
+      }
+
+      if (aiContext?.type === 'website') {
+        body.context = {
+          type: 'website_editor',
+          websiteId: aiContext.websiteId,
+          websiteName: aiContext.websiteName,
+          blockCount: aiContext.blockCount,
+          pageCount: aiContext.pageCount,
+          blocks: aiContext.blocks || [],
+          pages: aiContext.pages || [],
         };
       }
 

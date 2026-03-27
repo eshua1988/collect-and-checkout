@@ -53,6 +53,12 @@ const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; colo
   REPLACE_BOT:        { label: 'Обновить бота',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400' },
   EDIT_BOT_NODE:      { label: 'Изменить узел',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 border-cyan-500/30 dark:text-cyan-400' },
   REMOVE_BOT_NODES:   { label: 'Удалить узлы',         icon: <Trash2 className="w-3.5 h-3.5" />,       color: 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/30 dark:text-red-400' },
+  REPLACE_FORM:       { label: 'Обновить форму',       icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400' },
+  EDIT_FORM_FIELD:    { label: 'Изменить поле',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 border-cyan-500/30 dark:text-cyan-400' },
+  REMOVE_FORM_FIELDS: { label: 'Удалить поля',         icon: <Trash2 className="w-3.5 h-3.5" />,       color: 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/30 dark:text-red-400' },
+  REPLACE_WEBSITE:    { label: 'Обновить сайт',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400' },
+  EDIT_WEBSITE_BLOCK: { label: 'Изменить блок',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 border-cyan-500/30 dark:text-cyan-400' },
+  REMOVE_WEBSITE_BLOCKS:{ label: 'Удалить блоки',      icon: <Trash2 className="w-3.5 h-3.5" />,       color: 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/30 dark:text-red-400' },
 };
 
 // ── Tabbed suggestions by category ──────────────────────────────────────────
@@ -90,6 +96,20 @@ const BOT_CONTEXT_SUGGESTIONS = [
   { icon: 'plus',    text: 'Добавь сбор контактов: имя, телефон, email с валидацией',    color: 'text-blue-500' },
   { icon: 'zap',     text: 'Добавь AI-чат узел с умным ответом на вопросы',              color: 'text-yellow-500' },
   { icon: 'code',    text: 'Добавь webhook уведомление при заполнении формы',             color: 'text-emerald-500' },
+];
+
+const FORM_CONTEXT_SUGGESTIONS = [
+  { icon: 'plus',    text: 'Добавь поля для сбора контактов: телефон, email и адрес',      color: 'text-blue-500' },
+  { icon: 'layout',  text: 'Добавь поля с выпадающим списком и чекбоксами',                color: 'text-orange-500' },
+  { icon: 'brain',   text: 'Улучши форму: добавь описания, подсказки и валидацию полей',   color: 'text-violet-500' },
+  { icon: 'zap',     text: 'Переделай всю форму: сделай более профессиональной и удобной', color: 'text-yellow-500' },
+];
+
+const WEBSITE_CONTEXT_SUGGESTIONS = [
+  { icon: 'plus',    text: 'Добавь секции: тарифы, FAQ, отзывы клиентов и команда',        color: 'text-emerald-500' },
+  { icon: 'globe',   text: 'Добавь новую страницу: О нас, Услуги или Контакты',            color: 'text-teal-500' },
+  { icon: 'brain',   text: 'Улучши дизайн: обнови цвета, визуал и сделай более современным', color: 'text-violet-500' },
+  { icon: 'zap',     text: 'Переделай весь сайт: новый стиль с сохранением контента',      color: 'text-yellow-500' },
 ];
 
 function SuggestionIcon({ type, className }: { type: string; className?: string }) {
@@ -289,9 +309,11 @@ function MessageBubble({ msg, onExecuteAction, existingBots, existingWebsites, e
               const meta = ACTION_LABELS[action.type];
               if (!meta) return null;
               const isBotCreate = action.type === 'CREATE_BOT';
-              const isBotAction = isBotCreate || action.type === 'ADD_BOT_NODES' || action.type === 'REPLACE_BOT';
-              const isSiteAction = action.type === 'CREATE_WEBSITE';
-              const isFormAction = action.type === 'CREATE_FORM';
+              const isBotAction = isBotCreate || action.type === 'ADD_BOT_NODES' || action.type === 'REPLACE_BOT' || action.type === 'EDIT_BOT_NODE' || action.type === 'REMOVE_BOT_NODES';
+              const isSiteCreate = action.type === 'CREATE_WEBSITE';
+              const isSiteAction = isSiteCreate || action.type === 'ADD_WEBSITE_BLOCKS' || action.type === 'REPLACE_WEBSITE' || action.type === 'EDIT_WEBSITE_BLOCK' || action.type === 'REMOVE_WEBSITE_BLOCKS';
+              const isFormCreate = action.type === 'CREATE_FORM';
+              const isFormAction = isFormCreate || action.type === 'ADD_FORM_FIELDS' || action.type === 'REPLACE_FORM' || action.type === 'EDIT_FORM_FIELD' || action.type === 'REMOVE_FORM_FIELDS';
               const botName = action.data?.name || action.data?.description || '';
               const itemName = action.data?.name || action.data?.title || action.data?.description || '';
               return (
@@ -341,7 +363,7 @@ function MessageBubble({ msg, onExecuteAction, existingBots, existingWebsites, e
                     )}
 
                     {/* For CREATE_WEBSITE: "Add to existing site" button */}
-                    {isSiteAction && !action.executed && existingWebsites && existingWebsites.length > 0 && (
+                    {isSiteCreate && !action.executed && existingWebsites && existingWebsites.length > 0 && (
                       <div className="relative">
                         <button
                           onClick={() => setShowSitePicker(showSitePicker === i ? null : i)}
@@ -369,7 +391,7 @@ function MessageBubble({ msg, onExecuteAction, existingBots, existingWebsites, e
                     )}
 
                     {/* For CREATE_FORM: "Add to existing form" button */}
-                    {isFormAction && !action.executed && existingForms && existingForms.length > 0 && (
+                    {isFormCreate && !action.executed && existingForms && existingForms.length > 0 && (
                       <div className="relative">
                         <button
                           onClick={() => setShowFormPicker(showFormPicker === i ? null : i)}
@@ -649,6 +671,9 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
   }, [handleImageFiles]);
 
   const isBotContext = aiContext?.type === 'bot';
+  const isFormContext = aiContext?.type === 'form';
+  const isWebsiteContext = aiContext?.type === 'website';
+  const isAnyContext = isBotContext || isFormContext || isWebsiteContext;
   const showSuggestions = messages.length === 1 && !isLoading;
 
   // Close provider menu on outside click
@@ -731,7 +756,17 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
             {isBotContext ? (
               <p className="text-[10px] text-violet-500 truncate flex items-center gap-1 mt-0.5">
                 <Bot className="w-3 h-3 inline shrink-0" />
-                Режим бота: <span className="font-semibold ml-0.5">{aiContext!.botName}</span>
+                Режим бота: <span className="font-semibold ml-0.5">{(aiContext as any).botName}</span>
+              </p>
+            ) : isFormContext ? (
+              <p className="text-[10px] text-blue-500 truncate flex items-center gap-1 mt-0.5">
+                <FileText className="w-3 h-3 inline shrink-0" />
+                Режим формы: <span className="font-semibold ml-0.5">{(aiContext as any).formTitle}</span>
+              </p>
+            ) : isWebsiteContext ? (
+              <p className="text-[10px] text-emerald-500 truncate flex items-center gap-1 mt-0.5">
+                <Globe className="w-3 h-3 inline shrink-0" />
+                Режим сайта: <span className="font-semibold ml-0.5">{(aiContext as any).websiteName}</span>
               </p>
             ) : (
               <p className="text-[10px] text-muted-foreground mt-0.5">Формы, боты, сайты и документы</p>
@@ -765,9 +800,29 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
           <div className="px-4 py-2 bg-violet-500/5 border-b border-violet-500/10 flex items-center gap-2 text-xs">
             <Bot className="w-3.5 h-3.5 text-violet-500 shrink-0" />
             <span className="text-muted-foreground">
-              Бот <span className="font-medium text-foreground">{aiContext!.botName}</span> · {aiContext!.nodeCount} узлов
+              Бот <span className="font-medium text-foreground">{(aiContext as any).botName}</span> · {(aiContext as any).nodeCount} узлов
             </span>
             <span className="ml-auto text-violet-500 font-medium text-[11px]">+ добавить в бот</span>
+          </div>
+        )}
+
+        {isFormContext && (
+          <div className="px-4 py-2 bg-blue-500/5 border-b border-blue-500/10 flex items-center gap-2 text-xs">
+            <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <span className="text-muted-foreground">
+              Форма <span className="font-medium text-foreground">{(aiContext as any).formTitle}</span> · {(aiContext as any).fieldCount} полей
+            </span>
+            <span className="ml-auto text-blue-500 font-medium text-[11px]">+ изменить форму</span>
+          </div>
+        )}
+
+        {isWebsiteContext && (
+          <div className="px-4 py-2 bg-emerald-500/5 border-b border-emerald-500/10 flex items-center gap-2 text-xs">
+            <Globe className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span className="text-muted-foreground">
+              Сайт <span className="font-medium text-foreground">{(aiContext as any).websiteName}</span> · {(aiContext as any).blockCount} блоков
+            </span>
+            <span className="ml-auto text-emerald-500 font-medium text-[11px]">+ изменить сайт</span>
           </div>
         )}
 
@@ -787,6 +842,40 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
                 /* Bot context — flat list like before */
                 <div className="grid grid-cols-2 gap-2">
                   {BOT_CONTEXT_SUGGESTIONS.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => sendMessage(s.text)}
+                      className="flex flex-col gap-2.5 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 border border-border/40 hover:border-border/70 text-left transition-all active:scale-[0.97] group"
+                    >
+                      <span className={cn('w-8 h-8 rounded-lg bg-background flex items-center justify-center shadow-sm border border-border/30', s.color)}>
+                        <SuggestionIcon type={s.icon} className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground leading-relaxed line-clamp-3 transition-colors">
+                        {s.text}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : isFormContext ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {FORM_CONTEXT_SUGGESTIONS.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => sendMessage(s.text)}
+                      className="flex flex-col gap-2.5 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 border border-border/40 hover:border-border/70 text-left transition-all active:scale-[0.97] group"
+                    >
+                      <span className={cn('w-8 h-8 rounded-lg bg-background flex items-center justify-center shadow-sm border border-border/30', s.color)}>
+                        <SuggestionIcon type={s.icon} className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground leading-relaxed line-clamp-3 transition-colors">
+                        {s.text}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : isWebsiteContext ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {WEBSITE_CONTEXT_SUGGESTIONS.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => sendMessage(s.text)}
@@ -919,7 +1008,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={isBotContext ? 'Что добавить в бота?' : 'Опиши что хочешь создать...'}
+              placeholder={isBotContext ? 'Что добавить в бота?' : isFormContext ? 'Что изменить в форме?' : isWebsiteContext ? 'Что добавить в сайт?' : 'Опиши что хочешь создать...'}
               className="resize-none min-h-[44px] max-h-[120px] px-4 pt-3 pb-1 text-sm bg-transparent border-0 shadow-none focus-visible:ring-0 rounded-none leading-relaxed"
               rows={1}
               disabled={isLoading}
