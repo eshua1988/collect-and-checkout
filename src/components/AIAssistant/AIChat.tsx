@@ -402,6 +402,28 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
     setAttachedImages(prev => prev.filter((_, i) => i !== idx));
   }, []);
 
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) handleImageFiles(files);
+  }, [handleImageFiles]);
+
   const isBotContext = aiContext?.type === 'bot';
   const suggestions = isBotContext ? BOT_SUGGESTIONS : DEFAULT_SUGGESTIONS;
   const showSuggestions = messages.length === 1 && !isLoading;
@@ -575,7 +597,25 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
 
         {/* Input */}
         <div className="p-3 border-t border-border/50 bg-muted/10 shrink-0">
-          <div className="flex flex-col bg-background rounded-2xl border border-border/60 shadow-sm overflow-hidden focus-within:border-violet-500/50 focus-within:shadow-md focus-within:shadow-violet-500/10 transition-all">
+          <div
+            className={cn(
+              'flex flex-col bg-background rounded-2xl border shadow-sm overflow-hidden transition-all relative',
+              isDragging
+                ? 'border-violet-500 bg-violet-500/5 shadow-md shadow-violet-500/20'
+                : 'border-border/60 focus-within:border-violet-500/50 focus-within:shadow-md focus-within:shadow-violet-500/10'
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {isDragging && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-violet-500/10 rounded-2xl pointer-events-none">
+                <div className="flex items-center gap-2 text-violet-500 font-medium text-sm">
+                  <ImagePlus className="w-5 h-5" />
+                  Перетащите изображения сюда
+                </div>
+              </div>
+            )}
             {/* Attached images preview */}
             {attachedImages.length > 0 && (
               <div className="flex gap-2 px-3 pt-2.5 flex-wrap">
