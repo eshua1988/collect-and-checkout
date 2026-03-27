@@ -243,6 +243,48 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
       },
     ];
 
+    // --- Helper: convert messages for different providers ---
+    // Vision-capable providers that accept OpenAI image_url format
+    const VISION_PROVIDERS = new Set(["github-gpt4o-mini", "gemini"]);
+
+    /** Strip images from multimodal messages, add text note */
+    function stripImages(msgs: any[]): any[] {
+      return msgs.map(m => {
+        if (Array.isArray(m.content)) {
+          const hasImages = m.content.some((c: any) => c.type === "image_url");
+          const textParts = m.content.filter((c: any) => c.type === "text").map((c: any) => c.text);
+          if (hasImages) {
+            textParts.push("[Пользователь отправил изображение. Опиши что можешь помочь на основе текста.]");
+          }
+          return { role: m.role, content: textParts.join("\n") || m.content };
+        }
+        return m;
+      });
+    }
+
+    /** Convert OpenAI image_url format → Anthropic image format */
+    function toAnthropicMessages(msgs: any[]): any[] {
+      return msgs.filter((m: any) => m.role !== "system").map(m => {
+        if (Array.isArray(m.content)) {
+          const converted = m.content.map((c: any) => {
+            if (c.type === "image_url" && c.image_url?.url) {
+              const url: string = c.image_url.url;
+              const match = url.match(/^data:(image\/[^;]+);base64,(.+)$/);
+              if (match) {
+                return {
+                  type: "image",
+                  source: { type: "base64", media_type: match[1], data: match[2] },
+                };
+              }
+            }
+            return c;
+          });
+          return { role: m.role, content: converted };
+        }
+        return m;
+      });
+    }
+
     const baseMessages = [{ role: "system", content: systemContent }, ...messages];
 
     // If user selected a specific provider, move it to front
@@ -255,6 +297,25 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
       }
     }
 
+    // Check if any message contains images
+    const hasImages = messages.some((m: any) => Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url"));
+
+    // If images present, prefer vision-capable providers first
+    if (hasImages) {
+      const visionFirst: Provider[] = [];
+      const rest: Provider[] = [];
+      for (const p of orderedProviders) {
+        if (p.isAnthropic || VISION_PROVIDERS.has(p.name)) visionFirst.push(p);
+        else rest.push(p);
+      }
+      // Keep user's preferred provider at front if it was set
+      if (preferredProvider && preferredProvider !== "auto") {
+        orderedProviders = orderedProviders; // keep user choice
+      } else {
+        orderedProviders = [...visionFirst, ...rest];
+      }
+    }
+
     let lastError = "Нет доступных AI провайдеров. Настройте хотя бы один API ключ.";
     for (const provider of orderedProviders) {
       if (!provider.key) continue; // skip providers without key
@@ -263,8 +324,7 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
       try {
         // ── Anthropic API (different format) ────────────────────────
         if (provider.isAnthropic) {
-          // Anthropic requires system separate from messages
-          const anthropicMessages = messages.filter((m: any) => m.role !== "system");
+          const anthropicMessages = toAnthropicMessages(messages);
           const response = await fetch(provider.url, {
             method: "POST",
             headers: {
@@ -329,6 +389,12 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
         }
 
         // ── OpenAI-compatible API ────────────────────────────────────
+        // For providers without vision support, strip images from messages
+        const supportsVision = VISION_PROVIDERS.has(provider.name);
+        const providerMessages = hasImages && !supportsVision
+          ? [{ role: "system", content: systemContent }, ...stripImages(messages)]
+          : baseMessages;
+
         const response = await fetch(provider.url, {
           method: "POST",
           headers: {
@@ -338,7 +404,7 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
           },
           body: JSON.stringify({
             model: provider.model,
-            messages: baseMessages,
+            messages: providerMessages,
             stream: true,
             temperature: 0.7,
             max_tokens: 6000,

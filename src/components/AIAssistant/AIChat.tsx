@@ -657,9 +657,9 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
                   {showProviderMenu && (
-                    <div className="absolute bottom-full mb-2 left-0 z-50 w-52 bg-popover border border-border/60 rounded-xl shadow-xl overflow-hidden">
-                      <div className="px-3 py-2 border-b border-border/40">
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Выбор модели ИИ</p>
+                    <div className="absolute bottom-full mb-2 left-0 z-[100] w-56 rounded-xl shadow-2xl overflow-hidden border border-white/10 bg-[#1a1a2e]">
+                      <div className="px-3 py-2 border-b border-white/10">
+                        <p className="text-[10px] font-semibold text-violet-300 uppercase tracking-wide">Выбор модели ИИ</p>
                       </div>
                       <div className="py-1 max-h-64 overflow-y-auto">
                         {AI_PROVIDERS.map(p => (
@@ -667,16 +667,18 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
                             key={p.id}
                             onClick={() => { setProvider(p.id); setShowProviderMenu(false); }}
                             className={cn(
-                              'w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-muted/60 transition-colors',
-                              provider === p.id && 'bg-primary/10 text-primary'
+                              'w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-xs transition-colors',
+                              provider === p.id
+                                ? 'bg-violet-500/20 text-violet-200'
+                                : 'text-gray-300 hover:bg-white/5 hover:text-white'
                             )}
                           >
                             <span className="text-base leading-none">{p.icon}</span>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium leading-tight">{p.label}</div>
-                              <div className="text-[10px] text-muted-foreground truncate">{p.desc}</div>
+                              <div className="text-[10px] text-gray-500 truncate">{p.desc}</div>
                             </div>
-                            {provider === p.id && <Check className="w-3 h-3 shrink-0 text-primary" />}
+                            {provider === p.id && <Check className="w-3.5 h-3.5 shrink-0 text-violet-400" />}
                           </button>
                         ))}
                       </div>
