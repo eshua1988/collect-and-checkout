@@ -16,7 +16,8 @@ export type BotNodeType =
   | 'langDetect'
   | 'instagramMonitor'
   | 'facebookMonitor'
-  | 'userLangPref';
+  | 'userLangPref'
+  | 'yandexTranslate';
 
 export interface BotButton {
   id: string;
@@ -93,6 +94,14 @@ export interface BotNodeData {
   translateCaptionVar?: string;
   translateCaptionResultVar?: string;
   translateAutoSend?: boolean;      // auto-send translated result immediately
+
+  // yandexTranslate node
+  yandexSourceVar?: string;          // variable with text to translate
+  yandexTargetLang?: string;         // target language code (ru, en, de...)
+  yandexSourceLang?: string;         // source lang (empty = auto-detect)
+  yandexResultVar?: string;          // variable to store result
+  yandexFolderId?: string;           // Yandex Cloud folder ID (from bot settings)
+  yandexApiKey?: string;             // IAM or API key (from bot settings)
 
   // langDetect node
   langDetectVar?: string;

@@ -20,7 +20,7 @@ import {
   MessageNode, UserInputNode, ConditionNode, ActionNode, StartNode,
   AiChatNode, DelayNode, MediaNode, VariableNode, RandomizerNode, JumpNode,
   TranslateNode, LangDetectNode, YoutubeMonitorNode, SocialShareNode,
-  InstagramMonitorNode, FacebookMonitorNode, UserLangPrefNode,
+  InstagramMonitorNode, FacebookMonitorNode, UserLangPrefNode, YandexTranslateNode,
 } from './BotNodes';
 import { NodeEditor } from './NodeEditor';
 import { BotSimulator } from './BotSimulator';
@@ -81,6 +81,7 @@ const BASE_NODE_TYPES: NodeTypes = {
   instagramMonitor: InstagramMonitorNode,
   facebookMonitor: FacebookMonitorNode,
   userLangPref: UserLangPrefNode,
+  yandexTranslate: YandexTranslateNode,
 };
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -113,6 +114,7 @@ const defaultData: Record<BotNodeType, BotNodeData> = {
   instagramMonitor: { igCheckInterval: 30, igNotifyPosts: true, igNotifyReels: true, igTranslateContent: true, igTranslateContentType: 'both', igMessageTemplate: '📸 Новый пост от {{author}}!\n\n{{caption}}\n\n🔗 {{url}}' },
   facebookMonitor: { fbCheckInterval: 30, fbNotifyPosts: true, fbNotifyVideos: true, fbTranslateContent: true, fbMessageTemplate: '📘 Новый пост от {{author}}!\n\n{{text}}\n\n🔗 {{url}}' },
   userLangPref: { ulpQuestion: 'Выберите язык / Choose your language:', ulpSaveVar: 'user_lang', ulpDefaultLang: 'ru', ulpShowFlags: true, ulpLanguages: ['ru', 'en', 'de', 'fr', 'es'] },
+  yandexTranslate: { yandexSourceLang: '', yandexTargetLang: 'ru', yandexSourceVar: 'user_message', yandexResultVar: 'translated_text', yandexFolderId: '', yandexApiKey: '' },
 };
 
 const nodeAddButtons: { type: BotNodeType; label: string; icon: React.ReactNode; color: string }[] = [
@@ -123,6 +125,7 @@ const nodeAddButtons: { type: BotNodeType; label: string; icon: React.ReactNode;
   { type: 'aiChat',           label: '🤖 ИИ',        icon: <Brain className="w-3.5 h-3.5" />,             color: 'bg-primary/10 text-primary border-primary/30' },
   { type: 'userLangPref',     label: '🗣 Язык юзера', icon: <Flag className="w-3.5 h-3.5" />,              color: 'bg-primary/10 text-primary border-primary/30' },
   { type: 'translate',        label: '🌐 Перевод',   icon: <Languages className="w-3.5 h-3.5" />,         color: 'bg-primary/10 text-primary border-primary/30' },
+  { type: 'yandexTranslate',  label: '🔴 Яндекс',    icon: <Languages className="w-3.5 h-3.5" />,         color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' },
   { type: 'langDetect',       label: '🔍 Авто-язык', icon: <Globe className="w-3.5 h-3.5" />,             color: 'bg-accent/10 text-accent-foreground border-accent/30' },
   { type: 'instagramMonitor', label: '📸 Instagram',  icon: <Instagram className="w-3.5 h-3.5" />,         color: 'bg-destructive/10 text-destructive border-destructive/30' },
   { type: 'facebookMonitor',  label: '📘 Facebook',   icon: <Facebook className="w-3.5 h-3.5" />,          color: 'bg-primary/10 text-primary border-primary/30' },

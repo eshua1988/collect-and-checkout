@@ -673,6 +673,94 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
         )}
 
         {/* ══════════════════════════════════════════════════════════════════════
+            YANDEX TRANSLATE NODE
+        ══════════════════════════════════════════════════════════════════════ */}
+        {nodeType === 'yandexTranslate' && (
+          <>
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+              <Languages className="w-4 h-4 text-yellow-500 shrink-0" />
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium">Яндекс Переводчик (Yandex Translate API)</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">Исходный язык</Label>
+              <Select value={local.yandexSourceLang || ''} onValueChange={v => update({ yandexSourceLang: v })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue placeholder="Авто-определение" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">🔄 Авто-определение</SelectItem>
+                  {LANGUAGES.filter(l => l.code !== 'auto').map(l => (
+                    <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs">Целевой язык</Label>
+              <Select value={local.yandexTargetLang || 'ru'} onValueChange={v => update({ yandexTargetLang: v })}>
+                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.filter(l => l.code !== 'auto').map(l => (
+                    <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs">Переменная с текстом для перевода</Label>
+              <Input
+                value={local.yandexSourceVar || ''}
+                onChange={e => update({ yandexSourceVar: e.target.value })}
+                placeholder="user_message"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs">Сохранить перевод в переменную</Label>
+              <Input
+                value={local.yandexResultVar || ''}
+                onChange={e => update({ yandexResultVar: e.target.value })}
+                placeholder="translated_text"
+                className="mt-1 h-8 text-xs font-mono"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs">Yandex Cloud Folder ID</Label>
+              <Input
+                value={local.yandexFolderId || ''}
+                onChange={e => update({ yandexFolderId: e.target.value })}
+                placeholder="b1g..."
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Из консоли Yandex Cloud → каталог → ID</p>
+            </div>
+
+            <div>
+              <Label className="text-xs">API ключ Yandex Translate</Label>
+              <Input
+                type="password"
+                value={local.yandexApiKey || ''}
+                onChange={e => update({ yandexApiKey: e.target.value })}
+                placeholder="AQVNw..."
+                className="mt-1 h-8 text-xs font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">IAM-токен или API-ключ сервисного аккаунта</p>
+            </div>
+
+            <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">📋 Как получить ключ:</p>
+              <p>1. Зайдите на <strong>console.yandex.cloud</strong></p>
+              <p>2. Создайте каталог (folder) и скопируйте его ID</p>
+              <p>3. Создайте API-ключ: Сервисные аккаунты → Ключи → API-ключ</p>
+              <p>4. Вставьте Folder ID и API ключ выше</p>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
             LANG DETECT NODE
         ══════════════════════════════════════════════════════════════════════ */}
         {nodeType === 'langDetect' && (

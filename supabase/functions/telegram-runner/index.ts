@@ -258,6 +258,33 @@ async function runFlow(
         break;
       }
 
+      // ── yandexTranslate ───────────────────────────────────────────────────
+      case "yandexTranslate": {
+        const src = vars[node.data.yandexSourceVar as string || ""] || "";
+        if (src) {
+          try {
+            const folderId = node.data.yandexFolderId || Deno.env.get("YANDEX_FOLDER_ID") || "";
+            const apiKey = node.data.yandexApiKey || Deno.env.get("YANDEX_API_KEY") || "";
+            const r = await fetch(`${SUPABASE_URL}/functions/v1/bot-yandex-translate`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", apikey: SERVICE_KEY },
+              body: JSON.stringify({
+                text: src,
+                targetLang: node.data.yandexTargetLang || "ru",
+                sourceLang: node.data.yandexSourceLang || "",
+                folderId,
+                apiKey,
+              }),
+            });
+            const d = await r.json();
+            const tResult = d.translatedText || "";
+            if (tResult) vars = { ...vars, [node.data.yandexResultVar as string || "translated_text"]: tResult };
+          } catch { /* ignore */ }
+        }
+        cur = edge(id)?.target ?? null;
+        break;
+      }
+
       // ── langDetect ────────────────────────────────────────────────────────────
       case "langDetect": {
         const src = vars[node.data.langDetectVar as string || ""] || "";

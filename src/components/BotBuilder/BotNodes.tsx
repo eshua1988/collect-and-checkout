@@ -352,6 +352,31 @@ export const TranslateNode = memo(({ data, selected }: NodeProps<BotNodeData>) =
   );
 });
 
+// ─── YANDEX TRANSLATE ──────────────────────────────────────────────────────────
+
+export const YandexTranslateNode = memo(({ data, selected }: NodeProps<BotNodeData>) => {
+  const langName: Record<string, string> = {
+    auto: 'авто', ru: '🇷🇺 RU', en: '🇬🇧 EN', de: '🇩🇪 DE', fr: '🇫🇷 FR',
+    es: '🇪🇸 ES', it: '🇮🇹 IT', zh: '🇨🇳 ZH', ja: '🇯🇵 JA', ar: '🇸🇦 AR',
+    pt: '🇧🇷 PT', ko: '🇰🇷 KO', tr: '🇹🇷 TR', uk: '🇺🇦 UK', pl: '🇵🇱 PL',
+  };
+  return (
+    <NodeShell selected={selected} color="warning" icon={<Languages className="w-3 h-3 text-warning-foreground" />} label="🔴 Яндекс Переводчик">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">{langName[data.yandexSourceLang || ''] || 'авто'}</span>
+        <span className="text-yellow-500 font-bold">→</span>
+        <span className="font-medium">{langName[data.yandexTargetLang || 'ru'] || data.yandexTargetLang}</span>
+      </div>
+      {data.yandexSourceVar && (
+        <div className="text-xs bg-muted px-2 py-1 rounded font-mono text-muted-foreground">📥 {`{{${data.yandexSourceVar}}}`}</div>
+      )}
+      {data.yandexResultVar && (
+        <div className="text-xs bg-yellow-500/10 px-2 py-1 rounded font-mono text-yellow-600">→ {data.yandexResultVar}</div>
+      )}
+    </NodeShell>
+  );
+});
+
 // ─── LANG DETECT ───────────────────────────────────────────────────────────────
 
 export const LangDetectNode = memo(({ data, selected }: NodeProps<BotNodeData>) => (
