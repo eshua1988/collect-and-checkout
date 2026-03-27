@@ -599,7 +599,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
         <div className="p-3 border-t border-border/50 bg-muted/10 shrink-0">
           <div
             className={cn(
-              'flex flex-col bg-background rounded-2xl border shadow-sm overflow-hidden transition-all relative',
+              'flex flex-col bg-background rounded-2xl border shadow-sm transition-all relative',
               isDragging
                 ? 'border-violet-500 bg-violet-500/5 shadow-md shadow-violet-500/20'
                 : 'border-border/60 focus-within:border-violet-500/50 focus-within:shadow-md focus-within:shadow-violet-500/10'
@@ -657,7 +657,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
                   {showProviderMenu && (
-                    <div className="absolute bottom-full mb-2 left-0 z-[100] w-56 rounded-xl shadow-2xl overflow-hidden border border-white/10 bg-[#1a1a2e]">
+                    <div className="absolute bottom-full mb-2 left-0 z-[9999] w-56 rounded-xl shadow-2xl overflow-hidden border border-white/10 bg-[#1a1a2e]" style={{ position: 'fixed', bottom: 'auto', left: 'auto' }} ref={(el) => { if (el && providerMenuRef.current) { const btn = providerMenuRef.current.querySelector('button'); if (btn) { const r = btn.getBoundingClientRect(); el.style.left = r.left + 'px'; el.style.bottom = (window.innerHeight - r.top + 4) + 'px'; } } }}>
                       <div className="px-3 py-2 border-b border-white/10">
                         <p className="text-[10px] font-semibold text-violet-300 uppercase tracking-wide">Выбор модели ИИ</p>
                       </div>
