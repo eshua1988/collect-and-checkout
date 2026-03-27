@@ -86,7 +86,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     setWebsite(updated);
     saveWebsite(updated);
     if (updated.published) {
-      const url = `${window.location.origin}/site/${website.id}`;
+      const url = `${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`;
       navigator.clipboard.writeText(url).catch(() => {});
       toast.success('Сайт опубликован! Ссылка скопирована.');
     } else {
@@ -251,7 +251,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             {website.published ? 'Снять' : 'Опубликовать'}
           </Button>
           {website.published && (
-            <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/site/${website.id}`); toast.success('Ссылка скопирована!'); }}>
+            <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('Ссылка скопирована!'); }}>
               <Copy className="w-4 h-4" />
             </Button>
           )}
@@ -422,11 +422,11 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                     <div className="mt-2">
                       <Label className="text-xs">Ссылка на сайт</Label>
                       <div className="flex gap-2 mt-1">
-                        <Input value={`${window.location.origin}/site/${website.id}`} readOnly className="text-xs" />
-                        <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/site/${website.id}`); toast.success('Скопировано!'); }}>
+                        <Input value={`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`} readOnly className="text-xs" />
+                        <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('Скопировано!'); }}>
                           <Copy className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => window.open(`/site/${website.id}`, '_blank')}>
+                        <Button size="sm" variant="outline" onClick={() => window.open(`${import.meta.env.BASE_URL}site/${website.id}`, '_blank')}>
                           <ExternalLink className="w-4 h-4" />
                         </Button>
                       </div>

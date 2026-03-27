@@ -575,7 +575,7 @@ const Home = () => {
                           onClick={() => {
                             const updated = toggleSitePublish(site.id);
                             if (updated?.published) {
-                              const url = `${window.location.origin}/site/${site.id}`;
+                              const url = `${window.location.origin}${import.meta.env.BASE_URL}site/${site.id}`;
                               navigator.clipboard.writeText(url).catch(() => {});
                               toast.success('Опубликован! Ссылка скопирована');
                             } else {
@@ -588,10 +588,10 @@ const Home = () => {
                         </Button>
                         {site.published && (
                           <>
-                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/site/${site.id}`); toast.success('Ссылка скопирована'); }}>
+                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${site.id}`); toast.success('Ссылка скопирована'); }}>
                               <Copy className="w-3.5 h-3.5" />
                             </Button>
-                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => window.open(`/site/${site.id}`, '_blank')}>
+                            <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => window.open(`${import.meta.env.BASE_URL}site/${site.id}`, '_blank')}>
                               <ExternalLink className="w-3.5 h-3.5" />
                             </Button>
                           </>
