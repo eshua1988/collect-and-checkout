@@ -684,10 +684,10 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
 
             <div>
               <Label className="text-xs">Исходный язык</Label>
-              <Select value={local.yandexSourceLang || ''} onValueChange={v => update({ yandexSourceLang: v })}>
+              <Select value={local.yandexSourceLang || 'auto'} onValueChange={v => update({ yandexSourceLang: v === 'auto' ? '' : v })}>
                 <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue placeholder="Авто-определение" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">🔄 Авто-определение</SelectItem>
+                  <SelectItem value="auto">🔄 Авто-определение</SelectItem>
                   {LANGUAGES.filter(l => l.code !== 'auto').map(l => (
                     <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>
                   ))}
