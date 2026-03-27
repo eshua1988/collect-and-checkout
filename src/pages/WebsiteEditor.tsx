@@ -14,7 +14,9 @@ import {
   Globe, Layout, Type, Image, Video, AlignLeft, Star, DollarSign,
   MessageSquare, Phone, Timer, Users, HelpCircle, Code2, Minus,
   ChevronUp, ChevronDown, Layers, ExternalLink, Smartphone, Monitor, Tablet,
-  FileText
+  FileText, BarChart3, Award, Megaphone, GitBranch, Share2, Mail,
+  Bell, PanelTop, ChevronsRight, ListChecks, Table2, MoveHorizontal,
+  Quote, MapPin, Columns3, ClipboardList, ArrowUpDown
 } from 'lucide-react';
 
 const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactNode; defaultContent: Record<string, any> }[] = [
@@ -35,6 +37,23 @@ const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactN
   { type: 'divider', label: 'Разделитель', icon: <Minus className="w-4 h-4" />, defaultContent: {} },
   { type: 'html', label: 'HTML код', icon: <Code2 className="w-4 h-4" />, defaultContent: { code: '<p>Вставьте HTML код</p>' } },
   { type: 'footer', label: 'Футер', icon: <AlignLeft className="w-4 h-4" />, defaultContent: { companyName: 'Моя Компания', copyright: `© ${new Date().getFullYear()} Все права защищены.`, links: [] } },
+  { type: 'stats', label: 'Статистика', icon: <BarChart3 className="w-4 h-4" />, defaultContent: { title: 'Наши достижения', items: [{ value: '500+', label: 'Клиентов' }, { value: '10', label: 'Лет опыта' }, { value: '99%', label: 'Довольных' }], bgColor: '#4f46e5', textColor: '#ffffff' } },
+  { type: 'logos', label: 'Партнёры', icon: <Award className="w-4 h-4" />, defaultContent: { title: 'Нам доверяют', items: [{ name: 'Компания 1', logo: '' }, { name: 'Компания 2', logo: '' }], grayscale: true } },
+  { type: 'cta', label: 'Призыв (CTA)', icon: <Megaphone className="w-4 h-4" />, defaultContent: { title: 'Готовы начать?', subtitle: 'Присоединяйтесь к тысячам довольных клиентов', ctaText: 'Начать сейчас', ctaHref: '#', bgColor: '#7c3aed', textColor: '#ffffff' } },
+  { type: 'timeline', label: 'Хронология', icon: <GitBranch className="w-4 h-4" />, defaultContent: { title: 'Как мы работаем', items: [{ title: 'Шаг 1', desc: 'Заявка', icon: '1️⃣' }, { title: 'Шаг 2', desc: 'Обсуждение', icon: '2️⃣' }, { title: 'Шаг 3', desc: 'Результат', icon: '3️⃣' }] } },
+  { type: 'social', label: 'Соцсети', icon: <Share2 className="w-4 h-4" />, defaultContent: { title: 'Мы в соцсетях', links: [{ platform: 'Telegram', url: '', icon: '✈️' }, { platform: 'VK', url: '', icon: '💙' }, { platform: 'YouTube', url: '', icon: '🎬' }] } },
+  { type: 'newsletter', label: 'Рассылка', icon: <Mail className="w-4 h-4" />, defaultContent: { title: 'Подпишитесь на рассылку', subtitle: 'Будьте в курсе новостей и акций', buttonText: 'Подписаться', bgColor: '#f8fafc' } },
+  { type: 'banner', label: 'Баннер', icon: <Bell className="w-4 h-4" />, defaultContent: { text: '🔥 Специальное предложение! Скидка 20% до конца месяца', bgColor: '#ef4444', textColor: '#ffffff', closable: true } },
+  { type: 'tabs', label: 'Вкладки', icon: <PanelTop className="w-4 h-4" />, defaultContent: { tabs: [{ title: 'Вкладка 1', content: 'Содержимое первой вкладки' }, { title: 'Вкладка 2', content: 'Содержимое второй вкладки' }] } },
+  { type: 'accordion', label: 'Аккордеон', icon: <ChevronsRight className="w-4 h-4" />, defaultContent: { title: 'Подробнее', items: [{ title: 'Раздел 1', content: 'Содержимое раздела 1' }, { title: 'Раздел 2', content: 'Содержимое раздела 2' }] } },
+  { type: 'progress', label: 'Прогресс', icon: <ListChecks className="w-4 h-4" />, defaultContent: { title: 'Наши навыки', items: [{ label: 'Дизайн', value: 90, color: '#4f46e5' }, { label: 'Разработка', value: 85, color: '#7c3aed' }, { label: 'Маркетинг', value: 70, color: '#06b6d4' }] } },
+  { type: 'comparison', label: 'Сравнение', icon: <Table2 className="w-4 h-4" />, defaultContent: { title: 'Сравнение тарифов', columns: ['Бесплатный', 'Про'], rows: [{ feature: 'Пользователи', values: ['1', 'Безлимит'] }, { feature: 'Хранилище', values: ['1 ГБ', '100 ГБ'] }] } },
+  { type: 'marquee', label: 'Бегущая строка', icon: <MoveHorizontal className="w-4 h-4" />, defaultContent: { text: '⚡ Добро пожаловать! • Специальные предложения • Новинки каталога • Бесплатная доставка ⚡', speed: 30, bgColor: '#fbbf24', textColor: '#1e293b' } },
+  { type: 'quote', label: 'Цитата', icon: <Quote className="w-4 h-4" />, defaultContent: { text: 'Лучший способ предсказать будущее — создать его.', author: 'Питер Друкер', bgColor: '#f1f5f9' } },
+  { type: 'map', label: 'Карта', icon: <MapPin className="w-4 h-4" />, defaultContent: { address: 'Москва, Россия', embedUrl: '', height: '400px' } },
+  { type: 'columns', label: 'Колонки', icon: <Columns3 className="w-4 h-4" />, defaultContent: { columns: [{ title: 'Колонка 1', text: 'Содержимое первой колонки' }, { title: 'Колонка 2', text: 'Содержимое второй колонки' }] } },
+  { type: 'spacer', label: 'Отступ', icon: <ArrowUpDown className="w-4 h-4" />, defaultContent: { height: '60px' } },
+  { type: 'form', label: 'Форма', icon: <ClipboardList className="w-4 h-4" />, defaultContent: { title: 'Оставьте заявку', fields: [{ label: 'Имя', type: 'text' }, { label: 'Email', type: 'email' }, { label: 'Сообщение', type: 'textarea' }], buttonText: 'Отправить', bgColor: '#f8fafc' } },
 ];
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';

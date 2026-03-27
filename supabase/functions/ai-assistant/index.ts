@@ -141,6 +141,23 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 - **footer** — подвал. {text:"© 2026 Компания",links:[{label:"Политика",href:"#"}]}
 - **divider** — разделитель. {}
 - **html** — произвольный HTML. {code:"<div>...</div>"}
+- **stats** — статистика/цифры. {title:"Достижения",items:[{value:"500+",label:"Клиентов"},{value:"10",label:"Лет опыта"}],bgColor:"#4f46e5",textColor:"#ffffff"}
+- **logos** — логотипы партнёров. {title:"Нам доверяют",items:[{name:"Компания",logo:"https://..."}],grayscale:true}
+- **cta** — призыв к действию. {title:"Готовы начать?",subtitle:"Описание",ctaText:"Кнопка",ctaHref:"#",bgColor:"#7c3aed",textColor:"#ffffff"}
+- **timeline** — хронология/шаги. {title:"Как мы работаем",items:[{icon:"1️⃣",title:"Шаг 1",desc:"Описание"}]}
+- **social** — соцсети. {title:"Мы в соцсетях",links:[{platform:"Telegram",url:"https://...",icon:"✈️"}]}
+- **newsletter** — подписка на рассылку. {title:"Подпишитесь",subtitle:"Будьте в курсе",buttonText:"Подписаться",bgColor:"#f8fafc"}
+- **banner** — баннер/объявление. {text:"🔥 Спецпредложение!",bgColor:"#ef4444",textColor:"#ffffff",closable:true}
+- **tabs** — вкладки. {tabs:[{title:"Вкладка 1",content:"Текст..."},{title:"Вкладка 2",content:"Текст..."}]}
+- **accordion** — аккордеон. {title:"Подробнее",items:[{title:"Раздел 1",content:"Текст..."},{title:"Раздел 2",content:"Текст..."}]}
+- **progress** — прогресс-бары. {title:"Навыки",items:[{label:"Дизайн",value:90,color:"#4f46e5"},{label:"Код",value:85,color:"#7c3aed"}]}
+- **comparison** — таблица сравнения. {title:"Сравнение",columns:["Базовый","Про"],rows:[{feature:"Функция",values:["Да","Нет"]}]}
+- **marquee** — бегущая строка. {text:"Текст строки",speed:30,bgColor:"#fbbf24",textColor:"#1e293b"}
+- **quote** — цитата. {text:"Цитата...",author:"Автор",bgColor:"#f1f5f9"}
+- **map** — карта. {address:"Москва",embedUrl:"https://google.com/maps/embed?...",height:"400px"}
+- **columns** — колонки. {columns:[{title:"Кол 1",text:"Текст"},{title:"Кол 2",text:"Текст"}]}
+- **spacer** — отступ. {height:"60px"}
+- **form** — форма. {title:"Заявка",fields:[{label:"Имя",type:"text"},{label:"Email",type:"email"},{label:"Сообщение",type:"textarea"}],buttonText:"Отправить",bgColor:"#f8fafc"}
 
 ### ПРАВИЛА СОЗДАНИЯ САЙТОВ:
 1. Всегда начинай с блока **navbar** (навигация) — это меню сайта
@@ -252,7 +269,7 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 12. Если пользователь просит ДОБАВИТЬ элементы/секции/блоки в существующий сайт — используй CREATE_WEBSITE (фронтенд покажет кнопку "В существующий сайт" для выбора). Не нужен полный сайт — только новые блоки!
 
 ## ТИПЫ ПОЛЕЙ ФОРМЫ: text,textarea,number,email,phone,select,radio,checkbox,image,payment
-## ТИПЫ БЛОКОВ САЙТА (полный список content свойств — см. секцию ❺a выше): navbar,hero,features,text,image,gallery,pricing,testimonials,faq,team,contact,countdown,video,button,footer,divider,html`;
+## ТИПЫ БЛОКОВ САЙТА (полный список content свойств — см. секцию ❺a выше): navbar,hero,features,text,image,gallery,pricing,testimonials,faq,team,contact,countdown,video,button,footer,divider,html,stats,logos,cta,timeline,social,newsletter,banner,tabs,accordion,progress,comparison,marquee,quote,map,columns,spacer,form`;
 
 
 serve(async (req) => {

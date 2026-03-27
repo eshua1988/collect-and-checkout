@@ -271,6 +271,268 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     case 'spacer':
       return wrap(<div style={{ height: c.height || '40px' }} />);
 
+    case 'stats':
+      return wrap(
+        <section style={{ backgroundColor: c.bgColor || '#4f46e5', color: c.textColor || '#fff' }} className="py-16 px-8">
+          <div className="max-w-5xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-12 text-center">{c.title}</h2>}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {(c.items || []).map((item: any, i: number) => (
+                <div key={i} className="text-center">
+                  <div className="text-4xl md:text-5xl font-bold mb-2">{item.value}</div>
+                  <div className="text-sm opacity-80">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'logos':
+      return wrap(
+        <section className="py-12 px-8">
+          <div className="max-w-5xl mx-auto">
+            {c.title && <h2 className="text-xl font-semibold mb-8 text-center text-muted-foreground">{c.title}</h2>}
+            <div className="flex flex-wrap justify-center items-center gap-8">
+              {(c.items || []).map((item: any, i: number) => (
+                <div key={i} className={`flex items-center gap-2 ${c.grayscale ? 'opacity-50 hover:opacity-100 transition-opacity' : ''}`}>
+                  {item.logo ? <img src={item.logo} alt={item.name} className="h-10 object-contain" /> : <div className="px-4 py-2 border rounded-lg text-sm font-medium text-muted-foreground">{item.name}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'cta':
+      return wrap(
+        <section style={{ backgroundColor: c.bgColor || '#7c3aed', color: c.textColor || '#fff' }} className="py-20 px-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{c.title || 'Призыв к действию'}</h2>
+            {c.subtitle && <p className="text-lg opacity-90 mb-8">{c.subtitle}</p>}
+            {c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} className="inline-block px-8 py-4 rounded-xl bg-white/20 hover:bg-white/30 font-semibold text-lg transition-colors cursor-pointer">{c.ctaText}</a>}
+          </div>
+        </section>
+      );
+
+    case 'timeline':
+      return wrap(
+        <section className="py-16 px-8">
+          <div className="max-w-3xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-12 text-center">{c.title}</h2>}
+            <div className="relative">
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-primary/20" />
+              {(c.items || []).map((item: any, i: number) => (
+                <div key={i} className="relative flex gap-6 mb-8 last:mb-0">
+                  <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold shrink-0 z-10">{item.icon || (i + 1)}</div>
+                  <div className="pt-2">
+                    <h3 className="font-bold text-lg mb-1">{item.title}</h3>
+                    <p className="text-muted-foreground">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'social':
+      return wrap(
+        <section className="py-12 px-8 text-center">
+          {c.title && <h2 className="text-2xl font-bold mb-6">{c.title}</h2>}
+          <div className="flex justify-center gap-4">
+            {(c.links || []).map((link: any, i: number) => (
+              <a key={i} href={link.url || '#'} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-2xl transition-colors cursor-pointer" title={link.platform}>
+                {link.icon || '🔗'}
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+
+    case 'newsletter':
+      return wrap(
+        <section style={{ backgroundColor: c.bgColor || '#f8fafc' }} className="py-16 px-8">
+          <div className="max-w-xl mx-auto text-center">
+            {c.title && <h2 className="text-2xl font-bold mb-2">{c.title}</h2>}
+            {c.subtitle && <p className="text-muted-foreground mb-6">{c.subtitle}</p>}
+            <div className="flex gap-2 max-w-md mx-auto">
+              <input type="email" placeholder="Ваш email" className="flex-1 px-4 py-3 rounded-xl border bg-background text-sm" readOnly />
+              <button className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm">{c.buttonText || 'Подписаться'}</button>
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'banner':
+      return wrap(
+        <div style={{ backgroundColor: c.bgColor || '#ef4444', color: c.textColor || '#fff' }} className="py-3 px-6 text-center text-sm font-medium relative">
+          <span>{c.text || 'Объявление'}</span>
+          {c.closable && <span className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer opacity-70 hover:opacity-100">✕</span>}
+        </div>
+      );
+
+    case 'tabs': {
+      const tabItems = c.tabs || [];
+      return wrap(
+        <section className="py-12 px-8 max-w-4xl mx-auto">
+          <div className="flex border-b mb-6">
+            {tabItems.map((tab: any, i: number) => (
+              <div key={i} className={`px-6 py-3 text-sm font-medium cursor-pointer border-b-2 ${i === 0 ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}>{tab.title}</div>
+            ))}
+          </div>
+          {tabItems.length > 0 && <div className="text-muted-foreground whitespace-pre-wrap">{tabItems[0].content}</div>}
+        </section>
+      );
+    }
+
+    case 'accordion':
+      return wrap(
+        <section className="py-12 px-8 max-w-3xl mx-auto">
+          {c.title && <h2 className="text-3xl font-bold mb-8 text-center">{c.title}</h2>}
+          <div className="space-y-3">
+            {(c.items || []).map((item: any, i: number) => (
+              <div key={i} className="border rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between p-4 font-medium bg-muted/30 cursor-pointer">
+                  <span>{item.title}</span>
+                  <span className="text-muted-foreground">▼</span>
+                </div>
+                <div className="p-4 text-muted-foreground border-t">{item.content}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+
+    case 'progress':
+      return wrap(
+        <section className="py-16 px-8">
+          <div className="max-w-3xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-10 text-center">{c.title}</h2>}
+            <div className="space-y-6">
+              {(c.items || []).map((item: any, i: number) => (
+                <div key={i}>
+                  <div className="flex justify-between mb-2 text-sm font-medium">
+                    <span>{item.label}</span>
+                    <span>{item.value}%</span>
+                  </div>
+                  <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(item.value || 0, 100)}%`, backgroundColor: item.color || '#4f46e5' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'comparison':
+      return wrap(
+        <section className="py-16 px-8">
+          <div className="max-w-4xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-10 text-center">{c.title}</h2>}
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="text-left p-3 border-b font-semibold">Функция</th>
+                    {(c.columns || []).map((col: string, i: number) => (
+                      <th key={i} className="text-center p-3 border-b font-semibold">{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(c.rows || []).map((row: any, i: number) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="p-3 text-sm">{row.feature}</td>
+                      {(row.values || []).map((val: string, j: number) => (
+                        <td key={j} className="p-3 text-center text-sm">
+                          {val === 'true' ? <span className="text-green-500">✓</span> : val === 'false' ? <span className="text-red-400">✗</span> : val}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'marquee':
+      return wrap(
+        <div style={{ backgroundColor: c.bgColor || '#fbbf24', color: c.textColor || '#1e293b' }} className="py-3 overflow-hidden whitespace-nowrap">
+          <div className="inline-block animate-marquee text-sm font-medium" style={{ animation: `marquee ${c.speed || 30}s linear infinite` }}>
+            {c.text || 'Бегущая строка'} &nbsp;&nbsp;&nbsp; {c.text || 'Бегущая строка'} &nbsp;&nbsp;&nbsp;
+          </div>
+        </div>
+      );
+
+    case 'quote':
+      return wrap(
+        <section style={{ backgroundColor: c.bgColor || '#f1f5f9' }} className="py-16 px-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="text-6xl text-primary/30 mb-4">"</div>
+            <blockquote className="text-xl md:text-2xl font-medium italic leading-relaxed mb-6">{c.text || 'Цитата'}</blockquote>
+            {c.author && <div className="text-muted-foreground font-medium">— {c.author}</div>}
+          </div>
+        </section>
+      );
+
+    case 'map':
+      return wrap(
+        <section className="py-8 px-8">
+          <div className="max-w-4xl mx-auto">
+            {c.embedUrl ? (
+              <iframe src={c.embedUrl} className="w-full rounded-xl border-0" style={{ height: c.height || '400px' }} allowFullScreen loading="lazy" title="map" />
+            ) : (
+              <div className="w-full rounded-xl bg-muted flex flex-col items-center justify-center text-muted-foreground" style={{ height: c.height || '400px' }}>
+                <span className="text-4xl mb-2">📍</span>
+                <span className="text-sm">{c.address || 'Вставьте URL карты (Google Maps Embed)'}</span>
+              </div>
+            )}
+          </div>
+        </section>
+      );
+
+    case 'columns':
+      return wrap(
+        <section className="py-12 px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className={`grid grid-cols-1 md:grid-cols-${Math.min((c.columns || []).length, 4)} gap-6`}>
+              {(c.columns || []).map((col: any, i: number) => (
+                <div key={i} className="p-6 rounded-xl border bg-background">
+                  {col.title && <h3 className="font-bold text-lg mb-3">{col.title}</h3>}
+                  <p className="text-muted-foreground text-sm whitespace-pre-wrap">{col.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'form':
+      return wrap(
+        <section style={{ backgroundColor: c.bgColor || '#f8fafc' }} className="py-16 px-8">
+          <div className="max-w-xl mx-auto">
+            {c.title && <h2 className="text-2xl font-bold mb-6 text-center">{c.title}</h2>}
+            <div className="space-y-4">
+              {(c.fields || []).map((field: any, i: number) => (
+                <div key={i}>
+                  <label className="block text-sm font-medium mb-1">{field.label}</label>
+                  {field.type === 'textarea' ? (
+                    <textarea className="w-full px-4 py-3 rounded-xl border bg-background text-sm" rows={3} readOnly placeholder={field.label} />
+                  ) : (
+                    <input type={field.type || 'text'} className="w-full px-4 py-3 rounded-xl border bg-background text-sm" readOnly placeholder={field.label} />
+                  )}
+                </div>
+              ))}
+              <button className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium">{c.buttonText || 'Отправить'}</button>
+            </div>
+          </div>
+        </section>
+      );
+
     case 'html':
       return wrap(
         <div className="py-4 px-8" dangerouslySetInnerHTML={{ __html: c.code || '<!-- HTML блок -->' }} />

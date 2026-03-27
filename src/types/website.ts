@@ -19,7 +19,20 @@ export type WebsiteBlockType =
   | 'countdown'
   | 'faq'
   | 'team'
-  | 'footer';
+  | 'footer'
+  | 'stats'
+  | 'logos'
+  | 'cta'
+  | 'timeline'
+  | 'social'
+  | 'newsletter'
+  | 'banner'
+  | 'tabs'
+  | 'accordion'
+  | 'progress'
+  | 'comparison'
+  | 'marquee'
+  | 'quote';
 
 export interface WebsiteBlock {
   id: string;
