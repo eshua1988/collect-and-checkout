@@ -15,7 +15,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
+import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
 import { TelegramBot } from '@/types/bot';
+import { AppWebsite } from '@/types/website';
 
 // ── AI providers list (must match edge function provider names) ─────────────
 export const AI_PROVIDERS = [
@@ -43,6 +45,7 @@ const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; colo
   CREATE_WEBSITE:     { label: 'Открыть сайт',         icon: <Globe className="w-3.5 h-3.5" />,        color: 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30 dark:text-emerald-400' },
   NAVIGATE_TO:        { label: 'Перейти',              icon: <ChevronRight className="w-3.5 h-3.5" />, color: 'bg-muted text-muted-foreground hover:bg-muted/80 border-border' },
   ADD_BOT_NODES:      { label: 'Добавить в бота',      icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30' },
+  ADD_WEBSITE_BLOCKS:  { label: 'Добавить в сайт',      icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30 dark:text-emerald-400' },
   REGISTER_NODE_TYPE: { label: 'Зарегистрировать тип', icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 border-violet-500/30' },
   REPLACE_BOT:        { label: 'Обновить бота',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400' },
   EDIT_BOT_NODE:      { label: 'Изменить узел',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 border-cyan-500/30 dark:text-cyan-400' },
@@ -157,14 +160,40 @@ function BotPickerDropdown({ bots, onSelect, onClose }: { bots: TelegramBot[]; o
   );
 }
 
-function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove, onSendFollow }: {
+function WebsitePickerDropdown({ websites, onSelect, onClose }: { websites: AppWebsite[]; onSelect: (site: AppWebsite) => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+  return (
+    <div ref={ref} className="absolute bottom-full left-0 mb-1 w-56 max-h-48 overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-50">
+      {websites.length === 0 ? (
+        <div className="px-3 py-2.5 text-xs text-muted-foreground">Нет существующих сайтов</div>
+      ) : websites.map(site => (
+        <button key={site.id} onClick={() => { onSelect(site); onClose(); }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/60 transition-colors text-left">
+          <Globe className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium truncate">{site.name}</div>
+            <div className="text-[10px] text-muted-foreground">{site.blocks.length} блоков{site.pages ? ` · ${site.pages.length} стр.` : ''}</div>
+          </div>
+          <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+        </button>
+      ))}
+    </div>
+  );
+function MessageBubble({ msg, onExecuteAction, existingBots, existingWebsites, onSendImprove, onSendFollow }: {
   msg: ChatMessage;
   onExecuteAction: (a: ParsedAction) => void;
   existingBots?: TelegramBot[];
+  existingWebsites?: AppWebsite[];
   onSendImprove?: (botName: string) => void;
   onSendFollow?: (prompt: string) => void;
 }) {
   const [showBotPicker, setShowBotPicker] = useState<number | null>(null);
+  const [showSitePicker, setShowSitePicker] = useState<number | null>(null);
   const isUser = msg.role === 'user';
   const displayContent = msg.content.replace(/```action\n[\s\S]*?```/g, '').replace(/```action\n[\s\S]+$/, '').trim();
   return (
@@ -273,6 +302,34 @@ function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove, onSe
                               action.executed = true;
                             }}
                             onClose={() => setShowBotPicker(null)}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* For CREATE_WEBSITE: "Add to existing site" button */}
+                    {isSiteAction && !action.executed && existingWebsites && existingWebsites.length > 0 && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowSitePicker(showSitePicker === i ? null : i)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30 dark:text-emerald-400"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          В существующий сайт
+                          <ChevronDown className={cn('w-3 h-3 transition-transform', showSitePicker === i && 'rotate-180')} />
+                        </button>
+                        {showSitePicker === i && (
+                          <WebsitePickerDropdown
+                            websites={existingWebsites}
+                            onSelect={(site) => {
+                              const addAction: ParsedAction = {
+                                type: 'ADD_WEBSITE_BLOCKS',
+                                data: { ...action.data, websiteId: site.id, description: `${itemName} → ${site.name}` },
+                              };
+                              onExecuteAction(addAction);
+                              action.executed = true;
+                            }}
+                            onClose={() => setShowSitePicker(null)}
                           />
                         )}
                       </div>
@@ -419,6 +476,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
   } = useAIAssistant(aiContext);
 
   const { bots: existingBots } = useBotsStorage();
+  const { websites: existingWebsites } = useWebsitesStorage();
 
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
@@ -735,6 +793,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
                   msg={msg}
                   onExecuteAction={(action) => executeAction(action)}
                   existingBots={existingBots}
+                  existingWebsites={existingWebsites}
                   onSendImprove={handleImproveBot}
                   onSendFollow={handleFollowUp}
                 />

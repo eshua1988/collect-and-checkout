@@ -18,7 +18,7 @@ export interface ChatMessage {
 }
 
 export interface ParsedAction {
-  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES';
+  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS';
   data: any;
   executed?: boolean;
 }
@@ -106,7 +106,7 @@ export function useAIAssistant(aiContext?: AIContext) {
   const location = useLocation();
   const { saveForm } = useFormsStorage();
   const { saveBot, getBot } = useBotsStorage();
-  const { saveWebsite } = useWebsitesStorage();
+  const { saveWebsite, getWebsite } = useWebsitesStorage();
 
   const history = useAIHistory(WELCOME_MESSAGE);
 
@@ -453,11 +453,53 @@ export function useAIAssistant(aiContext?: AIContext) {
       return site.id;
     }
 
+    // ── ADD WEBSITE BLOCKS (добавление блоков в существующий сайт) ─
+    if (action.type === 'ADD_WEBSITE_BLOCKS') {
+      const targetSiteId = action.data.websiteId;
+      if (!targetSiteId) { toast.error('Не указан ID сайта'); return; }
+      const existingSite = getWebsite(targetSiteId);
+      if (!existingSite) { toast.error('Сайт не найден'); return; }
+
+      const newBlocks = (action.data.blocks || action.data.pages?.[0]?.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() }));
+      const newPages = action.data.pages
+        ? (action.data.pages as any[]).map((p: any) => ({
+            id: p.id || genId(),
+            slug: p.slug || 'page-' + genId().slice(0, 4),
+            title: p.title || p.slug || 'Страница',
+            blocks: (p.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
+          }))
+        : undefined;
+
+      let updatedSite: AppWebsite;
+      if (newPages && existingSite.pages) {
+        // Merge pages: add new pages, append blocks to existing pages with same slug
+        const mergedPages = [...existingSite.pages];
+        for (const np of newPages) {
+          const existIdx = mergedPages.findIndex(ep => ep.slug === np.slug);
+          if (existIdx >= 0) {
+            mergedPages[existIdx] = { ...mergedPages[existIdx], blocks: [...mergedPages[existIdx].blocks, ...np.blocks] };
+          } else {
+            mergedPages.push(np);
+          }
+        }
+        updatedSite = { ...existingSite, pages: mergedPages, updatedAt: now };
+      } else {
+        // Single-page: append blocks
+        updatedSite = { ...existingSite, blocks: [...existingSite.blocks, ...newBlocks], updatedAt: now };
+      }
+
+      saveWebsite(updatedSite);
+      const addedCount = newPages ? newPages.reduce((s, p) => s + p.blocks.length, 0) : newBlocks.length;
+      toast.success(`Добавлено ${addedCount} блоков в сайт "${existingSite.name}"`);
+      navigate(`/site/edit/${existingSite.id}`);
+      return existingSite.id;
+    }
+
     // ── NAVIGATE ───────────────────────────────────────────────────
     if (action.type === 'NAVIGATE_TO') {
       navigate(action.data.path);
     }
-  }, [saveForm, saveBot, saveWebsite, navigate, location, aiContext, getBot]);
+  }, [saveForm, saveBot, saveWebsite, getWebsite, navigate, location, aiContext, getBot]);
 
   const sendMessage = useCallback(async (userText: string, preferredProvider?: string, images?: string[]) => {
     if ((!userText.trim() && (!images || images.length === 0)) || isLoading) return;
