@@ -20,6 +20,8 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 Когда нужно создать/изменить объект — ВСЕГДА используй \`\`\`action блок. НИКОГДА не показывай JSON в обычном тексте.
 ⚠️ ЗАПРЕЩЕНО описывать что ты "собираешься создать" без action блока! Если пользователь просит создать сайт/бот/форму — СРАЗУ создавай через \`\`\`action, не спрашивая разрешения.
 ⚠️ Если пользователь прислал фото сайта и написал "создай такой же" — НЕ описывай что видишь, СРАЗУ создавай через CREATE_WEBSITE action блок!
+⚠️ ЭКОНОМЬ ТОКЕНЫ! Перед \`\`\`action блоком напиши МАКСИМУМ 1-2 предложения. Не повторяй структуру сайта текстом — ТОЛЬКО action блок!
+⚠️ JSON должен быть КОМПАКТНЫМ: не добавляй пробелы/отступы в JSON. Весь action блок в ОДНОМ сообщении!
 
 ## ❸ ПРОАКТИВНОСТЬ
 - Всегда предлагай улучшения к тому что создал
@@ -130,33 +132,20 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 9. Опиши что увидел на фото, потом создай сайт через \`\`\`action блок
 10. После создания предложи улучшения
 
-### Пример многостраничного сайта:
+### Пример многостраничного сайта (сокращённый):
 \`\`\`action
-{"type":"CREATE_WEBSITE","data":{"name":"Grace Community Church","pages":[
+{"type":"CREATE_WEBSITE","data":{"name":"Grace Church","pages":[
   {"slug":"home","title":"Главная","blocks":[
-    {"id":"b1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"/about"},{"label":"Ministries","href":"/ministries"},{"label":"Events","href":"/events"},{"label":"Give","href":"/give"}],"bgColor":"#ffffff","textColor":"#333333"}},
-    {"id":"b2","type":"hero","content":{"title":"Sunday at Grace","subtitle":"9 & 11 am — Join us this Sunday for worship services.","ctaText":"Service info","ctaHref":"/about","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"left"}},
-    {"id":"b3","type":"features","content":{"title":"Featured","items":[{"icon":"🙏","title":"Prayer","desc":"Join our prayer groups"},{"icon":"📖","title":"Bible Study","desc":"Deepen your faith"},{"icon":"🤝","title":"Community","desc":"Connect with others"}]}},
-    {"id":"b4","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
+    {"id":"n1","type":"navbar","content":{"logo":"Grace Church","links":[{"label":"About","href":"/about"},{"label":"Events","href":"/events"}],"bgColor":"#fff","textColor":"#333"}},
+    {"id":"h1","type":"hero","content":{"title":"Sunday at Grace","subtitle":"Join us for worship","ctaText":"Learn more","ctaHref":"/about","bgColor":"#f5f5f0","textColor":"#1a1a1a"}},
+    {"id":"f1","type":"features","content":{"title":"Featured","items":[{"icon":"🙏","title":"Prayer","desc":"Join us"}]}},
+    {"id":"ft1","type":"footer","content":{"text":"© 2026 Grace Church"}}
   ]},
   {"slug":"about","title":"About","blocks":[
-    {"id":"a1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"/about"},{"label":"Ministries","href":"/ministries"},{"label":"Events","href":"/events"},{"label":"Give","href":"/give"}],"bgColor":"#ffffff","textColor":"#333333"}},
-    {"id":"a2","type":"hero","content":{"title":"About Us","subtitle":"Our mission, vision and values","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"center"}},
-    {"id":"a3","type":"text","content":{"title":"Our Story","body":"Grace Community Church was founded in 1985...","align":"left"}},
-    {"id":"a4","type":"team","content":{"title":"Our Team","members":[{"avatar":"👨‍💼","name":"Pastor John","role":"Senior Pastor"}]}},
-    {"id":"a5","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
-  ]},
-  {"slug":"ministries","title":"Ministries","blocks":[
-    {"id":"m1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"/about"},{"label":"Ministries","href":"/ministries"},{"label":"Events","href":"/events"},{"label":"Give","href":"/give"}],"bgColor":"#ffffff","textColor":"#333333"}},
-    {"id":"m2","type":"hero","content":{"title":"Ministries","subtitle":"Discover how you can get involved","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"center"}},
-    {"id":"m3","type":"features","content":{"title":"Our Ministries","items":[{"icon":"👶","title":"Children","desc":"Sunday school"},{"icon":"🎓","title":"Youth","desc":"Youth groups"},{"icon":"🎵","title":"Worship","desc":"Music ministry"}]}},
-    {"id":"m4","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
-  ]},
-  {"slug":"events","title":"Events","blocks":[
-    {"id":"e1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"/about"},{"label":"Ministries","href":"/ministries"},{"label":"Events","href":"/events"},{"label":"Give","href":"/give"}],"bgColor":"#ffffff","textColor":"#333333"}},
-    {"id":"e2","type":"hero","content":{"title":"Upcoming Events","subtitle":"Join us","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"center"}},
-    {"id":"e3","type":"countdown","content":{"title":"Next Sunday Service","targetDate":"2026-12-31T10:00:00Z"}},
-    {"id":"e4","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
+    {"id":"n2","type":"navbar","content":{"logo":"Grace Church","links":[{"label":"About","href":"/about"},{"label":"Events","href":"/events"}],"bgColor":"#fff","textColor":"#333"}},
+    {"id":"h2","type":"hero","content":{"title":"About Us","subtitle":"Our mission","bgColor":"#f5f5f0","textColor":"#1a1a1a"}},
+    {"id":"t1","type":"text","content":{"title":"Our Story","body":"Founded in 1985..."}},
+    {"id":"ft2","type":"footer","content":{"text":"© 2026 Grace Church"}}
   ]}
 ]}}
 \`\`\`
@@ -456,7 +445,7 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
               .replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
             const bodyMatch = bodyHtml.match(/<body[\s\S]*?<\/body>/i);
             const bodyText = (bodyMatch ? bodyMatch[0] : bodyHtml)
-              .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 2000);
+              .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 800);
             const colorMatches = html.match(/(?:background-color|background|color)\s*:\s*[#\w(),.%\s]+/gi) || [];
             const colors = [...new Set(colorMatches.slice(0, 8))].join("; ");
             const imgMatches: string[] = [];
@@ -521,8 +510,8 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
             const internalLinks = extractInternalLinks(mainHtml, rootOrigin, rootUrl);
             console.log(`Found ${internalLinks.length} internal links`);
 
-            // Step 3: Fetch up to 8 internal pages in parallel
-            const MAX_PAGES = 8;
+            // Step 3: Fetch up to 5 internal pages in parallel
+            const MAX_PAGES = 5;
             const linksToFetch = internalLinks.slice(0, MAX_PAGES);
             const subPages = await Promise.all(linksToFetch.map(link => scrapePage(link)));
             const validPages = subPages.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof scrapePage>>>[];
@@ -539,28 +528,21 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
 
             for (const page of allPages) {
               scrapedSiteContent += `
-#### 📄 Страница: ${page.slug} (${page.url})
-**Заголовок:** ${page.title}
-**Навигация:** ${page.nav || "не определена"}
-**Заголовки (h1-h6):** ${page.headings.slice(0, 10).join(" | ")}
-**CSS цвета:** ${page.colors || "не определены"}
-**Изображения:** ${page.images.join(", ") || "нет"}
-**Контент (до 2000 символов):**
-${page.bodyText}
-
+📄 **${page.slug}** — ${page.title}
+Навигация: ${page.nav || "-"}
+H1-H3: ${page.headings.slice(0, 5).join(" | ")}
+Цвета: ${page.colors || "-"}
+Текст: ${page.bodyText.slice(0, 800)}
 `;
             }
 
-            scrapedSiteContent += `---
-### ЗАДАЧА: Воссоздай ВЕСЬ сайт через CREATE_WEBSITE action блок с ПОЛНЫМ pages массивом!
-- Создай ОТДЕЛЬНУЮ страницу (page) для КАЖДОЙ просканированной страницы выше
-- Каждая страница: {"slug":"...","title":"...","blocks":[navbar, контент, footer]}
-- Navbar ОДИНАКОВЫЙ на всех страницах с ссылками href="/slug"
-- Используй РЕАЛЬНУЮ структуру и тексты с каждой страницы
-- Подбери цвета (bgColor/textColor) на основе CSS цветов
-- slug = латиница: "home", "about", "services", "contact" и т.д.
-- СРАЗУ создавай через action блок, не описывай!
-- Это МНОГОСТРАНИЧНЫЙ сайт — пользователь сможет переходить между страницами`;
+            scrapedSiteContent += `
+---
+### ЗАДАЧА: СРАЗУ создай \`\`\`action CREATE_WEBSITE с pages массивом! НЕ описывай и НЕ объясняй — ТОЛЬКО action блок!
+- Одна page на каждую страницу. Navbar одинаковый на всех (href="/slug").
+- Каждая page: минимум 3-5 блоков (navbar + контент + footer). Бери тексты из контента выше.
+- Для экономии: НЕ дублируй одинаковый navbar/footer — копируй id-шаблон.
+- ВАЖНО: Весь JSON в ОДНОМ \`\`\`action блоке! Не разбивай на части!`;
           } else {
             console.error(`Failed to fetch main site: ${mainResp.status}`);
             scrapedSiteContent = `\n\n[Не удалось загрузить сайт ${rootUrl}: HTTP ${mainResp.status}. Попроси пользователя прислать скриншот.]`;
@@ -620,7 +602,7 @@ ${page.bodyText}
             },
             body: JSON.stringify({
               model: provider.model,
-              max_tokens: 6000,
+              max_tokens: 16000,
               stream: true,
               system: systemContent,
               messages: anthropicMessages,
@@ -693,7 +675,7 @@ ${page.bodyText}
             messages: providerMessages,
             stream: true,
             temperature: 0.7,
-            max_tokens: 6000,
+            max_tokens: 16000,
           }),
         });
 

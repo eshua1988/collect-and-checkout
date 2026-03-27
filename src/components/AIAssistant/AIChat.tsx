@@ -166,7 +166,7 @@ function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove, onSe
 }) {
   const [showBotPicker, setShowBotPicker] = useState<number | null>(null);
   const isUser = msg.role === 'user';
-  const displayContent = msg.content.replace(/```action\n[\s\S]*?```/g, '').trim();
+  const displayContent = msg.content.replace(/```action\n[\s\S]*?```/g, '').replace(/```action\n[\s\S]+$/, '').trim();
   return (
     <div className={cn('flex gap-3 group', isUser ? 'flex-row-reverse' : 'flex-row')}>
       <div className={cn(

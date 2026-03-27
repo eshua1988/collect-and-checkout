@@ -129,6 +129,31 @@ export function useAIAssistant(aiContext?: AIContext) {
         if (parsed.type && parsed.data) actions.push(parsed);
       } catch { /* skip */ }
     }
+    // Fallback: if no closed action block found, try to find an unclosed one (truncated response)
+    if (actions.length === 0) {
+      const unclosed = text.match(/```action\n([\s\S]+)$/);
+      if (unclosed) {
+        let json = unclosed[1].trim();
+        // Try to repair truncated JSON by closing brackets
+        for (let attempt = 0; attempt < 10; attempt++) {
+          try {
+            const parsed = JSON.parse(json);
+            if (parsed.type && parsed.data) { actions.push(parsed); break; }
+          } catch {
+            // Try appending closing brackets
+            const openBraces = (json.match(/\{/g) || []).length;
+            const closeBraces = (json.match(/\}/g) || []).length;
+            const openBrackets = (json.match(/\[/g) || []).length;
+            const closeBrackets = (json.match(/\]/g) || []).length;
+            // Remove trailing comma if present
+            json = json.replace(/,\s*$/, '');
+            if (openBrackets > closeBrackets) json += ']'.repeat(openBrackets - closeBrackets);
+            if (openBraces > closeBraces) json += '}'.repeat(openBraces - closeBraces);
+            if (attempt > 0) break; // only try repair once
+          }
+        }
+      }
+    }
     return actions;
   }, []);
 
