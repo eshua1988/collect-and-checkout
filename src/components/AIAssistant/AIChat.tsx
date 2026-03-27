@@ -11,7 +11,7 @@ import {
   Minimize2, Maximize2, Plus, ChevronLeft,
   History, Trash2, MessageSquare, Copy, Check,
   Zap, Code2, LayoutTemplate, BrainCircuit, ChevronDown,
-  Wand2, ArrowRight, ImagePlus,
+  Wand2, ArrowRight, ImagePlus, Camera,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
@@ -49,14 +49,37 @@ const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; colo
   REMOVE_BOT_NODES:   { label: 'Удалить узлы',         icon: <Trash2 className="w-3.5 h-3.5" />,       color: 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/30 dark:text-red-400' },
 };
 
-const DEFAULT_SUGGESTIONS = [
-  { icon: 'form',    text: 'Создай форму обратной связи с именем, email и сообщением',   color: 'text-blue-500' },
-  { icon: 'globe',   text: 'Создай лендинг для IT-стартапа с разделами цены и отзывы',   color: 'text-emerald-500' },
-  { icon: 'bot',     text: 'Создай Telegram-бота для записи на консультацию',             color: 'text-violet-500' },
-  { icon: 'layout',  text: 'Создай форму опроса удовлетворённости клиентов',              color: 'text-orange-500' },
+// ── Tabbed suggestions by category ──────────────────────────────────────────
+type SuggestionTab = 'bot' | 'form' | 'site';
+
+const SUGGESTION_TABS: { id: SuggestionTab; label: string; icon: React.ReactNode; color: string }[] = [
+  { id: 'bot',  label: 'Telegram-бот', icon: <Bot className="w-4 h-4" />,      color: 'text-violet-500 border-violet-500' },
+  { id: 'form', label: 'Форма',        icon: <FileText className="w-4 h-4" />,  color: 'text-blue-500 border-blue-500' },
+  { id: 'site', label: 'Сайт',         icon: <Globe className="w-4 h-4" />,     color: 'text-emerald-500 border-emerald-500' },
 ];
 
-const BOT_SUGGESTIONS = [
+const TAB_SUGGESTIONS: Record<SuggestionTab, { icon: string; text: string; color: string }[]> = {
+  bot: [
+    { icon: 'bot',    text: 'Создай бота для записи на консультацию с выбором даты и времени',      color: 'text-violet-500' },
+    { icon: 'brain',  text: 'Создай бота-ассистента с AI, который отвечает на вопросы клиентов',    color: 'text-purple-500' },
+    { icon: 'zap',    text: 'Создай бота для приёма заказов с каталогом товаров и корзиной',        color: 'text-yellow-500' },
+    { icon: 'plus',   text: 'Создай бота для сбора отзывов и обратной связи от клиентов',           color: 'text-blue-500' },
+  ],
+  form: [
+    { icon: 'form',   text: 'Создай форму обратной связи с именем, email и сообщением',             color: 'text-blue-500' },
+    { icon: 'layout', text: 'Создай форму опроса удовлетворённости клиентов с рейтингом',           color: 'text-orange-500' },
+    { icon: 'form',   text: 'Создай форму записи на приём с выбором даты и специалиста',            color: 'text-cyan-500' },
+    { icon: 'form',   text: 'Создай форму регистрации на мероприятие с полями: имя, email, компания', color: 'text-indigo-500' },
+  ],
+  site: [
+    { icon: 'globe',  text: 'Создай лендинг для IT-стартапа с разделами: о нас, цены, отзывы',     color: 'text-emerald-500' },
+    { icon: 'globe',  text: 'Создай сайт-портфолио с галереей работ и контактной формой',           color: 'text-teal-500' },
+    { icon: 'globe',  text: 'Создай страницу ресторана с меню, фото и кнопкой бронирования',        color: 'text-green-500' },
+    { icon: 'camera', text: 'Загрузи фото сайта — я воссоздам его дизайн по изображению',           color: 'text-pink-500' },
+  ],
+};
+
+const BOT_CONTEXT_SUGGESTIONS = [
   { icon: 'brain',   text: 'Добавь меню с кнопками и ветвлением по выбору пользователя', color: 'text-violet-500' },
   { icon: 'plus',    text: 'Добавь сбор контактов: имя, телефон, email с валидацией',    color: 'text-blue-500' },
   { icon: 'zap',     text: 'Добавь AI-чат узел с умным ответом на вопросы',              color: 'text-yellow-500' },
@@ -71,6 +94,7 @@ function SuggestionIcon({ type, className }: { type: string; className?: string 
   if (type === 'brain')  return <BrainCircuit className={className} />;
   if (type === 'zap')    return <Zap className={className} />;
   if (type === 'code')   return <Code2 className={className} />;
+  if (type === 'camera') return <Camera className={className} />;
   return <Plus className={className} />;
 }
 
@@ -355,6 +379,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
   const [provider, setProvider] = useState<AIProviderId>('auto');
   const [showProviderMenu, setShowProviderMenu] = useState(false);
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<SuggestionTab>('bot');
   const providerMenuRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -454,7 +479,6 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
   }, [handleImageFiles]);
 
   const isBotContext = aiContext?.type === 'bot';
-  const suggestions = isBotContext ? BOT_SUGGESTIONS : DEFAULT_SUGGESTIONS;
   const showSuggestions = messages.length === 1 && !isLoading;
 
   // Close provider menu on outside click
@@ -574,29 +598,77 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
         <div className="flex-1 overflow-y-auto scroll-smooth">
           {showSuggestions ? (
             <div className="px-4 pt-5 pb-2">
-              <div className="text-center mb-5">
+              <div className="text-center mb-4">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center mx-auto mb-3 shadow-xl shadow-violet-500/25">
                   <Sparkles className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="font-semibold text-sm mb-1">Чем могу помочь?</h3>
-                <p className="text-xs text-muted-foreground">Выбери предложение или напиши свой запрос</p>
+                <p className="text-xs text-muted-foreground">Выбери категорию или напиши свой запрос</p>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {suggestions.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(s.text)}
-                    className="flex flex-col gap-2.5 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 border border-border/40 hover:border-border/70 text-left transition-all active:scale-[0.97] group"
-                  >
-                    <span className={cn('w-8 h-8 rounded-lg bg-background flex items-center justify-center shadow-sm border border-border/30', s.color)}>
-                      <SuggestionIcon type={s.icon} className="w-4 h-4" />
-                    </span>
-                    <span className="text-xs text-muted-foreground group-hover:text-foreground leading-relaxed line-clamp-3 transition-colors">
-                      {s.text}
-                    </span>
-                  </button>
-                ))}
-              </div>
+
+              {isBotContext ? (
+                /* Bot context — flat list like before */
+                <div className="grid grid-cols-2 gap-2">
+                  {BOT_CONTEXT_SUGGESTIONS.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => sendMessage(s.text)}
+                      className="flex flex-col gap-2.5 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 border border-border/40 hover:border-border/70 text-left transition-all active:scale-[0.97] group"
+                    >
+                      <span className={cn('w-8 h-8 rounded-lg bg-background flex items-center justify-center shadow-sm border border-border/30', s.color)}>
+                        <SuggestionIcon type={s.icon} className="w-4 h-4" />
+                      </span>
+                      <span className="text-xs text-muted-foreground group-hover:text-foreground leading-relaxed line-clamp-3 transition-colors">
+                        {s.text}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                /* Default — tabbed suggestions */
+                <>
+                  <div className="flex gap-1 mb-3 p-1 rounded-xl bg-muted/30 border border-border/30">
+                    {SUGGESTION_TABS.map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                          'flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-medium transition-all',
+                          activeTab === tab.id
+                            ? 'bg-background shadow-sm border border-border/50 ' + tab.color
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                        )}
+                      >
+                        {tab.icon}
+                        <span className="hidden sm:inline">{tab.label}</span>
+                        <span className="sm:hidden">{tab.label.split('-')[0]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TAB_SUGGESTIONS[activeTab].map((s, i) => (
+                      <button
+                        key={`${activeTab}-${i}`}
+                        onClick={() => {
+                          if (s.icon === 'camera') {
+                            fileInputRef.current?.click();
+                          } else {
+                            sendMessage(s.text);
+                          }
+                        }}
+                        className="flex flex-col gap-2.5 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 border border-border/40 hover:border-border/70 text-left transition-all active:scale-[0.97] group"
+                      >
+                        <span className={cn('w-8 h-8 rounded-lg bg-background flex items-center justify-center shadow-sm border border-border/30', s.color)}>
+                          <SuggestionIcon type={s.icon} className="w-4 h-4" />
+                        </span>
+                        <span className="text-xs text-muted-foreground group-hover:text-foreground leading-relaxed line-clamp-3 transition-colors">
+                          {s.text}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="p-4 space-y-5">
