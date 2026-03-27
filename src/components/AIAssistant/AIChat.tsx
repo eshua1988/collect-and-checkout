@@ -16,8 +16,10 @@ import {
 import { cn } from '@/lib/utils';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
 import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
+import { useFormsStorage } from '@/hooks/useFormsStorage';
 import { TelegramBot } from '@/types/bot';
 import { AppWebsite } from '@/types/website';
+import { FormData } from '@/types/form';
 
 // ── AI providers list (must match edge function provider names) ─────────────
 export const AI_PROVIDERS = [
@@ -46,6 +48,7 @@ const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; colo
   NAVIGATE_TO:        { label: 'Перейти',              icon: <ChevronRight className="w-3.5 h-3.5" />, color: 'bg-muted text-muted-foreground hover:bg-muted/80 border-border' },
   ADD_BOT_NODES:      { label: 'Добавить в бота',      icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30' },
   ADD_WEBSITE_BLOCKS:  { label: 'Добавить в сайт',      icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30 dark:text-emerald-400' },
+  ADD_FORM_FIELDS:     { label: 'Добавить в форму',     icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30 dark:text-blue-400' },
   REGISTER_NODE_TYPE: { label: 'Зарегистрировать тип', icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 border-violet-500/30' },
   REPLACE_BOT:        { label: 'Обновить бота',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400' },
   EDIT_BOT_NODE:      { label: 'Изменить узел',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 border-cyan-500/30 dark:text-cyan-400' },
@@ -184,16 +187,46 @@ function WebsitePickerDropdown({ websites, onSelect, onClose }: { websites: AppW
       ))}
     </div>
   );
-function MessageBubble({ msg, onExecuteAction, existingBots, existingWebsites, onSendImprove, onSendFollow }: {
+}
+
+function FormPickerDropdown({ forms, onSelect, onClose }: { forms: FormData[]; onSelect: (form: FormData) => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+  return (
+    <div ref={ref} className="absolute bottom-full left-0 mb-1 w-56 max-h-48 overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-50">
+      {forms.length === 0 ? (
+        <div className="px-3 py-2.5 text-xs text-muted-foreground">Нет существующих форм</div>
+      ) : forms.map(form => (
+        <button key={form.id} onClick={() => { onSelect(form); onClose(); }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/60 transition-colors text-left">
+          <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium truncate">{form.title}</div>
+            <div className="text-[10px] text-muted-foreground">{form.fields.length} полей</div>
+          </div>
+          <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MessageBubble({ msg, onExecuteAction, existingBots, existingWebsites, existingForms, onSendImprove, onSendFollow }: {
   msg: ChatMessage;
   onExecuteAction: (a: ParsedAction) => void;
   existingBots?: TelegramBot[];
   existingWebsites?: AppWebsite[];
+  existingForms?: FormData[];
   onSendImprove?: (botName: string) => void;
   onSendFollow?: (prompt: string) => void;
 }) {
   const [showBotPicker, setShowBotPicker] = useState<number | null>(null);
   const [showSitePicker, setShowSitePicker] = useState<number | null>(null);
+  const [showFormPicker, setShowFormPicker] = useState<number | null>(null);
   const isUser = msg.role === 'user';
   const displayContent = msg.content.replace(/```action\n[\s\S]*?```/g, '').replace(/```action\n[\s\S]+$/, '').trim();
   return (
@@ -330,6 +363,34 @@ function MessageBubble({ msg, onExecuteAction, existingBots, existingWebsites, o
                               action.executed = true;
                             }}
                             onClose={() => setShowSitePicker(null)}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* For CREATE_FORM: "Add to existing form" button */}
+                    {isFormAction && !action.executed && existingForms && existingForms.length > 0 && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowFormPicker(showFormPicker === i ? null : i)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30 dark:text-blue-400"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          В существующую форму
+                          <ChevronDown className={cn('w-3 h-3 transition-transform', showFormPicker === i && 'rotate-180')} />
+                        </button>
+                        {showFormPicker === i && (
+                          <FormPickerDropdown
+                            forms={existingForms}
+                            onSelect={(form) => {
+                              const addAction: ParsedAction = {
+                                type: 'ADD_FORM_FIELDS',
+                                data: { ...action.data, formId: form.id, description: `${itemName} → ${form.title}` },
+                              };
+                              onExecuteAction(addAction);
+                              action.executed = true;
+                            }}
+                            onClose={() => setShowFormPicker(null)}
                           />
                         )}
                       </div>
@@ -477,6 +538,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
 
   const { bots: existingBots } = useBotsStorage();
   const { websites: existingWebsites } = useWebsitesStorage();
+  const { forms: existingForms } = useFormsStorage();
 
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
@@ -794,6 +856,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
                   onExecuteAction={(action) => executeAction(action)}
                   existingBots={existingBots}
                   existingWebsites={existingWebsites}
+                  existingForms={existingForms}
                   onSendImprove={handleImproveBot}
                   onSendFollow={handleFollowUp}
                 />

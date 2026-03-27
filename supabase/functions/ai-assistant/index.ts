@@ -69,6 +69,12 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 {"type":"CREATE_FORM","data":{"title":"","description":"","fields":[{"id":"f1","type":"text","label":"Имя","required":true}],"completionMessage":"Спасибо!"}}
 \`\`\`
 
+### ADD_FORM_FIELDS (добавление полей в существующую форму):
+Когда пользователь просит ДОБАВИТЬ поля/вопросы в существующую форму — используй CREATE_FORM (фронтенд покажет кнопку "В существующую форму" для выбора). Формат полей — такой же.
+\`\`\`action
+{"type":"CREATE_FORM","data":{"title":"Новые поля","fields":[{"type":"phone","label":"Телефон","required":true},{"type":"select","label":"Услуга","options":[{"id":"o1","label":"Вариант 1","value":0}],"required":true}]}}
+\`\`\`
+
 ### CREATE_WEBSITE:
 \`\`\`action
 {"type":"CREATE_WEBSITE","data":{"name":"","description":"","pages":[{"slug":"home","title":"Главная","blocks":[...]},{"slug":"about","title":"О нас","blocks":[...]}]}}

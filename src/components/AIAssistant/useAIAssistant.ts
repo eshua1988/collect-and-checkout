@@ -18,7 +18,7 @@ export interface ChatMessage {
 }
 
 export interface ParsedAction {
-  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS';
+  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS' | 'ADD_FORM_FIELDS';
   data: any;
   executed?: boolean;
 }
@@ -104,7 +104,7 @@ export function useAIAssistant(aiContext?: AIContext) {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { saveForm } = useFormsStorage();
+  const { saveForm, getForm } = useFormsStorage();
   const { saveBot, getBot } = useBotsStorage();
   const { saveWebsite, getWebsite } = useWebsitesStorage();
 
@@ -190,6 +190,27 @@ export function useAIAssistant(aiContext?: AIContext) {
       toast.success(`Форма "${form.title}" создана!`);
       navigate(`/form/${form.id}`);
       return form.id;
+    }
+
+    // ── ADD FORM FIELDS (добавление полей в существующую форму) ───
+    if (action.type === 'ADD_FORM_FIELDS') {
+      const targetFormId = action.data.formId;
+      if (!targetFormId) { toast.error('Не указан ID формы'); return; }
+      const existingForm = getForm(targetFormId);
+      if (!existingForm) { toast.error('Форма не найдена'); return; }
+
+      const newFields = (action.data.fields || []).map((f: any) => ({ ...f, id: f.id || genId() })) as FormField[];
+      if (newFields.length === 0) { toast.error('Нет полей для добавления'); return; }
+
+      const updatedForm: FormData = {
+        ...existingForm,
+        fields: [...existingForm.fields, ...newFields],
+        updatedAt: now,
+      };
+      saveForm(updatedForm);
+      toast.success(`Добавлено ${newFields.length} полей в форму "${existingForm.title}"`);
+      navigate(`/form/${existingForm.id}`);
+      return existingForm.id;
     }
 
     // ── CREATE BOT ─────────────────────────────────────────────────
@@ -499,7 +520,7 @@ export function useAIAssistant(aiContext?: AIContext) {
     if (action.type === 'NAVIGATE_TO') {
       navigate(action.data.path);
     }
-  }, [saveForm, saveBot, saveWebsite, getWebsite, navigate, location, aiContext, getBot]);
+  }, [saveForm, getForm, saveBot, saveWebsite, getWebsite, navigate, location, aiContext, getBot]);
 
   const sendMessage = useCallback(async (userText: string, preferredProvider?: string, images?: string[]) => {
     if ((!userText.trim() && (!images || images.length === 0)) || isLoading) return;
