@@ -17,7 +17,7 @@ export interface ChatMessage {
 }
 
 export interface ParsedAction {
-  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE';
+  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES';
   data: any;
   executed?: boolean;
 }
@@ -29,6 +29,8 @@ export interface AIContext {
   botName: string;
   nodeCount: number;
   nodeTypes: string[];
+  nodes?: BotNode[];
+  edges?: BotEdge[];
 }
 
 const ASSISTANT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
@@ -320,6 +322,80 @@ export function useAIAssistant(aiContext?: AIContext) {
       return targetBotId;
     }
 
+    // ── REPLACE BOT (полная замена узлов и связей) ─────────────────
+    if (action.type === 'REPLACE_BOT') {
+      const targetBotId = action.data.botId || aiContext?.botId;
+      if (!targetBotId) { toast.error('Не указан ID бота'); return; }
+      const existingBot = getBot(targetBotId);
+      if (!existingBot) { toast.error('Бот не найден'); return; }
+
+      const rawNodes: any[] = action.data.nodes || [];
+      const idMap: Record<string, string> = {};
+      const mappedNodes: BotNode[] = rawNodes.map((n: any, i: number) => {
+        const newId = n.id || genId();
+        idMap[n.id] = newId;
+        return { ...n, id: newId, position: { x: n.position?.x ?? 100 + (i % 3) * 250, y: n.position?.y ?? 100 + Math.floor(i / 3) * 180 } };
+      });
+      let mappedEdges: BotEdge[] = (action.data.edges || []).map((e: any) => ({
+        ...e, id: e.id || genId(), source: idMap[e.source] || e.source, target: idMap[e.target] || e.target,
+      }));
+      if (mappedEdges.length === 0 && mappedNodes.length > 1) {
+        mappedEdges = mappedNodes.slice(0, -1).map((n: BotNode, i: number) => ({
+          id: genId(), source: n.id, target: mappedNodes[i + 1].id, animated: true,
+        })) as BotEdge[];
+      }
+      const explicitNewTypes: any[] = action.data.newNodeTypes || [];
+      for (const nt of explicitNewTypes) {
+        if (nt.nodeType && nt.label) saveCustomNodeType(nt.nodeType, { label: nt.label, icon: nt.icon || '🔧', color: nt.color || 'bg-purple-500/10 text-purple-400 border-purple-500/30', description: nt.description || '' });
+      }
+      autoRegisterUnknownNodeTypes(mappedNodes);
+
+      const updatedBot: TelegramBot = { ...existingBot, nodes: mappedNodes, edges: mappedEdges, updatedAt: now };
+      saveBot(updatedBot);
+      toast.success(`Бот "${existingBot.name}" полностью обновлён! ${mappedNodes.length} узлов, ${mappedEdges.length} связей.`);
+      return targetBotId;
+    }
+
+    // ── EDIT BOT NODE (изменение данных одного узла) ───────────────
+    if (action.type === 'EDIT_BOT_NODE') {
+      const targetBotId = action.data.botId || aiContext?.botId;
+      if (!targetBotId) { toast.error('Не указан ID бота'); return; }
+      const existingBot = getBot(targetBotId);
+      if (!existingBot) { toast.error('Бот не найден'); return; }
+
+      const { nodeId, newData } = action.data;
+      if (!nodeId || !newData) { toast.error('Не указан nodeId или newData'); return; }
+
+      const updatedNodes: BotNode[] = existingBot.nodes.map(n =>
+        n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n
+      );
+      const patchedCount = existingBot.nodes.filter(n => n.id === nodeId).length;
+      if (patchedCount === 0) { toast.error(`Узел "${nodeId}" не найден`); return; }
+
+      saveBot({ ...existingBot, nodes: updatedNodes, updatedAt: now });
+      toast.success(`Узел "${nodeId}" обновлён.`);
+      return targetBotId;
+    }
+
+    // ── REMOVE BOT NODES (удаление узлов по ID) ────────────────────
+    if (action.type === 'REMOVE_BOT_NODES') {
+      const targetBotId = action.data.botId || aiContext?.botId;
+      if (!targetBotId) { toast.error('Не указан ID бота'); return; }
+      const existingBot = getBot(targetBotId);
+      if (!existingBot) { toast.error('Бот не найден'); return; }
+
+      const removeIds: string[] = Array.isArray(action.data.nodeIds) ? action.data.nodeIds : [];
+      if (removeIds.length === 0) { toast.error('Не указаны nodeIds для удаления'); return; }
+
+      const removeSet = new Set(removeIds);
+      const filteredNodes: BotNode[] = existingBot.nodes.filter(n => !removeSet.has(n.id));
+      const filteredEdges: BotEdge[] = existingBot.edges.filter(e => !removeSet.has(e.source) && !removeSet.has(e.target));
+
+      saveBot({ ...existingBot, nodes: filteredNodes, edges: filteredEdges, updatedAt: now });
+      toast.success(`Удалено ${removeIds.length} узлов из бота "${existingBot.name}".`);
+      return targetBotId;
+    }
+
     // ── CREATE WEBSITE ─────────────────────────────────────────────
     if (action.type === 'CREATE_WEBSITE') {
       const site: AppWebsite = {
@@ -382,6 +458,9 @@ export function useAIAssistant(aiContext?: AIContext) {
           nodeCount: aiContext.nodeCount,
           nodeTypes: aiContext.nodeTypes,
           customNodeTypes: customNodeList || 'none',
+          // Full nodes/edges for AI analysis and fixes
+          nodes: aiContext.nodes || [],
+          edges: aiContext.edges || [],
         };
       }
 

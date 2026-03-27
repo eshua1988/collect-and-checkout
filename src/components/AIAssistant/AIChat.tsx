@@ -11,8 +11,11 @@ import {
   Minimize2, Maximize2, Plus, ChevronLeft,
   History, Trash2, MessageSquare, Copy, Check,
   Zap, Code2, LayoutTemplate, BrainCircuit, ChevronDown,
+  Wand2, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBotsStorage } from '@/hooks/useBotsStorage';
+import { TelegramBot } from '@/types/bot';
 
 // ── AI providers list (must match edge function provider names) ─────────────
 export const AI_PROVIDERS = [
@@ -32,11 +35,14 @@ export type AIProviderId = (typeof AI_PROVIDERS)[number]['id'];
 
 const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   CREATE_FORM:        { label: 'Открыть форму',       icon: <FileText className="w-3.5 h-3.5" />,    color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30 dark:text-blue-400' },
-  CREATE_BOT:         { label: 'Открыть бота',         icon: <Bot className="w-3.5 h-3.5" />,          color: 'bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 border-violet-500/30 dark:text-violet-400' },
+  CREATE_BOT:         { label: 'Создать нового бота',  icon: <Bot className="w-3.5 h-3.5" />,          color: 'bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 border-violet-500/30 dark:text-violet-400' },
   CREATE_WEBSITE:     { label: 'Открыть сайт',         icon: <Globe className="w-3.5 h-3.5" />,        color: 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30 dark:text-emerald-400' },
   NAVIGATE_TO:        { label: 'Перейти',              icon: <ChevronRight className="w-3.5 h-3.5" />, color: 'bg-muted text-muted-foreground hover:bg-muted/80 border-border' },
   ADD_BOT_NODES:      { label: 'Добавить в бота',      icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30' },
   REGISTER_NODE_TYPE: { label: 'Зарегистрировать тип', icon: <Plus className="w-3.5 h-3.5" />,         color: 'bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 border-violet-500/30' },
+  REPLACE_BOT:        { label: 'Обновить бота',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400' },
+  EDIT_BOT_NODE:      { label: 'Изменить узел',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 border-cyan-500/30 dark:text-cyan-400' },
+  REMOVE_BOT_NODES:   { label: 'Удалить узлы',         icon: <Trash2 className="w-3.5 h-3.5" />,       color: 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/30 dark:text-red-400' },
 };
 
 const DEFAULT_SUGGESTIONS = [
@@ -96,7 +102,39 @@ function TypingDots() {
   );
 }
 
-function MessageBubble({ msg, onExecuteAction }: { msg: ChatMessage; onExecuteAction: (a: ParsedAction) => void }) {
+function BotPickerDropdown({ bots, onSelect, onClose }: { bots: TelegramBot[]; onSelect: (bot: TelegramBot) => void; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+  return (
+    <div ref={ref} className="absolute bottom-full left-0 mb-1 w-56 max-h-48 overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-50">
+      {bots.length === 0 ? (
+        <div className="px-3 py-2.5 text-xs text-muted-foreground">Нет существующих ботов</div>
+      ) : bots.map(bot => (
+        <button key={bot.id} onClick={() => { onSelect(bot); onClose(); }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/60 transition-colors text-left">
+          <Bot className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium truncate">{bot.name}</div>
+            <div className="text-[10px] text-muted-foreground">{bot.nodes.length} узлов · {bot.edges.length} связей</div>
+          </div>
+          <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove }: {
+  msg: ChatMessage;
+  onExecuteAction: (a: ParsedAction) => void;
+  existingBots?: TelegramBot[];
+  onSendImprove?: (botName: string) => void;
+}) {
+  const [showBotPicker, setShowBotPicker] = useState<number | null>(null);
   const isUser = msg.role === 'user';
   const displayContent = msg.content.replace(/```action\n[\s\S]*?```/g, '').trim();
   return (
@@ -146,26 +184,71 @@ function MessageBubble({ msg, onExecuteAction }: { msg: ChatMessage; onExecuteAc
           {!isUser && displayContent && <CopyButton text={displayContent} />}
         </div>
         {msg.actions && msg.actions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col gap-2">
             {msg.actions.map((action, i) => {
               const meta = ACTION_LABELS[action.type];
               if (!meta) return null;
+              const isBotCreate = action.type === 'CREATE_BOT';
+              const isBotAction = isBotCreate || action.type === 'ADD_BOT_NODES' || action.type === 'REPLACE_BOT';
+              const botName = action.data?.name || action.data?.description || '';
               return (
-                <button
-                  key={i}
-                  onClick={() => onExecuteAction(action)}
-                  disabled={action.executed}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95',
-                    action.executed ? 'opacity-50 cursor-default bg-muted text-muted-foreground border-border' : meta.color
-                  )}
-                >
-                  {action.executed ? <Check className="w-3.5 h-3.5" /> : meta.icon}
-                  {meta.label}
-                  {(action.data?.description || action.data?.name || action.data?.title) && (
-                    <span className="font-semibold truncate max-w-[120px]">{action.data.description || action.data.name || action.data.title}</span>
-                  )}
-                </button>
+                <div key={i} className="flex flex-col gap-1.5">
+                  {/* Main action buttons row */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {/* Primary: create / execute */}
+                    <button
+                      onClick={() => onExecuteAction(action)}
+                      disabled={action.executed}
+                      className={cn(
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95',
+                        action.executed ? 'opacity-50 cursor-default bg-muted text-muted-foreground border-border' : meta.color
+                      )}
+                    >
+                      {action.executed ? <Check className="w-3.5 h-3.5" /> : meta.icon}
+                      {meta.label}
+                      {botName && <span className="font-semibold truncate max-w-[120px]">{botName}</span>}
+                    </button>
+
+                    {/* For CREATE_BOT: "Add to existing" button */}
+                    {isBotCreate && !action.executed && existingBots && existingBots.length > 0 && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowBotPicker(showBotPicker === i ? null : i)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30 dark:text-blue-400"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          В существующий
+                          <ChevronDown className={cn('w-3 h-3 transition-transform', showBotPicker === i && 'rotate-180')} />
+                        </button>
+                        {showBotPicker === i && (
+                          <BotPickerDropdown
+                            bots={existingBots}
+                            onSelect={(bot) => {
+                              const addAction: ParsedAction = {
+                                type: 'ADD_BOT_NODES',
+                                data: { ...action.data, botId: bot.id, description: `${botName} → ${bot.name}` },
+                              };
+                              onExecuteAction(addAction);
+                              action.executed = true;
+                            }}
+                            onClose={() => setShowBotPicker(null)}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* For bot actions: "Improve" button */}
+                    {isBotAction && action.executed && onSendImprove && (
+                      <button
+                        onClick={() => onSendImprove(botName)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400"
+                      >
+                        <Wand2 className="w-3.5 h-3.5" />
+                        Улучшить бота
+                      </button>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -253,6 +336,8 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
     historyState, loadHistorySession, goToPrevSession, goToNextSession,
   } = useAIAssistant(aiContext);
 
+  const { bots: existingBots } = useBotsStorage();
+
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [provider, setProvider] = useState<AIProviderId>('auto');
@@ -260,6 +345,13 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
   const providerMenuRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleImproveBot = useCallback((botName: string) => {
+    const prompt = botName
+      ? `Улучши бота "${botName}": добавь больше узлов, логики, ветвлений и связей. Сделай его более функциональным и полезным.`
+      : 'Улучши последнего созданного бота: добавь больше узлов, логики, ветвлений и связей.';
+    sendMessage(prompt, provider === 'auto' ? undefined : provider);
+  }, [sendMessage, provider]);
 
   const isBotContext = aiContext?.type === 'bot';
   const suggestions = isBotContext ? BOT_SUGGESTIONS : DEFAULT_SUGGESTIONS;
@@ -408,7 +500,13 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
           ) : (
             <div className="p-4 space-y-5">
               {messages.map(msg => (
-                <MessageBubble key={msg.id} msg={msg} onExecuteAction={(action) => executeAction(action)} />
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  onExecuteAction={(action) => executeAction(action)}
+                  existingBots={existingBots}
+                  onSendImprove={handleImproveBot}
+                />
               ))}
               {isLoading && (
                 <div className="flex gap-3">

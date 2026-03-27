@@ -20,7 +20,7 @@ export function AIAssistantButton() {
     if (!botId || botId === 'new') return undefined;
     const bot = getBot(botId);
     if (!bot) return undefined;
-    return { type: 'bot', botId: bot.id, botName: bot.name, nodeCount: bot.nodes.length, nodeTypes: [...new Set(bot.nodes.map(n => n.type))] };
+    return { type: 'bot', botId: bot.id, botName: bot.name, nodeCount: bot.nodes.length, nodeTypes: [...new Set(bot.nodes.map(n => n.type))], nodes: bot.nodes, edges: bot.edges };
   })();
 
   const isBotMode = !!aiContext;
