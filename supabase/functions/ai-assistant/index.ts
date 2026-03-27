@@ -180,6 +180,7 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 8. Если нет подходящего узла — ИЗОБРЕТИ кастомный тип
 9. После создания бота — ПРЕДЛОЖИ улучшения ("Могу добавить...")
 10. Если пользователь прислал картинку сайта — воссоздай дизайн через CREATE_WEBSITE (см. ❺a)
+11. Если пользователь прислал ССЫЛКУ на сайт — система автоматически считает HTML и добавит структуру в контекст. Используй эти данные для CREATE_WEBSITE!
 
 ## ТИПЫ ПОЛЕЙ ФОРМЫ: text,textarea,number,email,phone,select,radio,checkbox,image,payment
 ## ТИПЫ БЛОКОВ САЙТА (полный список content свойств — см. секцию ❺a выше): navbar,hero,features,text,image,gallery,pricing,testimonials,faq,team,contact,countdown,video,button,footer,divider,html`;
@@ -369,7 +370,102 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
       });
     }
 
-    const baseMessages = [{ role: "system", content: systemContent }, ...messages];
+    // --- URL detection & website scraping ---
+    // Find URLs in the last user message and fetch their HTML content
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
+    let scrapedSiteContent = "";
+    if (lastUserMsg) {
+      const msgText = typeof lastUserMsg.content === "string"
+        ? lastUserMsg.content
+        : Array.isArray(lastUserMsg.content)
+          ? lastUserMsg.content.filter((c: any) => c.type === "text").map((c: any) => c.text).join(" ")
+          : "";
+      const urlMatch = msgText.match(/https?:\/\/[^\s"'<>]+/i);
+      if (urlMatch) {
+        try {
+          console.log(`Fetching website: ${urlMatch[0]}`);
+          const siteResp = await fetch(urlMatch[0], {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (compatible; FormBotStudio/1.0)",
+              "Accept": "text/html,application/xhtml+xml",
+              "Accept-Language": "ru,en;q=0.9",
+            },
+            redirect: "follow",
+          });
+          if (siteResp.ok) {
+            const html = await siteResp.text();
+            // Extract meaningful content: title, meta, headings, nav, text, structure
+            const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            const title = titleMatch ? titleMatch[1].trim() : "";
+            // Extract meta description
+            const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+            const metaDesc = metaDescMatch ? metaDescMatch[1] : "";
+            // Extract nav links
+            const navLinksRaw = html.match(/<nav[\s\S]*?<\/nav>/gi) || [];
+            const navText = navLinksRaw.map(n => n.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()).join(" | ");
+            // Extract headings
+            const headings: string[] = [];
+            const hRegex = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+            let hm;
+            while ((hm = hRegex.exec(html)) !== null) {
+              const txt = hm[1].replace(/<[^>]+>/g, "").trim();
+              if (txt) headings.push(txt);
+            }
+            // Extract visible text from body (strip scripts, styles, tags)
+            let bodyHtml = html.replace(/<script[\s\S]*?<\/script>/gi, "")
+              .replace(/<style[\s\S]*?<\/style>/gi, "")
+              .replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
+            const bodyMatch = bodyHtml.match(/<body[\s\S]*?<\/body>/i);
+            let bodyText = (bodyMatch ? bodyMatch[0] : bodyHtml)
+              .replace(/<[^>]+>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 3000); // limit to 3000 chars
+            // Extract background colors from inline styles/CSS
+            const colorMatches = html.match(/(?:background-color|background|color)\s*:\s*[#\w(),.%\s]+/gi) || [];
+            const colors = [...new Set(colorMatches.slice(0, 10))].join("; ");
+            // Extract images  
+            const imgMatches: string[] = [];
+            const imgRegex = /<img[^>]*src=["']([^"']+)["'][^>]*/gi;
+            let im;
+            while ((im = imgRegex.exec(html)) !== null && imgMatches.length < 5) {
+              imgMatches.push(im[1]);
+            }
+
+            scrapedSiteContent = `
+
+---
+## 🌐 СЧИТАН САЙТ ПО ССЫЛКЕ: ${urlMatch[0]}
+
+**Заголовок:** ${title}
+**Описание:** ${metaDesc}
+**Навигация:** ${navText || "не определена"}
+**Заголовки:** ${headings.slice(0, 15).join(" | ")}
+**Основные цвета CSS:** ${colors || "не определены"}
+**Изображения:** ${imgMatches.slice(0, 5).join(", ") || "нет"}
+**Текстовое содержимое (первые 3000 символов):**
+${bodyText}
+
+---
+### ЗАДАЧА: Воссоздай этот сайт через CREATE_WEBSITE action блок.
+- Используй РЕАЛЬНУЮ структуру и тексты с сайта
+- Скопируй навигацию (navbar links) точно
+- Подбери цвета (bgColor/textColor) на основе CSS цветов
+- Каждую секцию сайта → отдельный блок
+- Начни с navbar → hero → контент → footer
+- СРАЗУ создавай через action блок, не описывай!`;
+          } else {
+            console.error(`Failed to fetch site: ${siteResp.status}`);
+            scrapedSiteContent = `\n\n[Не удалось загрузить сайт ${urlMatch[0]}: HTTP ${siteResp.status}. Попроси пользователя прислать скриншот.]`;
+          }
+        } catch (fetchErr) {
+          console.error(`Site fetch error:`, fetchErr);
+          scrapedSiteContent = `\n\n[Ошибка при загрузке сайта ${urlMatch[0]}. Попроси пользователя прислать скриншот.]`;
+        }
+      }
+    }
+
+    const baseMessages = [{ role: "system", content: systemContent + scrapedSiteContent }, ...messages];
 
     // If user selected a specific provider, move it to front but keep fallback chain
     let orderedProviders = [...providers];

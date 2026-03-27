@@ -11,7 +11,7 @@ import {
   Minimize2, Maximize2, Plus, ChevronLeft,
   History, Trash2, MessageSquare, Copy, Check,
   Zap, Code2, LayoutTemplate, BrainCircuit, ChevronDown,
-  Wand2, ArrowRight, ImagePlus, Camera,
+  Wand2, ArrowRight, ImagePlus, Camera, Link2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
@@ -74,8 +74,8 @@ const TAB_SUGGESTIONS: Record<SuggestionTab, { icon: string; text: string; color
   site: [
     { icon: 'globe',  text: 'Создай лендинг для IT-стартапа с разделами: о нас, цены, отзывы',     color: 'text-emerald-500' },
     { icon: 'globe',  text: 'Создай сайт-портфолио с галереей работ и контактной формой',           color: 'text-teal-500' },
-    { icon: 'globe',  text: 'Создай страницу ресторана с меню, фото и кнопкой бронирования',        color: 'text-green-500' },
-    { icon: 'camera', text: 'Загрузи фото сайта — я воссоздам его дизайн по изображению',           color: 'text-pink-500' },
+    { icon: 'link',   text: 'Вставь ссылку на сайт — я считаю его и создам копию',                  color: 'text-cyan-500' },
+    { icon: 'camera', text: 'Или загрузи фото/скриншот сайта — воссоздам дизайн',                   color: 'text-pink-500' },
   ],
 };
 
@@ -95,6 +95,7 @@ function SuggestionIcon({ type, className }: { type: string; className?: string 
   if (type === 'zap')    return <Zap className={className} />;
   if (type === 'code')   return <Code2 className={className} />;
   if (type === 'camera') return <Camera className={className} />;
+  if (type === 'link')   return <Link2 className={className} />;
   return <Plus className={className} />;
 }
 
