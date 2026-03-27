@@ -184,6 +184,66 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
     type Provider = { name: string; url: string; model: string; key: string | undefined; isAnthropic?: boolean; extraHeaders?: Record<string, string> };
     const providers: Provider[] = [
       {
+        name: "groq",
+        url: "https://api.groq.com/openai/v1/chat/completions",
+        model: "llama-3.3-70b-versatile",
+        key: Deno.env.get("GROQ_API_KEY"),
+      },
+      {
+        name: "gemini",
+        url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        model: "gemini-2.0-flash",
+        key: Deno.env.get("GEMINI_API_KEY"),
+      },
+      {
+        name: "openrouter",
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        model: "meta-llama/llama-3.3-70b-instruct:free",
+        key: Deno.env.get("OPENROUTER_API_KEY"),
+        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
+      },
+      {
+        name: "openrouter-deepseek",
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        model: "openai/gpt-oss-120b:free",
+        key: Deno.env.get("OPENROUTER_API_KEY"),
+        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
+      },
+      {
+        name: "openrouter-qwen",
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        model: "nvidia/nemotron-3-super-120b-a12b:free",
+        key: Deno.env.get("OPENROUTER_API_KEY"),
+        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
+      },
+      {
+        name: "openrouter-gemma",
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        model: "mistralai/mistral-small-3.1-24b-instruct:free",
+        key: Deno.env.get("OPENROUTER_API_KEY"),
+        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
+      },
+      {
+        name: "openrouter-gemma3",
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        model: "google/gemma-3-27b-it:free",
+        key: Deno.env.get("OPENROUTER_API_KEY"),
+        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
+      },
+      {
+        name: "openrouter-hermes",
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        model: "nousresearch/hermes-3-llama-3.1-405b:free",
+        key: Deno.env.get("OPENROUTER_API_KEY"),
+        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
+      },
+      {
+        name: "together",
+        url: "https://api.together.xyz/v1/chat/completions",
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+        key: Deno.env.get("TOGETHER_API_KEY"),
+      },
+      {
         name: "claude-haiku",
         url: "https://api.anthropic.com/v1/messages",
         model: "claude-3-5-haiku-20241022",
@@ -198,12 +258,6 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
         isAnthropic: true,
       },
       {
-        name: "groq",
-        url: "https://api.groq.com/openai/v1/chat/completions",
-        model: "llama-3.3-70b-versatile",
-        key: Deno.env.get("GROQ_API_KEY"),
-      },
-      {
         name: "github-gpt4o-mini",
         url: "https://models.inference.ai.azure.com/chat/completions",
         model: "gpt-4o-mini",
@@ -214,32 +268,6 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
         url: "https://models.inference.ai.azure.com/chat/completions",
         model: "meta-llama-3.3-70b-instruct",
         key: Deno.env.get("GITHUB_TOKEN"),
-      },
-      {
-        name: "openrouter",
-        url: "https://openrouter.ai/api/v1/chat/completions",
-        model: "meta-llama/llama-3.3-70b-instruct:free",
-        key: Deno.env.get("OPENROUTER_API_KEY"),
-        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
-      },
-      {
-        name: "openrouter-deepseek",
-        url: "https://openrouter.ai/api/v1/chat/completions",
-        model: "deepseek/deepseek-r1:free",
-        key: Deno.env.get("OPENROUTER_API_KEY"),
-        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
-      },
-      {
-        name: "together",
-        url: "https://api.together.xyz/v1/chat/completions",
-        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-        key: Deno.env.get("TOGETHER_API_KEY"),
-      },
-      {
-        name: "gemini",
-        url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        model: "gemini-2.0-flash",
-        key: Deno.env.get("GEMINI_API_KEY"),
       },
     ];
 
@@ -315,8 +343,9 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
     }
 
     let lastError = "Нет доступных AI провайдеров. Настройте хотя бы один API ключ.";
+    const errors: string[] = [];
     for (const provider of orderedProviders) {
-      if (!provider.key) continue; // skip providers without key
+      if (!provider.key) { errors.push(`${provider.name}: no key`); continue; }
 
       console.log(`Trying provider: ${provider.name}`);
       try {
@@ -417,27 +446,31 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
         }
 
         const txt = await response.text();
-        console.error(`Provider ${provider.name} failed: ${response.status} ${txt}`);
+        console.error(`Provider ${provider.name} failed: ${response.status} ${txt.substring(0, 200)}`);
 
         if (response.status === 429 || response.status === 503) {
           lastError = `Лимит запросов у ${provider.name}`;
-          continue; // try next provider
+          errors.push(`${provider.name}: ${response.status} rate limit`);
+          continue;
         }
         if (response.status === 401 || response.status === 403) {
           lastError = `Ключ API недействителен (${provider.name})`;
+          errors.push(`${provider.name}: ${response.status} auth error`);
           continue;
         }
-        // other errors — try next
         lastError = `Ошибка ${provider.name}: ${response.status}`;
+        errors.push(`${provider.name}: ${response.status} ${txt.substring(0, 100)}`);
         continue;
       } catch (fetchErr) {
         console.error(`Provider ${provider.name} fetch error:`, fetchErr);
         lastError = `Сетевая ошибка (${provider.name})`;
+        errors.push(`${provider.name}: fetch error`);
         continue;
       }
     }
 
-    return new Response(JSON.stringify({ error: lastError }), {
+    console.error(`All providers failed:`, errors);
+    return new Response(JSON.stringify({ error: lastError, details: errors }), {
       status: 503,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -493,7 +493,8 @@ export function useAIAssistant(aiContext?: AIContext) {
 
       if (!resp.ok || !resp.body) {
         const errData = await resp.json().catch(() => ({ error: 'Ошибка соединения' }));
-        toast.error(errData.error || 'Ошибка AI');
+        const details = errData.details ? `\n${errData.details.join(', ')}` : '';
+        toast.error(`${errData.error || 'Ошибка AI'}${details}`);
         updateMessages(prev => prev.filter(m => m.id !== assistantId));
         setIsLoading(false);
         return;

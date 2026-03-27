@@ -20,15 +20,19 @@ import { TelegramBot } from '@/types/bot';
 // ── AI providers list (must match edge function provider names) ─────────────
 export const AI_PROVIDERS = [
   { id: 'auto',                label: 'Авто',            icon: '✨', desc: 'Лучший доступный' },
+  { id: 'groq',                label: 'Groq Llama',      icon: '⚡', desc: 'llama-3.3-70b-versatile' },
+  { id: 'gemini',              label: 'Gemini',          icon: '💫', desc: 'gemini-2.0-flash' },
+  { id: 'openrouter',          label: 'OpenRouter',      icon: '🔀', desc: 'llama-3.3-70b:free' },
+  { id: 'openrouter-deepseek', label: 'GPT-OSS 120B',   icon: '🧠', desc: 'openai/gpt-oss-120b:free' },
+  { id: 'openrouter-qwen',     label: 'Nemotron 120B',   icon: '🔮', desc: 'nvidia/nemotron-3-super:free' },
+  { id: 'openrouter-gemma',    label: 'Mistral Small',   icon: '🌀', desc: 'mistral-small-3.1:free' },
+  { id: 'openrouter-gemma3',   label: 'Gemma 3 27B',     icon: '💎', desc: 'google/gemma-3-27b:free' },
+  { id: 'openrouter-hermes',   label: 'Hermes 405B',     icon: '🏛️', desc: 'hermes-3-llama-405b:free' },
+  { id: 'together',            label: 'Together',        icon: '🤝', desc: 'Llama-3.3-70B-Free' },
   { id: 'claude-haiku',        label: 'Claude Haiku',    icon: '🟠', desc: 'claude-3-5-haiku' },
   { id: 'claude-sonnet',       label: 'Claude Sonnet',   icon: '🟣', desc: 'claude-3-5-sonnet' },
-  { id: 'groq',                label: 'Groq Llama',      icon: '⚡', desc: 'llama-3.3-70b-versatile' },
   { id: 'github-gpt4o-mini',   label: 'GPT-4o mini',     icon: '🤖', desc: 'gpt-4o-mini' },
   { id: 'github-llama',        label: 'GitHub Llama',    icon: '🦙', desc: 'meta-llama-3.3-70b' },
-  { id: 'openrouter',          label: 'OpenRouter',      icon: '🔀', desc: 'llama-3.3-70b:free' },
-  { id: 'openrouter-deepseek', label: 'DeepSeek R1',     icon: '🧠', desc: 'deepseek-r1:free' },
-  { id: 'together',            label: 'Together',        icon: '🤝', desc: 'Llama-3.3-70B-Free' },
-  { id: 'gemini',              label: 'Gemini',          icon: '💫', desc: 'gemini-2.0-flash' },
 ] as const;
 
 export type AIProviderId = (typeof AI_PROVIDERS)[number]['id'];
