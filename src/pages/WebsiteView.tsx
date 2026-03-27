@@ -26,10 +26,15 @@ export default function WebsiteView() {
     </div>
   );
 
+  const hasPages = !!(site.pages && site.pages.length > 0);
+
   return (
     <>
       {site.seoTitle && <title>{site.seoTitle}</title>}
-      <WebsitePreview blocks={site.blocks} />
+      <WebsitePreview
+        blocks={site.blocks}
+        pages={hasPages ? site.pages : undefined}
+      />
     </>
   );
 }

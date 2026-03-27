@@ -28,13 +28,21 @@ export interface WebsiteBlock {
   styles?: Record<string, string>;
 }
 
+export interface WebsitePage {
+  id: string;
+  slug: string;     // "home", "about", "services"
+  title: string;    // "Главная", "О нас"
+  blocks: WebsiteBlock[];
+}
+
 export interface AppWebsite {
   id: string;
   name: string;
   description?: string;
   favicon?: string;
   published: boolean;
-  blocks: WebsiteBlock[];
+  blocks: WebsiteBlock[];        // backward compat (single-page)
+  pages?: WebsitePage[];         // multi-page support
   globalStyles?: {
     primaryColor?: string;
     fontFamily?: string;

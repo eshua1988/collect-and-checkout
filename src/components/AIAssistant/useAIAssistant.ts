@@ -399,17 +399,31 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── CREATE WEBSITE ─────────────────────────────────────────────
     if (action.type === 'CREATE_WEBSITE') {
+      // Support multi-page: action.data.pages or fallback to action.data.blocks
+      const pages = action.data.pages
+        ? (action.data.pages as any[]).map((p: any) => ({
+            id: p.id || genId(),
+            slug: p.slug || 'home',
+            title: p.title || p.slug || 'Страница',
+            blocks: (p.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
+          }))
+        : undefined;
+
       const site: AppWebsite = {
         id: genId(),
         name: action.data.name || 'Новый сайт',
         description: action.data.description || '',
         published: false,
-        blocks: (action.data.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
+        blocks: pages
+          ? (pages.find(p => p.slug === 'home')?.blocks || pages[0]?.blocks || [])
+          : (action.data.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
+        pages,
         createdAt: now,
         updatedAt: now,
       };
       saveWebsite(site);
-      toast.success(`Сайт "${site.name}" создан!`);
+      const pageCount = pages ? pages.length : 1;
+      toast.success(`Сайт "${site.name}" создан! ${pageCount > 1 ? `(${pageCount} страниц)` : ''}`);
       navigate(`/site/edit/${site.id}`);
       return site.id;
     }

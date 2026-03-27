@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AppWebsite, WebsiteBlock, WebsiteBlockType } from '@/types/website';
+import { AppWebsite, WebsiteBlock, WebsiteBlockType, WebsitePage } from '@/types/website';
 import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
 import { WebsitePreview } from '@/components/WebsiteBuilder/WebsitePreview';
 import { WebsiteBlockEditor } from '@/components/WebsiteBuilder/WebsiteBlockEditor';
@@ -13,7 +13,8 @@ import {
   ArrowLeft, Plus, Trash2, Eye, Save, Copy, Link, GripVertical,
   Globe, Layout, Type, Image, Video, AlignLeft, Star, DollarSign,
   MessageSquare, Phone, Timer, Users, HelpCircle, Code2, Minus,
-  ChevronUp, ChevronDown, Layers, ExternalLink, Smartphone, Monitor, Tablet
+  ChevronUp, ChevronDown, Layers, ExternalLink, Smartphone, Monitor, Tablet,
+  FileText
 } from 'lucide-react';
 
 const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactNode; defaultContent: Record<string, any> }[] = [
@@ -68,6 +69,12 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [activeTab, setActiveTab] = useState<EditorTab>('blocks');
   const [templateCategory, setTemplateCategory] = useState<TemplateCategory>('all');
   const [showPreviewFull, setShowPreviewFull] = useState(false);
+  const [currentPageSlug, setCurrentPageSlug] = useState('home');
+
+  const hasPages = !!(website.pages && website.pages.length > 0);
+  const currentPage = hasPages ? (website.pages!.find(p => p.slug === currentPageSlug) || website.pages![0]) : null;
+  // Active blocks = current page's blocks (multi-page) or website.blocks (single-page)
+  const activeBlocks = currentPage ? currentPage.blocks : website.blocks;
 
   const handleSave = () => {
     saveWebsite(website);
@@ -93,29 +100,93 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
       type,
       content: { ...defaultContent },
     };
-    setWebsite(prev => ({ ...prev, blocks: [...prev.blocks, newBlock] }));
+    if (hasPages && currentPage) {
+      setWebsite(prev => ({
+        ...prev,
+        pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: [...p.blocks, newBlock] } : p),
+      }));
+    } else {
+      setWebsite(prev => ({ ...prev, blocks: [...prev.blocks, newBlock] }));
+    }
     setSelectedBlockId(newBlock.id);
     toast.success(`Блок "${type}" добавлен`);
   };
 
   const deleteBlock = (id: string) => {
-    setWebsite(prev => ({ ...prev, blocks: prev.blocks.filter(b => b.id !== id) }));
+    if (hasPages && currentPage) {
+      setWebsite(prev => ({
+        ...prev,
+        pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: p.blocks.filter(b => b.id !== id) } : p),
+      }));
+    } else {
+      setWebsite(prev => ({ ...prev, blocks: prev.blocks.filter(b => b.id !== id) }));
+    }
     if (selectedBlockId === id) setSelectedBlockId(null);
   };
 
   const moveBlock = (id: string, dir: 'up' | 'down') => {
-    setWebsite(prev => {
-      const blocks = [...prev.blocks];
-      const idx = blocks.findIndex(b => b.id === id);
-      if (dir === 'up' && idx > 0) [blocks[idx - 1], blocks[idx]] = [blocks[idx], blocks[idx - 1]];
-      if (dir === 'down' && idx < blocks.length - 1) [blocks[idx], blocks[idx + 1]] = [blocks[idx + 1], blocks[idx]];
-      return { ...prev, blocks };
-    });
+    const updateBlocks = (blocks: WebsiteBlock[]) => {
+      const arr = [...blocks];
+      const idx = arr.findIndex(b => b.id === id);
+      if (dir === 'up' && idx > 0) [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+      if (dir === 'down' && idx < arr.length - 1) [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+      return arr;
+    };
+    if (hasPages && currentPage) {
+      setWebsite(prev => ({
+        ...prev,
+        pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: updateBlocks(p.blocks) } : p),
+      }));
+    } else {
+      setWebsite(prev => ({ ...prev, blocks: updateBlocks(prev.blocks) }));
+    }
   };
 
   const updateBlock = (updated: WebsiteBlock) => {
-    setWebsite(prev => ({ ...prev, blocks: prev.blocks.map(b => b.id === updated.id ? updated : b) }));
+    if (hasPages && currentPage) {
+      setWebsite(prev => ({
+        ...prev,
+        pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: p.blocks.map(b => b.id === updated.id ? updated : b) } : p),
+      }));
+    } else {
+      setWebsite(prev => ({ ...prev, blocks: prev.blocks.map(b => b.id === updated.id ? updated : b) }));
+    }
     setEditingBlock(null);
+  };
+
+  const addPage = () => {
+    const slug = `page-${Date.now()}`;
+    const newPage: WebsitePage = {
+      id: `pg_${Date.now()}`,
+      slug,
+      title: 'Новая страница',
+      blocks: [],
+    };
+    setWebsite(prev => ({
+      ...prev,
+      pages: [...(prev.pages || []), newPage],
+    }));
+    setCurrentPageSlug(slug);
+    toast.success('Страница добавлена');
+  };
+
+  const deletePage = (slug: string) => {
+    if (!hasPages) return;
+    const remaining = website.pages!.filter(p => p.slug !== slug);
+    if (remaining.length === 0) {
+      toast.error('Нельзя удалить последнюю страницу');
+      return;
+    }
+    setWebsite(prev => ({ ...prev, pages: remaining }));
+    if (currentPageSlug === slug) setCurrentPageSlug(remaining[0].slug);
+    toast.success('Страница удалена');
+  };
+
+  const renamePage = (slug: string, newTitle: string) => {
+    setWebsite(prev => ({
+      ...prev,
+      pages: prev.pages!.map(p => p.slug === slug ? { ...p, title: newTitle } : p),
+    }));
   };
 
   const loadTemplate = (templateId: string, mode: 'replace' | 'append') => {
@@ -207,7 +278,34 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             {/* BLOCKS TAB */}
             {activeTab === 'blocks' && (
               <div className="p-3">
-                <p className="text-xs text-muted-foreground mb-3">Нажмите на блок, чтобы добавить его на страницу</p>
+                {/* Page tabs for multi-page sites */}
+                {hasPages && (
+                  <div className="mb-3 pb-3 border-b">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-medium text-muted-foreground">Страницы ({website.pages!.length})</p>
+                      <button onClick={addPage} className="text-xs text-primary hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Добавить</button>
+                    </div>
+                    <div className="space-y-1">
+                      {website.pages!.map(page => (
+                        <div
+                          key={page.slug}
+                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${currentPageSlug === page.slug ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'}`}
+                          onClick={() => { setCurrentPageSlug(page.slug); setSelectedBlockId(null); }}
+                        >
+                          <FileText className="w-3 h-3 text-muted-foreground shrink-0" />
+                          <span className="flex-1 text-xs truncate font-medium">{page.title} <span className="text-muted-foreground font-normal">/{page.slug}</span></span>
+                          {page.slug !== 'home' && (
+                            <button onClick={e => { e.stopPropagation(); deletePage(page.slug); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground mb-3">Нажмите на блок, чтобы добавить его на страницу{hasPages ? ` «${currentPage?.title}»` : ''}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {BLOCK_PALETTE.map(({ type, label, icon, defaultContent }) => (
                     <button
@@ -224,11 +322,11 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 </div>
 
                 {/* Block list */}
-                {website.blocks.length > 0 && (
+                {activeBlocks.length > 0 && (
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Слои ({website.blocks.length})</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Слои ({activeBlocks.length})</p>
                     <div className="space-y-1">
-                      {website.blocks.map((block, idx) => {
+                      {activeBlocks.map((block, idx) => {
                         const palette = BLOCK_PALETTE.find(p => p.type === block.type);
                         return (
                           <div
@@ -242,10 +340,10 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                               <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'up'); }} disabled={idx === 0} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-30">
                                 <ChevronUp className="w-3 h-3" />
                               </button>
-                              <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'down'); }} disabled={idx === website.blocks.length - 1} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-30">
+                              <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'down'); }} disabled={idx === activeBlocks.length - 1} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-30">
                                 <ChevronDown className="w-3 h-3" />
                               </button>
-                              <button onClick={e => { e.stopPropagation(); const b = website.blocks.find(bl => bl.id === block.id); if (b) setEditingBlock(b); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
+                              <button onClick={e => { e.stopPropagation(); const b = activeBlocks.find(bl => bl.id === block.id); if (b) setEditingBlock(b); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
                                 <AlignLeft className="w-3 h-3" />
                               </button>
                               <button onClick={e => { e.stopPropagation(); deleteBlock(block.id); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
@@ -347,15 +445,18 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
         <main className="flex-1 overflow-auto bg-muted/30 p-4">
           <div className={`${viewWidths[viewMode]} transition-all duration-300 bg-background rounded-2xl shadow-xl overflow-hidden min-h-[600px] border`}>
             <WebsitePreview
-              blocks={website.blocks}
+              blocks={activeBlocks}
+              pages={hasPages ? website.pages : undefined}
+              currentPageSlug={currentPageSlug}
+              onPageNavigate={(slug) => { setCurrentPageSlug(slug); setSelectedBlockId(null); }}
               onBlockClick={(id) => {
                 setSelectedBlockId(id);
-                const block = website.blocks.find(b => b.id === id);
+                const block = activeBlocks.find(b => b.id === id);
                 if (block) setEditingBlock(block);
               }}
               selectedBlockId={selectedBlockId}
             />
-            {website.blocks.length === 0 && (
+            {activeBlocks.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 text-center px-8">
                 <Globe className="w-16 h-16 text-muted-foreground/30 mb-4" />
                 <h3 className="text-xl font-bold mb-2">Создайте свой сайт</h3>
@@ -386,7 +487,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             <Button variant="ghost" onClick={() => setShowPreviewFull(false)}>✕ Закрыть</Button>
           </div>
           <div className="flex-1 overflow-auto">
-            <WebsitePreview blocks={website.blocks} />
+            <WebsitePreview blocks={activeBlocks} pages={hasPages ? website.pages : undefined} currentPageSlug={currentPageSlug} onPageNavigate={setCurrentPageSlug} />
           </div>
         </div>
       )}

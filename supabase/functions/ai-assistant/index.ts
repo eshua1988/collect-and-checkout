@@ -69,6 +69,10 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 
 ### CREATE_WEBSITE:
 \`\`\`action
+{"type":"CREATE_WEBSITE","data":{"name":"","description":"","pages":[{"slug":"home","title":"Главная","blocks":[...]},{"slug":"about","title":"О нас","blocks":[...]}]}}
+\`\`\`
+Если сайт одностраничный, можно использовать старый формат:
+\`\`\`action
 {"type":"CREATE_WEBSITE","data":{"name":"","description":"","blocks":[...]}}
 \`\`\`
 
@@ -102,6 +106,18 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 6. Используй цвета: bgColor и textColor для визуального стиля
 7. Давай реалистичный контент на языке запроса
 
+### 📄 МНОГОСТРАНИЧНЫЙ САЙТ (pages):
+Когда сайт имеет несколько страниц (About, Services, Contact и т.д.) — используй \`pages\` массив:
+- Каждая страница: {"slug":"about","title":"О нас","blocks":[...]}
+- slug = URL-путь (латиница, lowercase): "home", "about", "services", "contact", "portfolio", "blog"
+- title = отображаемое название на языке запроса
+- Каждая страница имеет свои блоки (navbar + контент + footer)
+- Navbar ОДИНАКОВЫЙ на всех страницах! Ссылки navbar: {"label":"О нас","href":"/about"} (slug страницы с /)
+- Главная страница ВСЕГДА slug="home"
+- Если сайт-источник имеет несколько страниц — СОЗДАЙ ВСЕ страницы через pages массив
+- Кнопки и ссылки между страницами: href="/slug" (например "/about", "/services")
+- Для внешних ссылок: href="https://..."
+
 ### 🖼️ КОГДА ПОЛЬЗОВАТЕЛЬ ПРИСЛАЛ ФОТО САЙТА:
 1. Внимательно проанализируй все элементы на изображении
 2. Определи структуру: навигация → герой → секции → подвал
@@ -114,16 +130,36 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 9. Опиши что увидел на фото, потом создай сайт через \`\`\`action блок
 10. После создания предложи улучшения
 
-### Пример полного сайта:
+### Пример многостраничного сайта:
 \`\`\`action
-{"type":"CREATE_WEBSITE","data":{"name":"Grace Community Church","blocks":[
-  {"id":"b1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"#about"},{"label":"Ministries","href":"#ministries"},{"label":"Sermons","href":"#sermons"},{"label":"Events","href":"#events"},{"label":"Give","href":"#give"}],"bgColor":"#ffffff","textColor":"#333333"}},
-  {"id":"b2","type":"hero","content":{"title":"Sunday at Grace","subtitle":"9 & 11 am\\nJoin us this Sunday for worship services and fellowship groups.","ctaText":"Service info","ctaHref":"#services","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"left"}},
-  {"id":"b3","type":"image","content":{"src":"https://images.unsplash.com/photo-1507525428034-b723cf961d3e","caption":""}},
-  {"id":"b4","type":"features","content":{"title":"Featured","items":[{"icon":"🙏","title":"Prayer","desc":"Join our prayer groups"},{"icon":"📖","title":"Bible Study","desc":"Deepen your faith"},{"icon":"🤝","title":"Community","desc":"Connect with others"}]}},
-  {"id":"b5","type":"contact","content":{"title":"Visit Us","email":"info@grace.org","address":"123 Church St"}},
-  {"id":"b6","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
+{"type":"CREATE_WEBSITE","data":{"name":"Grace Community Church","pages":[
+  {"slug":"home","title":"Главная","blocks":[
+    {"id":"b1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"/about"},{"label":"Ministries","href":"/ministries"},{"label":"Events","href":"/events"},{"label":"Give","href":"/give"}],"bgColor":"#ffffff","textColor":"#333333"}},
+    {"id":"b2","type":"hero","content":{"title":"Sunday at Grace","subtitle":"9 & 11 am — Join us this Sunday for worship services.","ctaText":"Service info","ctaHref":"/about","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"left"}},
+    {"id":"b3","type":"features","content":{"title":"Featured","items":[{"icon":"🙏","title":"Prayer","desc":"Join our prayer groups"},{"icon":"📖","title":"Bible Study","desc":"Deepen your faith"},{"icon":"🤝","title":"Community","desc":"Connect with others"}]}},
+    {"id":"b4","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
+  ]},
+  {"slug":"about","title":"About","blocks":[
+    {"id":"a1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"/about"},{"label":"Ministries","href":"/ministries"},{"label":"Events","href":"/events"},{"label":"Give","href":"/give"}],"bgColor":"#ffffff","textColor":"#333333"}},
+    {"id":"a2","type":"hero","content":{"title":"About Us","subtitle":"Our mission, vision and values","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"center"}},
+    {"id":"a3","type":"text","content":{"title":"Our Story","body":"Grace Community Church was founded in 1985...","align":"left"}},
+    {"id":"a4","type":"team","content":{"title":"Our Team","members":[{"avatar":"👨‍💼","name":"Pastor John","role":"Senior Pastor"}]}},
+    {"id":"a5","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
+  ]},
+  {"slug":"ministries","title":"Ministries","blocks":[
+    {"id":"m1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"/about"},{"label":"Ministries","href":"/ministries"},{"label":"Events","href":"/events"},{"label":"Give","href":"/give"}],"bgColor":"#ffffff","textColor":"#333333"}},
+    {"id":"m2","type":"hero","content":{"title":"Ministries","subtitle":"Discover how you can get involved","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"center"}},
+    {"id":"m3","type":"features","content":{"title":"Our Ministries","items":[{"icon":"👶","title":"Children","desc":"Sunday school"},{"icon":"🎓","title":"Youth","desc":"Youth groups"},{"icon":"🎵","title":"Worship","desc":"Music ministry"}]}},
+    {"id":"m4","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
+  ]},
+  {"slug":"events","title":"Events","blocks":[
+    {"id":"e1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"/about"},{"label":"Ministries","href":"/ministries"},{"label":"Events","href":"/events"},{"label":"Give","href":"/give"}],"bgColor":"#ffffff","textColor":"#333333"}},
+    {"id":"e2","type":"hero","content":{"title":"Upcoming Events","subtitle":"Join us","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"center"}},
+    {"id":"e3","type":"countdown","content":{"title":"Next Sunday Service","targetDate":"2026-12-31T10:00:00Z"}},
+    {"id":"e4","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
+  ]}
 ]}}
+\`\`\`
 \`\`\`
 
 ### NAVIGATE_TO:
@@ -180,7 +216,7 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 8. Если нет подходящего узла — ИЗОБРЕТИ кастомный тип
 9. После создания бота — ПРЕДЛОЖИ улучшения ("Могу добавить...")
 10. Если пользователь прислал картинку сайта — воссоздай дизайн через CREATE_WEBSITE (см. ❺a)
-11. Если пользователь прислал ССЫЛКУ на сайт — система автоматически считает HTML и добавит структуру в контекст. Используй эти данные для CREATE_WEBSITE!
+11. Если пользователь прислал ССЫЛКУ на сайт — система автоматически обходит НЕСКОЛЬКО страниц сайта (главная + внутренние ссылки) и добавит структуру КАЖДОЙ страницы в контекст. Используй ВСЕ эти данные для CREATE_WEBSITE с полным pages массивом! Каждая просканированная страница → отдельная запись в pages.
 
 ## ТИПЫ ПОЛЕЙ ФОРМЫ: text,textarea,number,email,phone,select,radio,checkbox,image,payment
 ## ТИПЫ БЛОКОВ САЙТА (полный список content свойств — см. секцию ❺a выше): navbar,hero,features,text,image,gallery,pricing,testimonials,faq,team,contact,countdown,video,button,footer,divider,html`;
@@ -370,8 +406,8 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
       });
     }
 
-    // --- URL detection & website scraping ---
-    // Find URLs in the last user message and fetch their HTML content
+    // --- URL detection & multi-page website scraping ---
+    // Find URLs in the last user message, crawl main page + internal links
     const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
     let scrapedSiteContent = "";
     if (lastUserMsg) {
@@ -382,28 +418,32 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
           : "";
       const urlMatch = msgText.match(/https?:\/\/[^\s"'<>]+/i);
       if (urlMatch) {
-        try {
-          console.log(`Fetching website: ${urlMatch[0]}`);
-          const siteResp = await fetch(urlMatch[0], {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (compatible; FormBotStudio/1.0)",
-              "Accept": "text/html,application/xhtml+xml",
-              "Accept-Language": "ru,en;q=0.9",
-            },
-            redirect: "follow",
-          });
-          if (siteResp.ok) {
-            const html = await siteResp.text();
-            // Extract meaningful content: title, meta, headings, nav, text, structure
+        const rootUrl = urlMatch[0].replace(/\/$/, "");
+        let rootOrigin: string;
+        try { rootOrigin = new URL(rootUrl).origin; } catch { rootOrigin = ""; }
+
+        /** Fetch and parse one page, return structured data */
+        async function scrapePage(pageUrl: string): Promise<{url: string; slug: string; title: string; nav: string; headings: string[]; colors: string; images: string[]; bodyText: string} | null> {
+          try {
+            console.log(`Fetching page: ${pageUrl}`);
+            const resp = await fetch(pageUrl, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (compatible; FormBotStudio/1.0)",
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "ru,en;q=0.9",
+              },
+              redirect: "follow",
+            });
+            if (!resp.ok) return null;
+            const contentType = resp.headers.get("content-type") || "";
+            if (!contentType.includes("text/html")) return null;
+            const html = await resp.text();
+
             const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-            const title = titleMatch ? titleMatch[1].trim() : "";
-            // Extract meta description
+            const title = titleMatch ? titleMatch[1].trim().slice(0, 200) : "";
             const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-            const metaDesc = metaDescMatch ? metaDescMatch[1] : "";
-            // Extract nav links
             const navLinksRaw = html.match(/<nav[\s\S]*?<\/nav>/gi) || [];
-            const navText = navLinksRaw.map(n => n.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()).join(" | ");
-            // Extract headings
+            const nav = navLinksRaw.map(n => n.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()).join(" | ");
             const headings: string[] = [];
             const hRegex = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi;
             let hm;
@@ -411,56 +451,123 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
               const txt = hm[1].replace(/<[^>]+>/g, "").trim();
               if (txt) headings.push(txt);
             }
-            // Extract visible text from body (strip scripts, styles, tags)
             let bodyHtml = html.replace(/<script[\s\S]*?<\/script>/gi, "")
               .replace(/<style[\s\S]*?<\/style>/gi, "")
               .replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
             const bodyMatch = bodyHtml.match(/<body[\s\S]*?<\/body>/i);
-            let bodyText = (bodyMatch ? bodyMatch[0] : bodyHtml)
-              .replace(/<[^>]+>/g, " ")
-              .replace(/\s+/g, " ")
-              .trim()
-              .slice(0, 3000); // limit to 3000 chars
-            // Extract background colors from inline styles/CSS
+            const bodyText = (bodyMatch ? bodyMatch[0] : bodyHtml)
+              .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 2000);
             const colorMatches = html.match(/(?:background-color|background|color)\s*:\s*[#\w(),.%\s]+/gi) || [];
-            const colors = [...new Set(colorMatches.slice(0, 10))].join("; ");
-            // Extract images  
+            const colors = [...new Set(colorMatches.slice(0, 8))].join("; ");
             const imgMatches: string[] = [];
             const imgRegex = /<img[^>]*src=["']([^"']+)["'][^>]*/gi;
             let im;
-            while ((im = imgRegex.exec(html)) !== null && imgMatches.length < 5) {
+            while ((im = imgRegex.exec(html)) !== null && imgMatches.length < 3) {
               imgMatches.push(im[1]);
             }
+
+            // Derive slug from URL path
+            try {
+              const u = new URL(pageUrl);
+              const path = u.pathname.replace(/^\/|\/$/g, "").replace(/\.[a-z]+$/, "");
+              return { url: pageUrl, slug: path || "home", title, nav, headings, colors, images: imgMatches, bodyText };
+            } catch {
+              return { url: pageUrl, slug: "home", title, nav, headings, colors, images: imgMatches, bodyText };
+            }
+          } catch (e) {
+            console.error(`Failed to scrape ${pageUrl}:`, e);
+            return null;
+          }
+        }
+
+        /** Extract internal links from HTML */
+        function extractInternalLinks(html: string, origin: string, baseUrl: string): string[] {
+          const links: Set<string> = new Set();
+          const linkRegex = /<a[^>]*href=["']([^"'#][^"']*?)["'][^>]*>/gi;
+          let lm;
+          while ((lm = linkRegex.exec(html)) !== null) {
+            let href = lm[1].trim();
+            // Skip non-page links
+            if (/\.(pdf|jpg|jpeg|png|gif|svg|zip|mp3|mp4|css|js|xml|json)$/i.test(href)) continue;
+            if (href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("javascript:")) continue;
+            // Resolve relative URLs
+            try {
+              const resolved = new URL(href, baseUrl).href.replace(/\/$/, "").split("#")[0].split("?")[0];
+              if (resolved.startsWith(origin) && resolved !== baseUrl.replace(/\/$/, "")) {
+                links.add(resolved);
+              }
+            } catch { /* skip invalid */ }
+          }
+          return [...links];
+        }
+
+        try {
+          // Step 1: Fetch main page
+          console.log(`Crawling website: ${rootUrl}`);
+          const mainResp = await fetch(rootUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (compatible; FormBotStudio/1.0)",
+              "Accept": "text/html,application/xhtml+xml",
+              "Accept-Language": "ru,en;q=0.9",
+            },
+            redirect: "follow",
+          });
+
+          if (mainResp.ok) {
+            const mainHtml = await mainResp.text();
+            const mainData = await scrapePage(rootUrl);
+
+            // Step 2: Extract internal links from main page
+            const internalLinks = extractInternalLinks(mainHtml, rootOrigin, rootUrl);
+            console.log(`Found ${internalLinks.length} internal links`);
+
+            // Step 3: Fetch up to 8 internal pages in parallel
+            const MAX_PAGES = 8;
+            const linksToFetch = internalLinks.slice(0, MAX_PAGES);
+            const subPages = await Promise.all(linksToFetch.map(link => scrapePage(link)));
+            const validPages = subPages.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof scrapePage>>>[];
+
+            // Step 4: Build context for AI
+            const allPages = [mainData, ...validPages].filter(Boolean) as NonNullable<typeof mainData>[];
 
             scrapedSiteContent = `
 
 ---
-## 🌐 СЧИТАН САЙТ ПО ССЫЛКЕ: ${urlMatch[0]}
+## 🌐 ПОЛНЫЙ ОБХОД САЙТА: ${rootUrl}
+### Найдено страниц: ${allPages.length}
+`;
 
-**Заголовок:** ${title}
-**Описание:** ${metaDesc}
-**Навигация:** ${navText || "не определена"}
-**Заголовки:** ${headings.slice(0, 15).join(" | ")}
-**Основные цвета CSS:** ${colors || "не определены"}
-**Изображения:** ${imgMatches.slice(0, 5).join(", ") || "нет"}
-**Текстовое содержимое (первые 3000 символов):**
-${bodyText}
+            for (const page of allPages) {
+              scrapedSiteContent += `
+#### 📄 Страница: ${page.slug} (${page.url})
+**Заголовок:** ${page.title}
+**Навигация:** ${page.nav || "не определена"}
+**Заголовки (h1-h6):** ${page.headings.slice(0, 10).join(" | ")}
+**CSS цвета:** ${page.colors || "не определены"}
+**Изображения:** ${page.images.join(", ") || "нет"}
+**Контент (до 2000 символов):**
+${page.bodyText}
 
----
-### ЗАДАЧА: Воссоздай этот сайт через CREATE_WEBSITE action блок.
-- Используй РЕАЛЬНУЮ структуру и тексты с сайта
-- Скопируй навигацию (navbar links) точно
+`;
+            }
+
+            scrapedSiteContent += `---
+### ЗАДАЧА: Воссоздай ВЕСЬ сайт через CREATE_WEBSITE action блок с ПОЛНЫМ pages массивом!
+- Создай ОТДЕЛЬНУЮ страницу (page) для КАЖДОЙ просканированной страницы выше
+- Каждая страница: {"slug":"...","title":"...","blocks":[navbar, контент, footer]}
+- Navbar ОДИНАКОВЫЙ на всех страницах с ссылками href="/slug"
+- Используй РЕАЛЬНУЮ структуру и тексты с каждой страницы
 - Подбери цвета (bgColor/textColor) на основе CSS цветов
-- Каждую секцию сайта → отдельный блок
-- Начни с navbar → hero → контент → footer
-- СРАЗУ создавай через action блок, не описывай!`;
+- slug = латиница: "home", "about", "services", "contact" и т.д.
+- СРАЗУ создавай через action блок, не описывай!
+- Это МНОГОСТРАНИЧНЫЙ сайт — пользователь сможет переходить между страницами`;
           } else {
-            console.error(`Failed to fetch site: ${siteResp.status}`);
-            scrapedSiteContent = `\n\n[Не удалось загрузить сайт ${urlMatch[0]}: HTTP ${siteResp.status}. Попроси пользователя прислать скриншот.]`;
+            console.error(`Failed to fetch main site: ${mainResp.status}`);
+            scrapedSiteContent = `\n\n[Не удалось загрузить сайт ${rootUrl}: HTTP ${mainResp.status}. Попроси пользователя прислать скриншот.]`;
           }
         } catch (fetchErr) {
-          console.error(`Site fetch error:`, fetchErr);
-          scrapedSiteContent = `\n\n[Ошибка при загрузке сайта ${urlMatch[0]}. Попроси пользователя прислать скриншот.]`;
+          console.error(`Site crawl error:`, fetchErr);
+          scrapedSiteContent = `\n\n[Ошибка при загрузке сайта ${rootUrl}. Попроси пользователя прислать скриншот.]`;
         }
       }
     }

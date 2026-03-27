@@ -1,8 +1,11 @@
-import { WebsiteBlock } from '@/types/website';
+import { WebsiteBlock, WebsitePage } from '@/types/website';
 import { useEffect, useState } from 'react';
 
 interface WebsitePreviewProps {
   blocks: WebsiteBlock[];
+  pages?: WebsitePage[];
+  currentPageSlug?: string;
+  onPageNavigate?: (slug: string) => void;
   onBlockClick?: (blockId: string) => void;
   selectedBlockId?: string | null;
 }
@@ -31,10 +34,26 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
   );
 }
 
-function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null) {
+function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void) {
   const c = block.content;
   const isSelected = selectedId === block.id;
   const wrapperClass = `relative group cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:ring-2 hover:ring-primary/40 hover:ring-offset-1'}`;
+
+  /** Handle link click — intercept internal page links (e.g. /about) */
+  const handleLinkClick = (e: React.MouseEvent, href?: string) => {
+    if (!href) return;
+    // Internal page link: "/slug" format
+    if (href.startsWith('/') && !href.startsWith('//') && onNavigate) {
+      e.preventDefault();
+      e.stopPropagation();
+      const slug = href.replace(/^\//, '') || 'home';
+      onNavigate(slug);
+    }
+    // Anchor links: "#section" — do nothing
+    if (href.startsWith('#')) {
+      e.preventDefault();
+    }
+  };
 
   const wrap = (node: React.ReactNode) => (
     <div key={block.id} className={wrapperClass} onClick={() => onClick?.(block.id)}>
@@ -51,12 +70,12 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     case 'navbar':
       return wrap(
         <nav style={{ backgroundColor: c.bgColor || '#1e293b', color: c.textColor || '#fff' }} className="px-6 py-4 flex items-center justify-between">
-          <div className="font-bold text-xl">{c.logo || 'Сайт'}</div>
+          <div className="font-bold text-xl cursor-pointer" onClick={(e) => { e.stopPropagation(); onNavigate?.('home'); }}>{c.logo || 'Сайт'}</div>
           <div className="flex items-center gap-6">
             {(c.links || []).map((link: any, i: number) => (
-              <a key={i} href={link.href} className="text-sm opacity-80 hover:opacity-100">{link.label}</a>
+              <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm opacity-80 hover:opacity-100 cursor-pointer">{link.label}</a>
             ))}
-            {c.ctaText && <button className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors">{c.ctaText}</button>}
+            {c.ctaText && <button onClick={(e) => { e.stopPropagation(); handleLinkClick(e as any, c.ctaHref); }} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors">{c.ctaText}</button>}
           </div>
         </nav>
       );
@@ -67,7 +86,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           <div className={`max-w-4xl mx-auto text-${c.align || 'center'}`}>
             <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">{c.title || 'Заголовок'}</h1>
             {c.subtitle && <p className="text-lg md:text-xl opacity-80 mb-8 max-w-2xl mx-auto">{c.subtitle}</p>}
-            {c.ctaText && <a href={c.ctaHref || '#'} className="inline-block px-8 py-4 rounded-xl bg-white/20 hover:bg-white/30 font-semibold text-lg transition-colors">{c.ctaText}</a>}
+            {c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} className="inline-block px-8 py-4 rounded-xl bg-white/20 hover:bg-white/30 font-semibold text-lg transition-colors cursor-pointer">{c.ctaText}</a>}
           </div>
         </section>
       );
@@ -241,7 +260,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
       return wrap(
         <section className="py-8 px-8">
           <div className={`text-${c.align || 'center'}`}>
-            <a href={c.href || '#'} className="inline-block px-8 py-4 rounded-xl font-semibold text-white shadow-lg" style={{ backgroundColor: c.bgColor || '#4f46e5' }}>{c.text || 'Кнопка'}</a>
+            <a href={c.href || '#'} onClick={(e) => handleLinkClick(e, c.href)} className="inline-block px-8 py-4 rounded-xl font-semibold text-white shadow-lg cursor-pointer" style={{ backgroundColor: c.bgColor || '#4f46e5' }}>{c.text || 'Кнопка'}</a>
           </div>
         </section>
       );
@@ -263,7 +282,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           {c.companyName && <div className="font-bold text-lg mb-2">{c.companyName}</div>}
           {(c.links || []).length > 0 && (
             <div className="flex justify-center gap-4 mb-4">
-              {(c.links || []).map((link: any, i: number) => <a key={i} href={link.href} className="text-sm text-muted-foreground hover:text-foreground">{link.label}</a>)}
+              {(c.links || []).map((link: any, i: number) => <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">{link.label}</a>)}
             </div>
           )}
           <div className="text-sm text-muted-foreground">{c.copyright || '© 2024'}</div>
@@ -275,8 +294,32 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   }
 }
 
-export function WebsitePreview({ blocks, onBlockClick, selectedBlockId }: WebsitePreviewProps) {
-  if (blocks.length === 0) {
+export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, selectedBlockId }: WebsitePreviewProps) {
+  // Determine which blocks to display: use pages if available
+  const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
+
+  // Sync with external currentPageSlug prop
+  useEffect(() => {
+    if (currentPageSlug) setActiveSlug(currentPageSlug);
+  }, [currentPageSlug]);
+
+  let displayBlocks = blocks;
+  let hasPages = false;
+
+  if (pages && pages.length > 0) {
+    hasPages = true;
+    const activePage = pages.find(p => p.slug === activeSlug) || pages[0];
+    displayBlocks = activePage?.blocks || [];
+  }
+
+  const handleNavigate = (slug: string) => {
+    if (hasPages) {
+      setActiveSlug(slug);
+      onPageNavigate?.(slug);
+    }
+  };
+
+  if (displayBlocks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-8">
         <div className="text-6xl mb-4">🌐</div>
@@ -288,7 +331,7 @@ export function WebsitePreview({ blocks, onBlockClick, selectedBlockId }: Websit
 
   return (
     <div className="min-h-screen bg-background">
-      {blocks.map(block => renderBlock(block, onBlockClick, selectedBlockId))}
+      {displayBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate))}
     </div>
   );
 }
