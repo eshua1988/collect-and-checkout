@@ -67,7 +67,61 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 
 ### CREATE_WEBSITE:
 \`\`\`action
-{"type":"CREATE_WEBSITE","data":{"name":"","blocks":[{"id":"b1","type":"hero","content":{"title":"","subtitle":"","buttonText":"Начать","buttonLink":"#"}}]}}
+{"type":"CREATE_WEBSITE","data":{"name":"","description":"","blocks":[...]}}
+\`\`\`
+
+## ❺a СОЗДАНИЕ САЙТОВ — ДЕТАЛЬНЫЕ ИНСТРУКЦИИ
+
+### Доступные блоки сайта и их content:
+- **navbar** — навигация. {logo:"Логотип",links:[{label:"О нас",href:"#about"}],ctaText:"Кнопка",ctaHref:"#",bgColor:"#ffffff",textColor:"#1a1a2e"}
+- **hero** — главный баннер. {title:"Заголовок",subtitle:"Подзаголовок",ctaText:"Кнопка",ctaHref:"#",bgColor:"#1e293b",textColor:"#ffffff",align:"center"|"left"}
+- **text** — текстовый блок. {title:"Заголовок секции",body:"Текст абзаца...",align:"left"|"center"}
+- **image** — изображение. {src:"https://images.unsplash.com/...",caption:"Подпись"}
+- **features** — карточки преимуществ. {title:"Почему мы",items:[{icon:"⚡",title:"Быстро",desc:"Описание"}]}
+- **gallery** — галерея. {title:"Галерея",images:[{url:"https://...",caption:""}]}
+- **pricing** — тарифы. {title:"Цены",plans:[{name:"Базовый",price:"990₽/мес",features:["Фича 1"],highlighted:false}]}
+- **testimonials** — отзывы. {title:"Отзывы",items:[{name:"Имя",text:"Текст отзыва",rating:5}]}
+- **team** — команда. {title:"Наша команда",members:[{avatar:"👨‍💼",name:"Имя",role:"Должность"}]}
+- **faq** — вопрос-ответ. {title:"FAQ",items:[{q:"Вопрос?",a:"Ответ"}]}
+- **contact** — контакты. {title:"Контакты",email:"...",phone:"...",address:"...",social:[{name:"Telegram",url:"#"}]}
+- **countdown** — таймер. {title:"До события",targetDate:"2026-12-31T23:59:59Z"}
+- **video** — видео. {url:"https://youtube.com/watch?v=...",title:"Видео"}
+- **button** — кнопка. {text:"Текст кнопки",href:"#",bgColor:"#4f46e5",align:"center"}
+- **footer** — подвал. {text:"© 2026 Компания",links:[{label:"Политика",href:"#"}]}
+- **divider** — разделитель. {}
+- **html** — произвольный HTML. {code:"<div>...</div>"}
+
+### ПРАВИЛА СОЗДАНИЯ САЙТОВ:
+1. Всегда начинай с блока **navbar** (навигация) — это меню сайта
+2. Затем **hero** секция — главный баннер с заголовком
+3. Далее контентные секции по порядку
+4. Заканчивай блоком **footer**
+5. Минимум 5-7 блоков для полноценного сайта
+6. Используй цвета: bgColor и textColor для визуального стиля
+7. Давай реалистичный контент на языке запроса
+
+### 🖼️ КОГДА ПОЛЬЗОВАТЕЛЬ ПРИСЛАЛ ФОТО САЙТА:
+1. Внимательно проанализируй все элементы на изображении
+2. Определи структуру: навигация → герой → секции → подвал
+3. Извлеки: цвета (фон, текст, акценты), шрифтовой стиль, расположение
+4. Воссоздай КАЖДУЮ видимую секцию отдельным блоком
+5. Скопируй текст с фото максимально точно (или адаптируй если нечитаемо)
+6. Навигацию скопируй точно: лого + все пункты меню + CTA кнопку
+7. Подбери цвета bgColor/textColor максимально близко к оригиналу
+8. Если на фото есть изображения — используй image блок с placeholder Unsplash URL подходящей тематики
+9. Опиши что увидел на фото, потом создай сайт через \`\`\`action блок
+10. После создания предложи улучшения
+
+### Пример полного сайта:
+\`\`\`action
+{"type":"CREATE_WEBSITE","data":{"name":"Grace Community Church","blocks":[
+  {"id":"b1","type":"navbar","content":{"logo":"Grace Community Church","links":[{"label":"About","href":"#about"},{"label":"Ministries","href":"#ministries"},{"label":"Sermons","href":"#sermons"},{"label":"Events","href":"#events"},{"label":"Give","href":"#give"}],"bgColor":"#ffffff","textColor":"#333333"}},
+  {"id":"b2","type":"hero","content":{"title":"Sunday at Grace","subtitle":"9 & 11 am\\nJoin us this Sunday for worship services and fellowship groups.","ctaText":"Service info","ctaHref":"#services","bgColor":"#f5f5f0","textColor":"#1a1a1a","align":"left"}},
+  {"id":"b3","type":"image","content":{"src":"https://images.unsplash.com/photo-1507525428034-b723cf961d3e","caption":""}},
+  {"id":"b4","type":"features","content":{"title":"Featured","items":[{"icon":"🙏","title":"Prayer","desc":"Join our prayer groups"},{"icon":"📖","title":"Bible Study","desc":"Deepen your faith"},{"icon":"🤝","title":"Community","desc":"Connect with others"}]}},
+  {"id":"b5","type":"contact","content":{"title":"Visit Us","email":"info@grace.org","address":"123 Church St"}},
+  {"id":"b6","type":"footer","content":{"text":"© 2026 Grace Community Church"}}
+]}}
 \`\`\`
 
 ### NAVIGATE_TO:
@@ -123,10 +177,10 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 7. start → первый узел ОБЯЗАТЕЛЬНО связан edge
 8. Если нет подходящего узла — ИЗОБРЕТИ кастомный тип
 9. После создания бота — ПРЕДЛОЖИ улучшения ("Могу добавить...")
-10. Если пользователь прислал картинку — опиши что на ней и как это реализовать
+10. Если пользователь прислал картинку сайта — воссоздай дизайн через CREATE_WEBSITE (см. ❺a)
 
 ## ТИПЫ ПОЛЕЙ ФОРМЫ: text,textarea,number,email,phone,select,radio,checkbox,image,payment
-## ТИПЫ БЛОКОВ САЙТА: navbar,hero,features,text,image,gallery,pricing,testimonials,faq,team,contact,countdown,video,cta,footer,divider,html,button,map`;
+## ТИПЫ БЛОКОВ САЙТА (полный список content свойств — см. секцию ❺a выше): navbar,hero,features,text,image,gallery,pricing,testimonials,faq,team,contact,countdown,video,button,footer,divider,html`;
 
 
 serve(async (req) => {
