@@ -412,21 +412,36 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
         try { rootOrigin = new URL(rootUrl).origin; } catch { rootOrigin = ""; }
 
         /** Fetch and parse one page, return structured data */
-        async function scrapePage(pageUrl: string): Promise<{url: string; slug: string; title: string; nav: string; headings: string[]; colors: string; images: string[]; bodyText: string} | null> {
+        async function scrapePage(pageUrl: string, prefetchedHtml?: string): Promise<{url: string; slug: string; title: string; nav: string; headings: string[]; colors: string; images: string[]; bodyText: string} | null> {
           try {
-            console.log(`Fetching page: ${pageUrl}`);
-            const resp = await fetch(pageUrl, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (compatible; FormBotStudio/1.0)",
-                "Accept": "text/html,application/xhtml+xml",
-                "Accept-Language": "ru,en;q=0.9",
-              },
-              redirect: "follow",
-            });
-            if (!resp.ok) return null;
-            const contentType = resp.headers.get("content-type") || "";
-            if (!contentType.includes("text/html")) return null;
-            const html = await resp.text();
+            let html: string;
+            if (prefetchedHtml) {
+              html = prefetchedHtml;
+            } else {
+              console.log(`Fetching page: ${pageUrl}`);
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 8000);
+              try {
+                const resp = await fetch(pageUrl, {
+                  headers: {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language": "ru,en;q=0.9",
+                  },
+                  redirect: "follow",
+                  signal: controller.signal,
+                });
+                clearTimeout(timeout);
+                if (!resp.ok) return null;
+                const contentType = resp.headers.get("content-type") || "";
+                if (!contentType.includes("text/html") && !contentType.includes("text/plain")) return null;
+                html = await resp.text();
+              } catch (fetchErr) {
+                clearTimeout(timeout);
+                console.error(`Timeout/fetch error for ${pageUrl}:`, fetchErr);
+                return null;
+              }
+            }
 
             const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
             const title = titleMatch ? titleMatch[1].trim().slice(0, 200) : "";
@@ -493,18 +508,28 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
         try {
           // Step 1: Fetch main page
           console.log(`Crawling website: ${rootUrl}`);
-          const mainResp = await fetch(rootUrl, {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (compatible; FormBotStudio/1.0)",
-              "Accept": "text/html,application/xhtml+xml",
-              "Accept-Language": "ru,en;q=0.9",
-            },
-            redirect: "follow",
-          });
+          const controller = new AbortController();
+          const mainTimeout = setTimeout(() => controller.abort(), 10000);
+          let mainResp: Response;
+          try {
+            mainResp = await fetch(rootUrl, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "ru,en;q=0.9",
+              },
+              redirect: "follow",
+              signal: controller.signal,
+            });
+            clearTimeout(mainTimeout);
+          } catch (fetchErr) {
+            clearTimeout(mainTimeout);
+            throw fetchErr;
+          }
 
           if (mainResp.ok) {
             const mainHtml = await mainResp.text();
-            const mainData = await scrapePage(rootUrl);
+            const mainData = await scrapePage(rootUrl, mainHtml);
 
             // Step 2: Extract internal links from main page
             const internalLinks = extractInternalLinks(mainHtml, rootOrigin, rootUrl);
@@ -593,6 +618,7 @@ H1-H3: ${page.headings.slice(0, 5).join(" | ")}
         // ── Anthropic API (different format) ────────────────────────
         if (provider.isAnthropic) {
           const anthropicMessages = toAnthropicMessages(messages);
+          const anthropicSystem = systemContent + scrapedSiteContent;
           const response = await fetch(provider.url, {
             method: "POST",
             headers: {
@@ -604,7 +630,7 @@ H1-H3: ${page.headings.slice(0, 5).join(" | ")}
               model: provider.model,
               max_tokens: 16000,
               stream: true,
-              system: systemContent,
+              system: anthropicSystem,
               messages: anthropicMessages,
             }),
           });
@@ -659,8 +685,9 @@ H1-H3: ${page.headings.slice(0, 5).join(" | ")}
         // ── OpenAI-compatible API ────────────────────────────────────
         // For providers without vision support, strip images from messages
         const supportsVision = VISION_PROVIDERS.has(provider.name);
+        const fullSystemContent = systemContent + scrapedSiteContent;
         const providerMessages = hasImages && !supportsVision
-          ? [{ role: "system", content: systemContent }, ...stripImages(messages)]
+          ? [{ role: "system", content: fullSystemContent }, ...stripImages(messages)]
           : baseMessages;
 
         const response = await fetch(provider.url, {
