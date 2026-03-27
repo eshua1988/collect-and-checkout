@@ -364,23 +364,48 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
   }, [sendMessage, provider]);
 
   // ── Image handling ────────────────────────────────────────────
-  const handleImageFiles = useCallback((files: FileList | File[]) => {
+  // Compress image to max 800px and JPEG quality 0.7 (~50-150KB)
+  const compressImage = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+      img.src = url;
+    });
+  }, []);
+
+  const handleImageFiles = useCallback(async (files: FileList | File[]) => {
     const fileArr = Array.from(files).filter(f => f.type.startsWith('image/'));
     if (fileArr.length === 0) return;
     for (const file of fileArr) {
-      if (file.size > 4 * 1024 * 1024) { // 4MB limit
-        toast.error('Изображение слишком большое (макс 4MB)');
+      if (file.size > 10 * 1024 * 1024) { // 10MB raw limit
+        toast.error('Изображение слишком большое (макс 10MB)');
         continue;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setAttachedImages(prev => [...prev, reader.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImage(file);
+        setAttachedImages(prev => [...prev, compressed]);
+      } catch {
+        toast.error('Не удалось обработать изображение');
+      }
     }
-  }, []);
+  }, [compressImage]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;

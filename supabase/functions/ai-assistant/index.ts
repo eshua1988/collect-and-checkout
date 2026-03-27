@@ -287,28 +287,31 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
 
     const baseMessages = [{ role: "system", content: systemContent }, ...messages];
 
-    // If user selected a specific provider, try ONLY that provider (no fallback chain)
+    // If user selected a specific provider, move it to front but keep fallback chain
     let orderedProviders = [...providers];
-    const userExplicitChoice = preferredProvider && preferredProvider !== "auto";
-    if (userExplicitChoice) {
-      const chosen = orderedProviders.find(p => p.name === preferredProvider);
-      if (chosen) {
-        orderedProviders = [chosen]; // only this one, no fallback
+    if (preferredProvider && preferredProvider !== "auto") {
+      const idx = orderedProviders.findIndex(p => p.name === preferredProvider);
+      if (idx > 0) {
+        const [preferred] = orderedProviders.splice(idx, 1);
+        orderedProviders = [preferred, ...orderedProviders];
       }
     }
 
     // Check if any message contains images
     const hasImages = messages.some((m: any) => Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url"));
 
-    // If images present and auto mode, prefer vision-capable providers first
-    if (hasImages && !userExplicitChoice) {
+    // If images present, prefer vision-capable providers first (after user's choice)
+    if (hasImages) {
+      const userChoice = (preferredProvider && preferredProvider !== "auto")
+        ? orderedProviders.find(p => p.name === preferredProvider) : null;
       const visionFirst: Provider[] = [];
       const rest: Provider[] = [];
       for (const p of orderedProviders) {
+        if (p === userChoice) continue; // will be prepended
         if (p.isAnthropic || VISION_PROVIDERS.has(p.name)) visionFirst.push(p);
         else rest.push(p);
       }
-      orderedProviders = [...visionFirst, ...rest];
+      orderedProviders = [...(userChoice ? [userChoice] : []), ...visionFirst, ...rest];
     }
 
     let lastError = "Нет доступных AI провайдеров. Настройте хотя бы один API ключ.";
