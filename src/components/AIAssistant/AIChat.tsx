@@ -156,11 +156,12 @@ function BotPickerDropdown({ bots, onSelect, onClose }: { bots: TelegramBot[]; o
   );
 }
 
-function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove }: {
+function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove, onSendFollow }: {
   msg: ChatMessage;
   onExecuteAction: (a: ParsedAction) => void;
   existingBots?: TelegramBot[];
   onSendImprove?: (botName: string) => void;
+  onSendFollow?: (prompt: string) => void;
 }) {
   const [showBotPicker, setShowBotPicker] = useState<number | null>(null);
   const isUser = msg.role === 'user';
@@ -226,7 +227,10 @@ function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove }: {
               if (!meta) return null;
               const isBotCreate = action.type === 'CREATE_BOT';
               const isBotAction = isBotCreate || action.type === 'ADD_BOT_NODES' || action.type === 'REPLACE_BOT';
+              const isSiteAction = action.type === 'CREATE_WEBSITE';
+              const isFormAction = action.type === 'CREATE_FORM';
               const botName = action.data?.name || action.data?.description || '';
+              const itemName = action.data?.name || action.data?.title || action.data?.description || '';
               return (
                 <div key={i} className="flex flex-col gap-1.5">
                   {/* Main action buttons row */}
@@ -282,6 +286,46 @@ function MessageBubble({ msg, onExecuteAction, existingBots, onSendImprove }: {
                         <Wand2 className="w-3.5 h-3.5" />
                         Улучшить бота
                       </button>
+                    )}
+
+                    {/* For website actions: follow-up buttons */}
+                    {isSiteAction && action.executed && onSendFollow && (
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          onClick={() => onSendFollow(`Добавь в сайт "${itemName}" ещё секции: тарифы, отзывы клиентов и FAQ`)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/30 dark:text-emerald-400"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Расширить
+                        </button>
+                        <button
+                          onClick={() => onSendFollow(`Улучши дизайн сайта "${itemName}": сделай более современным, добавь акцентные цвета и улучши визуал`)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400"
+                        >
+                          <Wand2 className="w-3.5 h-3.5" />
+                          Улучшить
+                        </button>
+                      </div>
+                    )}
+
+                    {/* For form actions: follow-up buttons */}
+                    {isFormAction && action.executed && onSendFollow && (
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          onClick={() => onSendFollow(`Добавь в форму "${itemName}" дополнительные поля: телефон, выбор услуги, дата и комментарий`)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/30 dark:text-blue-400"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Добавить поля
+                        </button>
+                        <button
+                          onClick={() => onSendFollow(`Улучши форму "${itemName}": добавь валидацию, условные поля и лучшее оформление`)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all shadow-sm active:scale-95 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400"
+                        >
+                          <Wand2 className="w-3.5 h-3.5" />
+                          Улучшить
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -389,6 +433,10 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
     const prompt = botName
       ? `Улучши бота "${botName}": добавь больше узлов, логики, ветвлений и связей. Сделай его более функциональным и полезным.`
       : 'Улучши последнего созданного бота: добавь больше узлов, логики, ветвлений и связей.';
+    sendMessage(prompt, provider === 'auto' ? undefined : provider);
+  }, [sendMessage, provider]);
+
+  const handleFollowUp = useCallback((prompt: string) => {
     sendMessage(prompt, provider === 'auto' ? undefined : provider);
   }, [sendMessage, provider]);
 
@@ -679,6 +727,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext }: AICha
                   onExecuteAction={(action) => executeAction(action)}
                   existingBots={existingBots}
                   onSendImprove={handleImproveBot}
+                  onSendFollow={handleFollowUp}
                 />
               ))}
               {isLoading && (
