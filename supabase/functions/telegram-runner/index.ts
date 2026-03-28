@@ -587,7 +587,15 @@ async function runFlow(
         const steps = node.data.executionSteps as ExecStep[] | undefined;
         if (steps && steps.length > 0) {
           try {
-            const result = await runExecSteps(steps, token, chatId, vars);
+            // Inject node.data properties into vars so executionSteps can reference them via {{key}}
+            const dataVars = { ...vars };
+            for (const [k, v] of Object.entries(node.data)) {
+              if (k === 'executionSteps' || k === 'label' || k === 'icon' || k === 'description' || k === 'buttons' || k === 'color') continue;
+              if (typeof v === 'string' && v) dataVars[k] = v;
+              else if (typeof v === 'number') dataVars[k] = String(v);
+              else if (typeof v === 'boolean') dataVars[k] = String(v);
+            }
+            const result = await runExecSteps(steps, token, chatId, dataVars);
             vars = result.vars;
             // If step requested waitInput — save as wait node
             if (result.waitInput) {

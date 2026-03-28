@@ -335,9 +335,28 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 
 ## ❼ КАСТОМНЫЕ ТИПЫ УЗЛОВ (авторегистрация + бекенд-логика)
 Если для задачи НЕ хватает встроенных узлов — **ИЗОБРЕТИ кастомный тип**!
-Примеры: paymentNode, ratingNode, subscriptionNode, calendarNode, notificationNode, qrCodeNode, pollNode, bookingNode, reviewNode.
+Примеры: paymentNode, ratingNode, subscriptionNode, calendarNode, notificationNode, qrCodeNode, pollNode, bookingNode, reviewNode, googleSheetsNode.
 - Придумай уникальное camelCase имя для type
 - Добавь в data: {label:"Название",icon:"💳",description:"Описание",...}
+
+### ⚠️ КРИТИЧНО: КАСТОМНЫЕ ПОЛЯ НАСТРОЙКИ
+Когда создаёшь кастомный узел, все его НАСТРОЙКИ должны быть в data как ОТДЕЛЬНЫЕ свойства с ДЕФОЛТНЫМИ значениями!
+Редактор автоматически показывает поля для каждого свойства в data (кроме label, icon, description, executionSteps).
+
+**ПРИМЕР ПРАВИЛЬНОГО узла Google Sheets:**
+\`\`\`json
+{"type":"googleSheetsExport","data":{"label":"Экспорт в Google Таблицу","icon":"📊","description":"Запись данных в Google Sheets","spreadsheetId":"","sheetName":"Лист1","range":"A1:D100","apiKey":"","direction":"export","dataMapping":"","executionSteps":[...]}}
+\`\`\`
+Здесь spreadsheetId, sheetName, range, apiKey, direction, dataMapping — это НАСТРОЙКИ. Они будут отображаться как редактируемые поля в интерфейсе.
+
+**ПРИМЕР НЕПРАВИЛЬНОГО (поля спрятаны внутри executionSteps):**
+\`\`\`json
+{"type":"googleSheets","data":{"label":"Таблица","icon":"📊","executionSteps":[{"action":"fetchUrl","url":"https://sheets.googleapis.com/..."}]}}
+\`\`\`
+Тут НЕТ настроек в интерфейсе — пользователь не может указать ID таблицы, лист, ключ!
+
+**ПРАВИЛО:** Каждый параметр, который пользователь ДОЛЖЕН настроить → выноси как ОТДЕЛЬНОЕ свойство в data.
+Потом ССЫЛАЙСЯ на них в executionSteps через {{имя_свойства}}. Переменные из data автоматически доступны в executionSteps!
 - Объяви в newNodeTypes: [{"nodeType":"paymentNode","label":"Оплата","icon":"💳","color":"bg-green-500/10 text-green-400 border-green-500/30","description":"Приём платежа"}]
 - Узел автоматически появится в панели инструментов!
 

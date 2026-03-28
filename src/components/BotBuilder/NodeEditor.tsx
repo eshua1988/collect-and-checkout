@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { BotNodeData, BotNodeType, BotButton, SocialLink } from '@/types/bot';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1334,8 +1334,9 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
         ══════════════════════════════════════════════════════════════════════ */}
         {!typeLabel[nodeType] && (() => {
           const customMeta = getCustomNodeTypes()[nodeType];
-          const SKIP_KEYS = new Set(['label', 'icon', 'description']);
+          const SKIP_KEYS = new Set(['label', 'icon', 'description', 'executionSteps', 'color']);
           const dataEntries = Object.entries(local).filter(([k]) => !SKIP_KEYS.has(k));
+          const hasExecSteps = Array.isArray(local.executionSteps) && (local.executionSteps as any[]).length > 0;
           return (
             <>
               {customMeta && (
@@ -1360,7 +1361,17 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
 
               {dataEntries.filter(([k]) => k !== 'text' && k !== 'buttons').map(([key, val]) => (
                 <div key={key}>
-                  <Label className="text-xs font-mono">{key}</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-mono">{key}</Label>
+                    <Button variant="ghost" size="icon" className="w-5 h-5 text-muted-foreground hover:text-destructive" onClick={() => {
+                      const next = { ...local };
+                      delete (next as any)[key];
+                      setLocal(next);
+                      onUpdate(nodeId, next);
+                    }}>
+                      <Trash2 className="w-2.5 h-2.5" />
+                    </Button>
+                  </div>
                   {typeof val === 'boolean' ? (
                     <div className="flex items-center gap-2 mt-1">
                       <Switch checked={val} onCheckedChange={v => update({ [key]: v })} />
@@ -1400,6 +1411,48 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
                   </Button>
                 </div>
               </div>
+
+              {/* Add custom field button */}
+              <div className="space-y-2">
+                <div className="flex gap-1">
+                  <Input
+                    id="__newFieldName"
+                    placeholder="Имя поля (лат.)"
+                    className="h-7 text-xs flex-1"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const inp = e.currentTarget;
+                        const name = inp.value.trim().replace(/\s+/g, '_');
+                        if (name && !SKIP_KEYS.has(name) && !(name in local)) {
+                          update({ [name]: '' });
+                          inp.value = '';
+                          toast.success(`Поле "${name}" добавлено`);
+                        }
+                      }
+                    }}
+                  />
+                  <Button variant="outline" size="sm" className="h-7 text-xs shrink-0" onClick={() => {
+                    const inp = document.getElementById('__newFieldName') as HTMLInputElement;
+                    if (!inp) return;
+                    const name = inp.value.trim().replace(/\s+/g, '_');
+                    if (name && !SKIP_KEYS.has(name) && !(name in local)) {
+                      update({ [name]: '' });
+                      inp.value = '';
+                      toast.success(`Поле "${name}" добавлено`);
+                    } else if (name in local) { toast.error('Поле уже существует'); }
+                  }}>
+                    <Plus className="w-3 h-3 mr-1" />Поле
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Добавь настройки: spreadsheetId, sheetName, apiKey и т.д.</p>
+              </div>
+
+              {hasExecSteps && (
+                <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-2 text-xs text-green-600 dark:text-green-400 flex items-center gap-2">
+                  <span>⚡</span>
+                  <span>Бекенд-логика: {(local.executionSteps as any[]).length} шагов executionSteps</span>
+                </div>
+              )}
 
               <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground space-y-2">
                 <p>🤖 Это кастомный узел, созданный AI. Все свойства из data доступны для редактирования.</p>

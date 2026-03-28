@@ -322,8 +322,15 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
     {
       const steps = data.executionSteps as any[] | undefined;
       if (steps && steps.length > 0) {
-        // Execute steps sequentially
+        // Inject node.data properties into vars so executionSteps can reference them via {{key}}
         let currentVars = { ...vars };
+        for (const [k, v] of Object.entries(data)) {
+          if (k === 'executionSteps' || k === 'label' || k === 'icon' || k === 'description' || k === 'buttons' || k === 'color') continue;
+          if (typeof v === 'string' && v) currentVars[k] = v;
+          else if (typeof v === 'number') currentVars[k] = String(v);
+          else if (typeof v === 'boolean') currentVars[k] = String(v);
+        }
+        // Execute steps sequentially
         for (const step of steps) {
           switch (step.action) {
             case 'sendMessage': {
