@@ -786,6 +786,17 @@ export function useAIAssistant(aiContext?: AIContext) {
   // Queued message support: allow typing while AI is streaming
   const queuedMessageRef = useRef<{ text: string; provider?: string; images?: string[] } | null>(null);
   const isLoadingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoading(false);
+    isLoadingRef.current = false;
+    queuedMessageRef.current = null;
+  }, []);
 
   const sendMessage = useCallback(async (userText: string, preferredProvider?: string, images?: string[]) => {
     if (!userText.trim() && (!images || images.length === 0)) return;
@@ -887,6 +898,9 @@ export function useAIAssistant(aiContext?: AIContext) {
         };
       }
 
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       const resp = await fetch(ASSISTANT_URL, {
         method: 'POST',
         headers: {
@@ -894,6 +908,7 @@ export function useAIAssistant(aiContext?: AIContext) {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
 
       if (!resp.ok || !resp.body) {
@@ -949,10 +964,28 @@ export function useAIAssistant(aiContext?: AIContext) {
         return updated;
       });
     } catch (e) {
-      console.error(e);
-      toast.error('Ошибка AI ассистента');
-      updateMessages(prev => prev.filter(m => m.id !== assistantId));
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        // User stopped generation — keep partial content
+        if (assistantContent) {
+          assistantContent += '\n\n*⏹ Генерация остановлена*';
+          const actions = parseActions(assistantContent);
+          updateMessages(prev => {
+            const updated = prev.map(m =>
+              m.id === assistantId ? { ...m, content: assistantContent, actions } : m
+            );
+            history.saveSession(updated);
+            return updated;
+          });
+        } else {
+          updateMessages(prev => prev.filter(m => m.id !== assistantId));
+        }
+      } else {
+        console.error(e);
+        toast.error('Ошибка AI ассистента');
+        updateMessages(prev => prev.filter(m => m.id !== assistantId));
+      }
     } finally {
+      abortControllerRef.current = null;
       setIsLoading(false);
       isLoadingRef.current = false;
       // Process queued message if any
@@ -996,6 +1029,7 @@ export function useAIAssistant(aiContext?: AIContext) {
     messages,
     isLoading,
     sendMessage,
+    stopGeneration,
     executeAction,
     clearMessages,
     // History

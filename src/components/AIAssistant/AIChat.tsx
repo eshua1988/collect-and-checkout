@@ -11,7 +11,7 @@ import {
   Minimize2, Maximize2, Plus, ChevronLeft,
   History, Trash2, MessageSquare, Copy, Check,
   Zap, Code2, LayoutTemplate, BrainCircuit, ChevronDown,
-  Wand2, ArrowRight, ImagePlus, Camera, Link2,
+  Wand2, ArrowRight, ImagePlus, Camera, Link2, Square,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBotsStorage } from '@/hooks/useBotsStorage';
@@ -556,7 +556,7 @@ interface AIChatProps {
 
 export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragStart }: AIChatProps) {
   const {
-    messages, isLoading, sendMessage, executeAction, clearMessages,
+    messages, isLoading, sendMessage, stopGeneration, executeAction, clearMessages,
     historyState, loadHistorySession, goToPrevSession, goToNextSession,
   } = useAIAssistant(aiContext);
 
@@ -1091,11 +1091,26 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
                 </button>
               </div>
 
+              {isLoading && (
+                <Button
+                  size="sm"
+                  onClick={stopGeneration}
+                  className="ml-auto h-8 px-4 rounded-xl text-xs font-medium bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 border-0 shadow-md shadow-red-500/25 transition-all active:scale-95"
+                  title="Остановить генерацию"
+                >
+                  <Square className="w-3 h-3 mr-1.5 fill-current" />Стоп
+                </Button>
+              )}
               <Button
                 size="sm"
                 onClick={handleSend}
                 disabled={!input.trim() && attachedImages.length === 0}
-                className="ml-auto h-8 px-4 rounded-xl text-xs font-medium bg-gradient-to-r from-violet-500 to-blue-600 hover:from-violet-600 hover:to-blue-700 border-0 shadow-md shadow-violet-500/25 transition-all active:scale-95 disabled:opacity-40"
+                className={cn(
+                  'h-8 px-4 rounded-xl text-xs font-medium border-0 shadow-md transition-all active:scale-95 disabled:opacity-40',
+                  isLoading
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/25'
+                    : 'ml-auto bg-gradient-to-r from-violet-500 to-blue-600 hover:from-violet-600 hover:to-blue-700 shadow-violet-500/25'
+                )}
               >
                 {isLoading
                   ? (input.trim() || attachedImages.length > 0)
