@@ -552,7 +552,39 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
       );
 
     default:
-      return wrap(<div className="py-8 px-8 text-center text-muted-foreground">Блок: {block.type}</div>);
+      // Generic rendering for custom AI-registered block types
+      const cc = block.content || {};
+      return wrap(
+        <div className="py-8 px-8" style={{ backgroundColor: cc.bgColor, color: cc.textColor }}>
+          {cc.title && <h2 className="text-2xl font-bold mb-4 text-center">{cc.title}</h2>}
+          {cc.subtitle && <p className="text-center text-lg mb-4 opacity-80">{cc.subtitle}</p>}
+          {cc.text && <p className="text-center mb-4">{cc.text}</p>}
+          {cc.body && <p className="mb-4">{cc.body}</p>}
+          {cc.items && Array.isArray(cc.items) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+              {cc.items.map((item: any, i: number) => (
+                <div key={i} className="p-4 rounded-lg border bg-white/5">
+                  {item.icon && <span className="text-2xl">{item.icon}</span>}
+                  {item.title && <h3 className="font-semibold mt-1">{item.title}</h3>}
+                  {item.value && <p className="text-xl font-bold">{item.value}</p>}
+                  {item.desc && <p className="text-sm opacity-70">{item.desc}</p>}
+                  {item.label && !item.title && <p className="text-sm">{item.label}</p>}
+                  {item.name && <p className="font-medium">{item.name}</p>}
+                  {item.text && <p className="text-sm opacity-80">{item.text}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+          {cc.ctaText && (
+            <div className="text-center mt-6">
+              <a href={cc.ctaHref || '#'} className="inline-block px-6 py-3 rounded-lg bg-white/20 font-semibold hover:bg-white/30 transition">{cc.ctaText}</a>
+            </div>
+          )}
+          {!cc.title && !cc.text && !cc.items && (
+            <p className="text-center text-muted-foreground">🧩 {block.type}</p>
+          )}
+        </div>
+      );
   }
 }
 

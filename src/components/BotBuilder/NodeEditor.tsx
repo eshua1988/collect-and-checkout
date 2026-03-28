@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { X, Plus, Trash2, Settings2, Brain, Clock, Shuffle, Languages, Youtube, Share2, Globe } from 'lucide-react';
 import { FormData } from '@/types/form';
 import { BotNode } from '@/types/bot';
+import { getCustomNodeTypes } from '@/components/AIAssistant/useAIAssistant';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -25,7 +26,7 @@ interface NodeEditorProps {
   onDelete: (nodeId: string) => void;
 }
 
-const typeLabel: Record<BotNodeType, string> = {
+const typeLabel: Record<string, string> = {
   message: '💬 Сообщение',
   userInput: '❓ Ввод пользователя',
   condition: '⚡ Условие',
@@ -44,6 +45,7 @@ const typeLabel: Record<BotNodeType, string> = {
   instagramMonitor: '📸 Instagram Monitor',
   facebookMonitor: '📘 Facebook Monitor',
   userLangPref: '🗣 Выбор языка',
+  yandexTranslate: '🔴 Яндекс Перевод',
 };
 
 const LANGUAGES = [
@@ -147,7 +149,7 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
       <CardHeader className="pb-3 flex flex-row items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <Settings2 className="w-4 h-4 text-primary" />
-          <CardTitle className="text-sm">{typeLabel[nodeType]}</CardTitle>
+          <CardTitle className="text-sm">{typeLabel[nodeType] || (() => { const c = getCustomNodeTypes()[nodeType]; return c ? `${c.icon} ${c.label}` : nodeType; })()}</CardTitle>
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive hover:text-destructive" onClick={() => onDelete(nodeId)}>
@@ -1325,6 +1327,85 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
             </div>
           </>
         )}
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            CUSTOM / AI-REGISTERED NODE TYPES — generic property editor
+        ══════════════════════════════════════════════════════════════════════ */}
+        {!typeLabel[nodeType] && (() => {
+          const customMeta = getCustomNodeTypes()[nodeType];
+          const SKIP_KEYS = new Set(['label', 'icon', 'description']);
+          const dataEntries = Object.entries(local).filter(([k]) => !SKIP_KEYS.has(k));
+          return (
+            <>
+              {customMeta && (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+                  <span className="text-lg">{customMeta.icon}</span>
+                  <div>
+                    <p className="text-xs font-medium">{customMeta.label}</p>
+                    {customMeta.description && <p className="text-xs text-muted-foreground">{customMeta.description}</p>}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label className="text-xs">Текст / Сообщение</Label>
+                <Textarea
+                  value={local.text || ''}
+                  onChange={e => update({ text: e.target.value })}
+                  placeholder="Введите текст..."
+                  className="mt-1 text-xs min-h-[60px]"
+                />
+              </div>
+
+              {dataEntries.filter(([k]) => k !== 'text' && k !== 'buttons').map(([key, val]) => (
+                <div key={key}>
+                  <Label className="text-xs font-mono">{key}</Label>
+                  {typeof val === 'boolean' ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Switch checked={val} onCheckedChange={v => update({ [key]: v })} />
+                      <span className="text-xs text-muted-foreground">{val ? 'Да' : 'Нет'}</span>
+                    </div>
+                  ) : typeof val === 'number' ? (
+                    <Input type="number" value={val} onChange={e => update({ [key]: Number(e.target.value) })} className="mt-1 h-8 text-xs" />
+                  ) : typeof val === 'string' ? (
+                    val.length > 80 ? (
+                      <Textarea value={val} onChange={e => update({ [key]: e.target.value })} className="mt-1 text-xs min-h-[50px]" />
+                    ) : (
+                      <Input value={val} onChange={e => update({ [key]: e.target.value })} className="mt-1 h-8 text-xs" />
+                    )
+                  ) : Array.isArray(val) ? (
+                    <Textarea value={JSON.stringify(val, null, 2)} onChange={e => { try { update({ [key]: JSON.parse(e.target.value) }); } catch {} }} className="mt-1 text-xs font-mono min-h-[60px]" />
+                  ) : typeof val === 'object' && val !== null ? (
+                    <Textarea value={JSON.stringify(val, null, 2)} onChange={e => { try { update({ [key]: JSON.parse(e.target.value) }); } catch {} }} className="mt-1 text-xs font-mono min-h-[60px]" />
+                  ) : null}
+                </div>
+              ))}
+
+              {/* Buttons for custom nodes — same as message */}
+              <div>
+                <Label className="text-xs">Кнопки (опционально)</Label>
+                <div className="space-y-2 mt-1">
+                  {(local.buttons || []).map((btn: BotButton) => (
+                    <div key={btn.id} className="flex gap-1">
+                      <Input value={btn.label} onChange={e => updateButton(btn.id, 'label', e.target.value)} className="h-7 text-xs flex-1" placeholder="Текст кнопки" />
+                      <Input value={btn.url || ''} onChange={e => updateButton(btn.id, 'url', e.target.value)} className="h-7 text-xs flex-1" placeholder="URL (опционально)" />
+                      <Button variant="ghost" size="icon" className="w-7 h-7 shrink-0" onClick={() => removeButton(btn.id)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" className="w-full h-7 text-xs" onClick={addButton}>
+                    <Plus className="w-3 h-3 mr-1" /> Добавить кнопку
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground">
+                <p>🤖 Это кастомный узел, созданный AI. Все свойства из data доступны для редактирования.</p>
+              </div>
+            </>
+          );
+        })()}
 
       </CardContent>
     </Card>

@@ -294,7 +294,18 @@ export function FormFieldComponent({ field, value, onChange, onPaymentChange }: 
       );
 
     default:
-      return null;
+      // Generic rendering for custom AI-registered field types
+      return (
+        <div className="space-y-2">
+          {renderLabel()}
+          <Input
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder || `Введите ${field.label || field.type}...`}
+            required={field.required}
+          />
+        </div>
+      );
   }
 }
 

@@ -584,7 +584,64 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEdi
         );
 
       default:
-        return <p className="text-muted-foreground text-sm">Редактирование этого блока пока не поддерживается</p>;
+        // Generic editor for custom AI-registered block types — edit all content properties dynamically
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+              <span className="text-sm">🧩</span>
+              <p className="text-xs text-muted-foreground">Кастомный блок <strong>{block.type}</strong> — все свойства доступны для редактирования</p>
+            </div>
+            {Object.entries(content).map(([key, val]) => (
+              <div key={key}>
+                <Label>{key}</Label>
+                {typeof val === 'string' ? (
+                  key.toLowerCase().includes('color') ? (
+                    <Input type="color" value={val || '#000000'} onChange={e => set(key, e.target.value)} className="h-10 mt-1" />
+                  ) : val.length > 80 ? (
+                    <Textarea value={val} onChange={e => set(key, e.target.value)} rows={3} className="mt-1" />
+                  ) : (
+                    <Input value={val} onChange={e => set(key, e.target.value)} className="mt-1" />
+                  )
+                ) : typeof val === 'number' ? (
+                  <Input type="number" value={val} onChange={e => set(key, Number(e.target.value))} className="mt-1" />
+                ) : typeof val === 'boolean' ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input type="checkbox" checked={val} onChange={e => set(key, e.target.checked)} />
+                    <span className="text-sm">{val ? 'Да' : 'Нет'}</span>
+                  </div>
+                ) : Array.isArray(val) ? (
+                  <div className="space-y-2 mt-1">
+                    {val.map((item: any, i: number) => (
+                      <div key={i} className="border rounded-lg p-2 space-y-1">
+                        {typeof item === 'object' && item !== null ? (
+                          Object.entries(item).map(([ik, iv]) => (
+                            <div key={ik} className="flex gap-2 items-center">
+                              <span className="text-xs text-muted-foreground w-20 shrink-0">{ik}</span>
+                              <Input value={String(iv ?? '')} onChange={e => {
+                                const arr = [...val]; arr[i] = { ...arr[i], [ik]: e.target.value }; set(key, arr);
+                              }} className="h-7 text-xs" />
+                            </div>
+                          ))
+                        ) : (
+                          <Input value={String(item)} onChange={e => { const arr = [...val]; arr[i] = e.target.value; set(key, arr); }} className="h-7 text-xs" />
+                        )}
+                        <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" onClick={() => set(key, val.filter((_: any, j: number) => j !== i))}>
+                          <Trash2 className="w-3 h-3 mr-1" /> Удалить
+                        </Button>
+                      </div>
+                    ))}
+                    <Button size="sm" variant="outline" onClick={() => {
+                      const sample = val.length > 0 && typeof val[0] === 'object' ? Object.fromEntries(Object.keys(val[0]).map(k => [k, ''])) : '';
+                      set(key, [...val, sample]);
+                    }}><Plus className="w-3 h-3 mr-1" /> Добавить</Button>
+                  </div>
+                ) : typeof val === 'object' && val !== null ? (
+                  <Textarea value={JSON.stringify(val, null, 2)} onChange={e => { try { set(key, JSON.parse(e.target.value)); } catch {} }} rows={4} className="mt-1 font-mono text-xs" />
+                ) : null}
+              </div>
+            ))}
+          </div>
+        );
     }
   };
 

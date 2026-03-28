@@ -17,7 +17,8 @@ export type BotNodeType =
   | 'instagramMonitor'
   | 'facebookMonitor'
   | 'userLangPref'
-  | 'yandexTranslate';
+  | 'yandexTranslate'
+  | (string & {}); // allow custom AI-registered node types
 
 export interface BotButton {
   id: string;

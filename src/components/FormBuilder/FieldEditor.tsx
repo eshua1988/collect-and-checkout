@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getCustomFieldTypes } from '@/components/AIAssistant/useAIAssistant';
 
 interface FieldEditorProps {
   field: FormField;
@@ -41,7 +42,7 @@ export function FieldEditor({
   const { t } = useLanguage();
 
   const getFieldTypeName = (type: FormField['type']): string => {
-    const names: Record<FormField['type'], string> = {
+    const names: Record<string, string> = {
       text: t('field.text'),
       textarea: t('field.textarea'),
       number: t('field.number'),
@@ -54,7 +55,9 @@ export function FieldEditor({
       dynamicNumber: t('field.dynamicNumber'),
       payment: t('field.payment'),
     };
-    return names[type];
+    if (names[type]) return names[type];
+    const custom = getCustomFieldTypes()[type];
+    return custom ? `${custom.icon || '📝'} ${custom.label}` : type;
   };
 
   const addOption = () => {
@@ -267,6 +270,33 @@ export function FieldEditor({
             </div>
           </div>
         )}
+
+        {/* Generic editor for custom AI-registered field types */}
+        {!['text', 'textarea', 'number', 'email', 'phone', 'select', 'radio', 'checkbox', 'image', 'dynamicNumber', 'payment'].includes(field.type) && (() => {
+          const customMeta = getCustomFieldTypes()[field.type];
+          return (
+            <>
+              {customMeta && (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+                  <span className="text-lg">{customMeta.icon || '📝'}</span>
+                  <div>
+                    <p className="text-xs font-medium">{customMeta.label}</p>
+                    {customMeta.description && <p className="text-xs text-muted-foreground">{customMeta.description}</p>}
+                  </div>
+                </div>
+              )}
+              <div>
+                <Label>Placeholder</Label>
+                <Input
+                  value={field.placeholder || ''}
+                  onChange={(e) => onUpdate({ placeholder: e.target.value })}
+                  placeholder={`Подсказка для поля ${field.type}`}
+                  className="mt-1"
+                />
+              </div>
+            </>
+          );
+        })()}
 
         <div className="flex items-center gap-2">
           <Switch

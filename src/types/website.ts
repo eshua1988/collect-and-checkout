@@ -32,7 +32,8 @@ export type WebsiteBlockType =
   | 'progress'
   | 'comparison'
   | 'marquee'
-  | 'quote';
+  | 'quote'
+  | (string & {});
 
 export interface WebsiteBlock {
   id: string;

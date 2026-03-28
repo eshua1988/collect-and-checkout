@@ -9,7 +9,8 @@ export type FieldType =
   | 'checkbox'
   | 'image'
   | 'dynamicNumber'
-  | 'payment';
+  | 'payment'
+  | (string & {}); // allow custom AI-registered field types
 
 export interface FieldOption {
   id: string;
