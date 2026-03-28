@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef, memo, useEffect } from 'react';
+import { useCallback, useState, useRef, memo, useEffect, useMemo } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -155,12 +155,13 @@ function BotFlowEditorInner({ bot, forms, onSave, sidePanel, onSidePanelChange, 
   }, []);
 
   // Re-read custom types from localStorage (when AI adds new ones)
-  const nodeTypes: NodeTypes = {
+  // IMPORTANT: memoize nodeTypes so ReactFlow does NOT unmount/remount nodes on every render
+  const nodeTypes: NodeTypes = useMemo(() => ({
     ...BASE_NODE_TYPES,
     ...Object.fromEntries(
       Object.entries(customNodeMeta).map(([type, meta]) => [type, makeCustomNode(meta.label, meta.icon)])
     ),
-  };
+  }), [customNodeMeta]);
 
   // Custom node buttons for toolbar
   const customNodeButtons = Object.entries(customNodeMeta).map(([type, meta]) => ({
@@ -309,7 +310,7 @@ function BotFlowEditorInner({ bot, forms, onSave, sidePanel, onSidePanelChange, 
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => { setSelectedNodeId(node.id); }}
+          onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSidePanel('nodeEditor'); }}
           onNodeDoubleClick={(_, node) => { setSelectedNodeId(node.id); setSidePanel('nodeEditor'); }}
           onPaneClick={() => { setSelectedNodeId(null); if (sidePanel === 'nodeEditor') setSidePanel(null); }}
           fitView
