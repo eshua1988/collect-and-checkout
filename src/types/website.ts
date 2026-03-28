@@ -59,8 +59,14 @@ export interface AppWebsite {
   pages?: WebsitePage[];         // multi-page support
   globalStyles?: {
     primaryColor?: string;
+    secondaryColor?: string;
+    accentColor?: string;
     fontFamily?: string;
+    headingFont?: string;
     backgroundColor?: string;
+    textColor?: string;
+    borderRadius?: string;
+    maxWidth?: string;
   };
   seoTitle?: string;
   seoDescription?: string;

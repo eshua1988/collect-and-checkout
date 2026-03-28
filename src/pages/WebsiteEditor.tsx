@@ -495,6 +495,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 if (block) setEditingBlock(block);
               }}
               selectedBlockId={selectedBlockId}
+              globalStyles={website.globalStyles}
             />
             {activeBlocks.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 text-center px-8">
@@ -527,7 +528,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             <Button variant="ghost" onClick={() => setShowPreviewFull(false)}>✕ Закрыть</Button>
           </div>
           <div className="flex-1 overflow-auto">
-            <WebsitePreview blocks={activeBlocks} pages={hasPages ? website.pages : undefined} currentPageSlug={currentPageSlug} onPageNavigate={setCurrentPageSlug} />
+            <WebsitePreview blocks={activeBlocks} pages={hasPages ? website.pages : undefined} currentPageSlug={currentPageSlug} onPageNavigate={setCurrentPageSlug} globalStyles={website.globalStyles} />
           </div>
         </div>
       )}

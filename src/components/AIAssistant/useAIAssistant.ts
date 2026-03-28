@@ -244,6 +244,7 @@ export function useAIAssistant(aiContext?: AIContext) {
         completionMessage: action.data.completionMessage || 'Спасибо!',
         paymentEnabled: action.data.paymentEnabled || false,
         totalAmount: action.data.totalAmount || 0,
+        ...(action.data.theme ? { theme: action.data.theme } : {}),
         createdAt: now,
         updatedAt: now,
         published: false,
@@ -305,6 +306,7 @@ export function useAIAssistant(aiContext?: AIContext) {
         description: action.data.description ?? existingForm.description,
         fields: newFields,
         completionMessage: action.data.completionMessage || existingForm.completionMessage,
+        ...(action.data.theme ? { theme: action.data.theme } : {}),
         updatedAt: now,
       };
       saveForm(updatedForm);
@@ -614,6 +616,7 @@ export function useAIAssistant(aiContext?: AIContext) {
           ? (pages.find(p => p.slug === 'home')?.blocks || pages[0]?.blocks || [])
           : (action.data.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
         pages,
+        ...(action.data.globalStyles ? { globalStyles: action.data.globalStyles } : {}),
         createdAt: now,
         updatedAt: now,
       };
@@ -706,6 +709,7 @@ export function useAIAssistant(aiContext?: AIContext) {
           ? (pages.find(p => p.slug === 'home')?.blocks || pages[0]?.blocks || [])
           : (action.data.blocks || []).map((b: any) => ({ ...b, id: b.id || genId() })),
         pages,
+        ...(action.data.globalStyles ? { globalStyles: action.data.globalStyles } : {}),
         updatedAt: now,
       };
       saveWebsite(updatedSite);

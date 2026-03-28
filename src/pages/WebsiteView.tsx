@@ -34,6 +34,7 @@ export default function WebsiteView() {
       <WebsitePreview
         blocks={site.blocks}
         pages={hasPages ? site.pages : undefined}
+        globalStyles={site.globalStyles}
       />
     </>
   );

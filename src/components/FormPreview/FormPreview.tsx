@@ -117,10 +117,36 @@ export function FormPreview({ form, onUpdateCompletionMessage, isPublicView, onS
     );
   }
 
+  // Theme support
+  const theme = form.theme;
+  const formContainerStyle: React.CSSProperties = {};
+  if (theme?.backgroundColor) formContainerStyle.backgroundColor = theme.backgroundColor;
+  if (theme?.textColor) formContainerStyle.color = theme.textColor;
+  if (theme?.fontFamily) formContainerStyle.fontFamily = theme.fontFamily;
+
+  const headerStyle: React.CSSProperties = {};
+  if (theme?.headerColor) headerStyle.backgroundColor = theme.headerColor;
+  if (theme?.headerTextColor) headerStyle.color = theme.headerTextColor;
+
+  const buttonStyle: React.CSSProperties = {};
+  if (theme?.buttonColor) buttonStyle.backgroundColor = theme.buttonColor;
+  if (theme?.buttonTextColor) buttonStyle.color = theme.buttonTextColor;
+  if (theme?.borderRadius) buttonStyle.borderRadius = theme.borderRadius;
+
+  const fieldStyle: React.CSSProperties = {};
+  if (theme?.fieldBackground) fieldStyle.backgroundColor = theme.fieldBackground;
+  if (theme?.fieldBorder) fieldStyle.border = theme.fieldBorder;
+  if (theme?.borderRadius) fieldStyle.borderRadius = theme.borderRadius;
+
+  const layoutClass = theme?.layout === 'flat' ? 'shadow-none border-0' 
+    : theme?.layout === 'minimal' ? 'shadow-sm border-0 rounded-none' 
+    : theme?.layout === 'modern' ? 'shadow-2xl rounded-3xl border-0' 
+    : '';
+
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4" style={formContainerStyle}>
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-        <Card variant="form" className="overflow-hidden">
+        <Card variant="form" className={`overflow-hidden ${layoutClass}`} style={theme?.borderRadius ? { borderRadius: theme.borderRadius } : undefined}>
           {form.headerImage && (
             <div className="w-full h-48 overflow-hidden">
               <img
@@ -131,8 +157,8 @@ export function FormPreview({ form, onUpdateCompletionMessage, isPublicView, onS
             </div>
           )}
           
-          <CardHeader variant="form">
-            <CardTitle className="text-2xl">{form.title}</CardTitle>
+          <CardHeader variant="form" style={headerStyle}>
+            <CardTitle className="text-2xl" style={theme?.headerTextColor ? { color: theme.headerTextColor } : undefined}>{form.title}</CardTitle>
             {form.description && (
               <CardDescription className="text-primary-foreground/80">
                 {form.description}
@@ -163,7 +189,7 @@ export function FormPreview({ form, onUpdateCompletionMessage, isPublicView, onS
               </div>
             )}
 
-            <Button type="submit" size="lg" className="w-full" variant="formAction">
+            <Button type="submit" size="lg" className="w-full" variant="formAction" style={buttonStyle}>
               {form.paymentEnabled && totalAmount > 0 ? (
                 <>
                   {t('preview.goToPayment')}

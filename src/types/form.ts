@@ -41,6 +41,23 @@ export interface FormField {
   baseAmount?: number;
 }
 
+export interface FormTheme {
+  primaryColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  headerColor?: string;
+  headerTextColor?: string;
+  accentColor?: string;
+  fontFamily?: string;
+  borderRadius?: string;
+  buttonText?: string;
+  buttonColor?: string;
+  buttonTextColor?: string;
+  fieldBackground?: string;
+  fieldBorder?: string;
+  layout?: 'card' | 'flat' | 'minimal' | 'modern';
+}
+
 export interface FormData {
   id: string;
   title: string;
@@ -53,6 +70,7 @@ export interface FormData {
   paymentAccount?: string; // Account number for payment
   telegramBotToken?: string;
   telegramChatId?: string;
+  theme?: FormTheme;
   createdAt: number;
   updatedAt: number;
   published: boolean;

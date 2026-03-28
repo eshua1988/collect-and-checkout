@@ -1,5 +1,17 @@
-import { WebsiteBlock, WebsitePage } from '@/types/website';
+import { WebsiteBlock, WebsitePage, AppWebsite } from '@/types/website';
 import { useEffect, useState } from 'react';
+
+interface GlobalStyles {
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  fontFamily?: string;
+  headingFont?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  borderRadius?: string;
+  maxWidth?: string;
+}
 
 interface WebsitePreviewProps {
   blocks: WebsiteBlock[];
@@ -8,6 +20,7 @@ interface WebsitePreviewProps {
   onPageNavigate?: (slug: string) => void;
   onBlockClick?: (blockId: string) => void;
   selectedBlockId?: string | null;
+  globalStyles?: GlobalStyles;
 }
 
 function CountdownTimer({ targetDate }: { targetDate: string }) {
@@ -34,10 +47,34 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
   );
 }
 
-function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void) {
+function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles) {
   const c = block.content;
+  const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
   const wrapperClass = `relative group cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:ring-2 hover:ring-primary/40 hover:ring-offset-1'}`;
+
+  // Merge block.styles into a CSSProperties object
+  const blockStyle: React.CSSProperties = {};
+  if (bs.borderRadius) blockStyle.borderRadius = bs.borderRadius;
+  if (bs.padding) blockStyle.padding = bs.padding;
+  if (bs.margin) blockStyle.margin = bs.margin;
+  if (bs.fontSize) blockStyle.fontSize = bs.fontSize;
+  if (bs.fontWeight) blockStyle.fontWeight = bs.fontWeight;
+  if (bs.fontFamily) blockStyle.fontFamily = bs.fontFamily;
+  if (bs.boxShadow) blockStyle.boxShadow = bs.boxShadow;
+  if (bs.border) blockStyle.border = bs.border;
+  if (bs.opacity) blockStyle.opacity = bs.opacity;
+  if (bs.backgroundImage) blockStyle.backgroundImage = bs.backgroundImage;
+  if (bs.backgroundSize) blockStyle.backgroundSize = bs.backgroundSize;
+  if (bs.backgroundPosition) blockStyle.backgroundPosition = bs.backgroundPosition;
+  if (bs.maxWidth) blockStyle.maxWidth = bs.maxWidth;
+  if (bs.minHeight) blockStyle.minHeight = bs.minHeight;
+  if (bs.overflow) blockStyle.overflow = bs.overflow as any;
+  if (bs.textTransform) blockStyle.textTransform = bs.textTransform as any;
+  if (bs.letterSpacing) blockStyle.letterSpacing = bs.letterSpacing;
+  if (bs.lineHeight) blockStyle.lineHeight = bs.lineHeight;
+  // Apply global font if no block-specific provided
+  if (!blockStyle.fontFamily && gs?.fontFamily) blockStyle.fontFamily = gs.fontFamily;
 
   /** Handle link click — intercept internal page links (e.g. /about) */
   const handleLinkClick = (e: React.MouseEvent, href?: string) => {
@@ -56,7 +93,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   };
 
   const wrap = (node: React.ReactNode) => (
-    <div key={block.id} className={wrapperClass} onClick={() => onClick?.(block.id)}>
+    <div key={block.id} className={wrapperClass} style={blockStyle} onClick={() => onClick?.(block.id)}>
       {onClick && (
         <div className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? 'opacity-100' : ''}`}>
           ✏️ Редактировать
@@ -82,11 +119,11 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
 
     case 'hero':
       return wrap(
-        <section style={{ backgroundColor: c.bgColor || '#1e293b', color: c.textColor || '#fff' }} className="py-20 px-8">
+        <section style={{ backgroundColor: c.bgColor || gs?.backgroundColor || '#1e293b', color: c.textColor || gs?.textColor || '#fff' }} className="py-20 px-8">
           <div className={`max-w-4xl mx-auto text-${c.align || 'center'}`}>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">{c.title || 'Заголовок'}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight" style={gs?.headingFont ? { fontFamily: gs.headingFont } : undefined}>{c.title || 'Заголовок'}</h1>
             {c.subtitle && <p className="text-lg md:text-xl opacity-80 mb-8 max-w-2xl mx-auto">{c.subtitle}</p>}
-            {c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} className="inline-block px-8 py-4 rounded-xl bg-white/20 hover:bg-white/30 font-semibold text-lg transition-colors cursor-pointer">{c.ctaText}</a>}
+            {c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} style={gs?.accentColor ? { backgroundColor: gs.accentColor } : undefined} className="inline-block px-8 py-4 rounded-xl bg-white/20 hover:bg-white/30 font-semibold text-lg transition-colors cursor-pointer">{c.ctaText}</a>}
           </div>
         </section>
       );
@@ -588,7 +625,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   }
 }
 
-export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, selectedBlockId }: WebsitePreviewProps) {
+export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
   // Determine which blocks to display: use pages if available
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
 
@@ -623,9 +660,16 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
     );
   }
 
+  // Global container styles
+  const containerStyle: React.CSSProperties = {};
+  if (gs?.backgroundColor) containerStyle.backgroundColor = gs.backgroundColor;
+  if (gs?.textColor) containerStyle.color = gs.textColor;
+  if (gs?.fontFamily) containerStyle.fontFamily = gs.fontFamily;
+  if (gs?.maxWidth) containerStyle.maxWidth = gs.maxWidth;
+
   return (
-    <div className="min-h-screen bg-background">
-      {displayBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate))}
+    <div className="min-h-screen bg-background" style={containerStyle}>
+      {displayBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs))}
     </div>
   );
 }
