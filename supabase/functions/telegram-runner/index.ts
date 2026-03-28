@@ -273,8 +273,12 @@ async function runFlow(
 ): Promise<{ waitNodeId: string | null; variables: Record<string, string> }> {
 
   const nodeMap  = new Map(nodes.map(n => [n.id, n]));
-  const edge     = (src: string, h?: string) =>
-    edges.find(e => e.source === src && (h === undefined || e.sourceHandle === h));
+  const edge     = (src: string, h?: string) => {
+    if (h !== undefined) return edges.find(e => e.source === src && e.sourceHandle === h);
+    // Default: prefer edges without sourceHandle, fallback to any edge
+    return edges.find(e => e.source === src && (!e.sourceHandle || e.sourceHandle === "" || e.sourceHandle === null))
+        || edges.find(e => e.source === src);
+  };
 
   let cur: string | null = startId;
   let steps = 0;
@@ -335,6 +339,7 @@ async function runFlow(
         if (!consumed && textInput !== null) {
           const vn = node.data.variableName as string;
           if (vn) vars = { ...vars, [vn]: textInput };
+          vars = { ...vars, _lastUserInput: textInput };
           consumed   = true;
           textInput  = null;
           cur = edge(id)?.target ?? null;
@@ -516,19 +521,24 @@ async function runFlow(
 
       // ── aiChat ───────────────────────────────────────────────────────────────
       case "aiChat": {
-        const prompt = interp(node.data.aiPrompt as string || "", vars);
-        if (prompt) {
-          try {
-            const r = await fetch(`${SUPABASE_URL}/functions/v1/bot-ai-chat`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", apikey: SERVICE_KEY },
-              body: JSON.stringify({ prompt, model: node.data.aiModel, temperature: node.data.aiTemperature }),
-            });
-            const d = await r.json();
-            const aiResult = d.reply || d.response || "";
-            if (aiResult) vars = { ...vars, [node.data.aiResponseVar as string || "ai_response"]: aiResult };
-          } catch { /* ignore */ }
-        }
+        const systemPrompt = interp(node.data.aiPrompt as string || "Ты — полезный ассистент. Отвечай кратко.", vars);
+        const aiContext = node.data.aiContext ? interp(node.data.aiContext as string, vars) : "";
+        const userMsg = vars._lastUserInput || interp(node.data.aiUserMessage as string || "", vars) || "Привет";
+        try {
+          const r = await fetch(`${SUPABASE_URL}/functions/v1/bot-ai-chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: SERVICE_KEY },
+            body: JSON.stringify({
+              systemPrompt: aiContext ? `${systemPrompt}\n\nКонтекст: ${aiContext}` : systemPrompt,
+              userMessage: userMsg,
+              model: node.data.aiModel || "google/gemini-3-flash-preview",
+              temperature: node.data.aiTemperature ?? 0.7,
+            }),
+          });
+          const d = await r.json();
+          const aiResult = d.reply || d.response || "";
+          if (aiResult) vars = { ...vars, [node.data.aiResponseVar as string || "ai_response"]: aiResult };
+        } catch (e) { console.error("aiChat error:", e); }
         cur = edge(id)?.target ?? null;
         break;
       }
