@@ -309,7 +309,8 @@ function BotFlowEditorInner({ bot, forms, onSave, sidePanel, onSidePanelChange, 
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => { setSelectedNodeId(node.id); setSidePanel('nodeEditor'); }}
+          onNodeClick={(_, node) => { setSelectedNodeId(node.id); }}
+          onNodeDoubleClick={(_, node) => { setSelectedNodeId(node.id); setSidePanel('nodeEditor'); }}
           onPaneClick={() => { setSelectedNodeId(null); if (sidePanel === 'nodeEditor') setSidePanel(null); }}
           fitView
           proOptions={{ hideAttribution: true }}
