@@ -1093,12 +1093,12 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
 
               {isLoading && (
                 <Button
-                  size="sm"
+                  size="icon"
                   onClick={stopGeneration}
-                  className="ml-auto h-8 px-4 rounded-xl text-xs font-medium bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 border-0 shadow-md shadow-red-500/25 transition-all active:scale-95"
+                  className="ml-auto h-8 w-8 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 border-0 shadow-md shadow-red-500/25 transition-all active:scale-95"
                   title="Остановить генерацию"
                 >
-                  <Square className="w-3 h-3 mr-1.5 fill-current" />Стоп
+                  <Square className="w-3.5 h-3.5 fill-current" />
                 </Button>
               )}
               <Button
