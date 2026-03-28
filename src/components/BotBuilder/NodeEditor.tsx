@@ -11,7 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import { X, Plus, Trash2, Settings2, Brain, Clock, Shuffle, Languages, Youtube, Share2, Globe } from 'lucide-react';
 import { FormData } from '@/types/form';
 import { BotNode } from '@/types/bot';
-import { getCustomNodeTypes } from '@/components/AIAssistant/useAIAssistant';
+import { getCustomNodeTypes, saveCustomNodeType, deleteCustomNodeType } from '@/components/AIAssistant/useAIAssistant';
+import { toast } from 'sonner';
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
@@ -1400,8 +1401,58 @@ export function NodeEditor({ nodeId, nodeType, data, forms, nodes, onUpdate, onC
                 </div>
               </div>
 
-              <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground">
+              <div className="rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground space-y-2">
                 <p>🤖 Это кастомный узел, созданный AI. Все свойства из data доступны для редактирования.</p>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {!customMeta ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs text-primary border-primary/30 hover:bg-primary/10"
+                      onClick={() => {
+                        saveCustomNodeType(nodeType, {
+                          label: local.label || nodeType,
+                          icon: local.icon || '⚙️',
+                          color: 'bg-violet-50 text-violet-700 border-violet-200',
+                          description: local.description || '',
+                        });
+                        toast.success(`Инструмент "${local.label || nodeType}" добавлен в панель`);
+                      }}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />В панель
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs text-primary border-primary/30 hover:bg-primary/10"
+                      onClick={() => {
+                        saveCustomNodeType(nodeType, {
+                          label: local.label || customMeta.label,
+                          icon: local.icon || customMeta.icon,
+                          color: customMeta.color,
+                          description: local.description || customMeta.description,
+                        });
+                        toast.success(`Инструмент "${customMeta.label}" обновлён`);
+                      }}
+                    >
+                      <Settings2 className="w-3 h-3 mr-1" />Обновить
+                    </Button>
+                  )}
+                  {customMeta && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => {
+                        deleteCustomNodeType(nodeType);
+                        toast.success(`Инструмент "${customMeta.label}" удалён из панели`);
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />Удалить из панели
+                    </Button>
+                  )}
+                </div>
               </div>
             </>
           );

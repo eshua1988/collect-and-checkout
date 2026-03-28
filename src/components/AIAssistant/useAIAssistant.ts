@@ -57,11 +57,18 @@ export function getCustomNodeTypes(): Record<string, { label: string; icon: stri
   } catch { return {}; }
 }
 
-function saveCustomNodeType(type: string, meta: { label: string; icon: string; color: string; description: string }) {
+export function saveCustomNodeType(type: string, meta: { label: string; icon: string; color: string; description: string }) {
   const existing = getCustomNodeTypes();
   existing[type] = meta;
   localStorage.setItem(CUSTOM_NODES_KEY, JSON.stringify(existing));
   // Notify BotFlowEditor in the same tab to refresh its toolbar immediately
+  window.dispatchEvent(new CustomEvent('customNodeTypesUpdated'));
+}
+
+export function deleteCustomNodeType(type: string) {
+  const existing = getCustomNodeTypes();
+  delete existing[type];
+  localStorage.setItem(CUSTOM_NODES_KEY, JSON.stringify(existing));
   window.dispatchEvent(new CustomEvent('customNodeTypesUpdated'));
 }
 
