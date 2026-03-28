@@ -708,8 +708,11 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
-    e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+    // Only auto-resize if user hasn't manually resized
+    if (!e.target.dataset.manualResize) {
+      e.target.style.height = 'auto';
+      e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+    }
   };
 
   const handleSend = useCallback(() => {
@@ -717,7 +720,10 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
     sendMessage(input, provider === 'auto' ? undefined : provider, attachedImages.length > 0 ? attachedImages : undefined);
     setInput('');
     setAttachedImages([]);
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      delete textareaRef.current.dataset.manualResize;
+    }
   }, [input, sendMessage, provider, attachedImages]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1024,8 +1030,12 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               placeholder={isBotContext ? 'Что добавить в бота?' : isFormContext ? 'Что изменить в форме?' : isWebsiteContext ? 'Что добавить в сайт?' : 'Опиши что хочешь создать...'}
-              className="resize-none min-h-[44px] max-h-[120px] px-4 pt-3 pb-1 text-sm bg-transparent border-0 shadow-none focus-visible:ring-0 rounded-none leading-relaxed"
+              className="resize-y min-h-[44px] max-h-[50vh] px-4 pt-3 pb-1 text-sm bg-transparent border-0 shadow-none focus-visible:ring-0 rounded-none leading-relaxed"
               rows={1}
+              onMouseUp={(e) => {
+                const el = e.currentTarget;
+                if (el.offsetHeight > 44) el.dataset.manualResize = '1';
+              }}
             />
             <div className="flex items-center justify-between px-3 pb-2.5 gap-2">
               {/* Provider selector + image upload */}
