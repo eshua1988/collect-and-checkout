@@ -655,7 +655,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
+    if (e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('application/tool-config')) setIsDragging(true);
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -668,6 +668,19 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
+    // Handle tool config drops
+    const toolData = e.dataTransfer.getData('application/tool-config');
+    if (toolData) {
+      try {
+        const tool = JSON.parse(toolData) as { category: string; type: string; label: string };
+        const registerCmd = tool.category === 'bot' ? 'newNodeTypes' : tool.category === 'form' ? 'newFieldTypes' : 'newBlockTypes';
+        const categoryLabel = tool.category === 'bot' ? 'бота' : tool.category === 'form' ? 'формы' : 'сайта';
+        const prompt = `Настрой и расширь инструмент "${tool.label}" (тип: ${tool.type}, категория: ${categoryLabel}). Добавь новые возможности, улучши функционал, и зарегистрируй улучшенную версию через ${registerCmd}. Сохрани обратную совместимость с оригиналом.`;
+        setInput(prompt);
+      } catch { /* ignore invalid data */ }
+      return;
+    }
+    // Handle image file drops
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
     if (files.length > 0) handleImageFiles(files);
   }, [handleImageFiles]);
@@ -700,12 +713,12 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
   };
 
   const handleSend = useCallback(() => {
-    if ((!input.trim() && attachedImages.length === 0) || isLoading) return;
+    if (!input.trim() && attachedImages.length === 0) return;
     sendMessage(input, provider === 'auto' ? undefined : provider, attachedImages.length > 0 ? attachedImages : undefined);
     setInput('');
     setAttachedImages([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-  }, [input, isLoading, sendMessage, provider, attachedImages]);
+  }, [input, sendMessage, provider, attachedImages]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -984,7 +997,7 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-violet-500/10 rounded-2xl pointer-events-none">
                 <div className="flex items-center gap-2 text-violet-500 font-medium text-sm">
                   <ImagePlus className="w-5 h-5" />
-                  Перетащите изображения сюда
+                  Перетащите изображения или инструмент сюда
                 </div>
               </div>
             )}
@@ -1013,7 +1026,6 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
               placeholder={isBotContext ? 'Что добавить в бота?' : isFormContext ? 'Что изменить в форме?' : isWebsiteContext ? 'Что добавить в сайт?' : 'Опиши что хочешь создать...'}
               className="resize-none min-h-[44px] max-h-[120px] px-4 pt-3 pb-1 text-sm bg-transparent border-0 shadow-none focus-visible:ring-0 rounded-none leading-relaxed"
               rows={1}
-              disabled={isLoading}
             />
             <div className="flex items-center justify-between px-3 pb-2.5 gap-2">
               {/* Provider selector + image upload */}
@@ -1082,10 +1094,15 @@ export function AIChat({ onClose, isExpanded, onToggleExpand, aiContext, onDragS
               <Button
                 size="sm"
                 onClick={handleSend}
-                disabled={(!input.trim() && attachedImages.length === 0) || isLoading}
+                disabled={!input.trim() && attachedImages.length === 0}
                 className="ml-auto h-8 px-4 rounded-xl text-xs font-medium bg-gradient-to-r from-violet-500 to-blue-600 hover:from-violet-600 hover:to-blue-700 border-0 shadow-md shadow-violet-500/25 transition-all active:scale-95 disabled:opacity-40"
               >
-                {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-1.5" />Отправить</>}
+                {isLoading
+                  ? (input.trim() || attachedImages.length > 0)
+                    ? <><Send className="w-3.5 h-3.5 mr-1.5" />В очередь</>
+                    : <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <><Send className="w-3.5 h-3.5 mr-1.5" />Отправить</>
+                }
               </Button>
             </div>
           </div>

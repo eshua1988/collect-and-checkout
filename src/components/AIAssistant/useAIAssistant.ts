@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useFormsStorage } from '@/hooks/useFormsStorage';
@@ -783,8 +783,27 @@ export function useAIAssistant(aiContext?: AIContext) {
     }
   }, [saveForm, getForm, saveBot, saveWebsite, getWebsite, navigate, location, aiContext, getBot]);
 
+  // Queued message support: allow typing while AI is streaming
+  const queuedMessageRef = useRef<{ text: string; provider?: string; images?: string[] } | null>(null);
+  const isLoadingRef = useRef(false);
+
   const sendMessage = useCallback(async (userText: string, preferredProvider?: string, images?: string[]) => {
-    if ((!userText.trim() && (!images || images.length === 0)) || isLoading) return;
+    if (!userText.trim() && (!images || images.length === 0)) return;
+
+    // If AI is still streaming, queue the message for later
+    if (isLoadingRef.current) {
+      queuedMessageRef.current = { text: userText, provider: preferredProvider, images };
+      // Show user message immediately in chat
+      const queuedUserMsg: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: userText,
+        images,
+      };
+      updateMessages(prev => [...prev, queuedUserMsg]);
+      toast.info('Сообщение в очереди — отправится после ответа AI');
+      return;
+    }
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -816,6 +835,7 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     updateMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
+    isLoadingRef.current = true;
 
     let assistantContent = '';
     const assistantId = (Date.now() + 1).toString();
@@ -934,6 +954,16 @@ export function useAIAssistant(aiContext?: AIContext) {
       updateMessages(prev => prev.filter(m => m.id !== assistantId));
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
+      // Process queued message if any
+      const queued = queuedMessageRef.current;
+      if (queued) {
+        queuedMessageRef.current = null;
+        // Use setTimeout to allow state to settle
+        setTimeout(() => {
+          sendMessage(queued.text, queued.provider, queued.images);
+        }, 100);
+      }
     }
   }, [isLoading, parseActions, aiContext, updateMessages, history]);
 

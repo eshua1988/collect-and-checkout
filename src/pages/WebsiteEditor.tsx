@@ -351,7 +351,16 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                     <button
                       key={type}
                       onClick={() => addBlock(type, defaultContent)}
-                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl border hover:border-primary hover:bg-primary/5 transition-all text-center group"
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('application/tool-config', JSON.stringify({
+                          category: 'website',
+                          type,
+                          label
+                        }));
+                        e.dataTransfer.effectAllowed = 'copy';
+                      }}
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl border hover:border-primary hover:bg-primary/5 transition-all text-center group cursor-grab active:cursor-grabbing"
                     >
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                         {icon}

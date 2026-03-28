@@ -63,8 +63,17 @@ export function FieldTypeSelector({ onAddField }: FieldTypeSelectorProps) {
         <Button
           key={type}
           variant="outline"
-          className="flex items-center gap-2 h-auto py-3 px-4 justify-start hover:bg-primary/5 hover:border-primary/30"
+          className="flex items-center gap-2 h-auto py-3 px-4 justify-start hover:bg-primary/5 hover:border-primary/30 cursor-grab active:cursor-grabbing"
           onClick={() => onAddField(type)}
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('application/tool-config', JSON.stringify({
+              category: 'form',
+              type,
+              label: '_isCustom' in rest ? labelKey : t(labelKey)
+            }));
+            e.dataTransfer.effectAllowed = 'copy';
+          }}
         >
           <span className="text-primary">{icon}</span>
           <span className="text-sm">{'_isCustom' in rest ? labelKey : t(labelKey)}</span>

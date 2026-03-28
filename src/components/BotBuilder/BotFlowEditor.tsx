@@ -277,7 +277,16 @@ function BotFlowEditorInner({ bot, forms, onSave, sidePanel, onSidePanelChange, 
             <button
               key={btn.type}
               onClick={() => addNode(btn.type)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium shadow-sm bg-card hover:shadow-md transition-all ${btn.color}`}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('application/tool-config', JSON.stringify({
+                  category: 'bot',
+                  type: btn.type,
+                  label: btn.label
+                }));
+                e.dataTransfer.effectAllowed = 'copy';
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium shadow-sm bg-card hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${btn.color}`}
             >
               {btn.icon}
               {btn.label}
