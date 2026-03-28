@@ -50,6 +50,217 @@ function evalCond(
 interface BotNode { id: string; type: string; data: Record<string, unknown> }
 interface BotEdge { source: string; target: string; sourceHandle?: string }
 
+// ── Execution step types for custom nodes ----------------------------------------
+interface ExecStep {
+  action: string;
+  // sendMessage
+  text?: string;
+  buttons?: { id: string; label: string; url?: string }[];
+  parseMode?: string;
+  // setVariable
+  variable?: string;
+  value?: string;
+  operation?: string;
+  // fetchUrl
+  url?: string;
+  method?: string;
+  body?: string;
+  headers?: Record<string, string>;
+  resultVar?: string;
+  resultPath?: string;
+  // callFunction (Supabase edge function)
+  function?: string;
+  functionBody?: Record<string, unknown>;
+  // condition
+  operator?: string;
+  thenSteps?: ExecStep[];
+  elseSteps?: ExecStep[];
+  // waitInput
+  prompt?: string;
+  variableName?: string;
+  inputType?: string;
+  choices?: string[];
+}
+
+// ── Custom node execution engine (backend) ----------------------------------------
+async function runExecSteps(
+  steps: ExecStep[],
+  token: string,
+  chatId: number,
+  vars: Record<string, string>,
+): Promise<{ vars: Record<string, string>; waitInput?: { prompt: string; variableName: string; inputType?: string; choices?: string[] }; waitButtons?: boolean }> {
+  for (const step of steps) {
+    switch (step.action) {
+      case "sendMessage": {
+        const text = interp(step.text || "", vars);
+        if (!text) break;
+        const buttons = step.buttons || [];
+        if (buttons.length > 0) {
+          const rows: unknown[][] = [];
+          let row: unknown[] = [];
+          buttons.forEach((b, i) => {
+            const item: Record<string, string> = { text: interp(b.label, vars) };
+            if (b.url) item.url = interp(b.url, vars);
+            else item.callback_data = String(i);
+            row.push(item);
+            if (row.length >= 2) { rows.push(row); row = []; }
+          });
+          if (row.length) rows.push(row);
+          await tg(token, "sendMessage", {
+            chat_id: chatId,
+            text,
+            parse_mode: step.parseMode !== "plain" ? (step.parseMode || "Markdown") : undefined,
+            reply_markup: { inline_keyboard: rows },
+          });
+          return { vars, waitButtons: true };
+        }
+        await tg(token, "sendMessage", {
+          chat_id: chatId,
+          text,
+          parse_mode: step.parseMode !== "plain" ? (step.parseMode || "Markdown") : undefined,
+        });
+        break;
+      }
+
+      case "setVariable": {
+        const name = step.variable || step.variableName || "";
+        if (!name) break;
+        const val = interp(step.value || "", vars);
+        const op = step.operation || "set";
+        const cur = vars[name] ?? "";
+        switch (op) {
+          case "set": vars = { ...vars, [name]: val }; break;
+          case "increment": vars = { ...vars, [name]: String((parseFloat(cur) || 0) + (parseFloat(val) || 1)) }; break;
+          case "decrement": vars = { ...vars, [name]: String((parseFloat(cur) || 0) - (parseFloat(val) || 1)) }; break;
+          case "append": vars = { ...vars, [name]: cur + val }; break;
+          case "clear": { const v = { ...vars }; delete v[name]; vars = v; break; }
+          default: vars = { ...vars, [name]: val }; break;
+        }
+        break;
+      }
+
+      case "fetchUrl": {
+        const url = interp(step.url || "", vars);
+        if (!url) break;
+        try {
+          const method = (step.method || "GET").toUpperCase();
+          const opts: RequestInit = { method };
+          if (method !== "GET" && step.body) {
+            opts.body = interp(step.body, vars);
+            opts.headers = { "Content-Type": "application/json", ...(step.headers || {}) };
+          } else if (step.headers) {
+            opts.headers = step.headers;
+          }
+          // Interpolate header values
+          if (opts.headers) {
+            const h: Record<string, string> = {};
+            for (const [k, v] of Object.entries(opts.headers as Record<string, string>)) {
+              h[k] = interp(v, vars);
+            }
+            opts.headers = h;
+          }
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
+          const resp = await fetch(url, { ...opts, signal: controller.signal });
+          clearTimeout(timeout);
+          const txt = await resp.text();
+          const resultVar = step.resultVar || "fetch_response";
+          vars = { ...vars, [resultVar]: txt };
+          // Try to extract specific JSON path
+          try {
+            const json = JSON.parse(txt);
+            if (step.resultPath) {
+              const parts = step.resultPath.split(".");
+              let val: unknown = json;
+              for (const p of parts) { val = (val as Record<string, unknown>)?.[p]; }
+              if (val !== undefined) vars = { ...vars, [resultVar]: String(val) };
+            }
+            // Also save common fields
+            if (json.translation) vars = { ...vars, [`${resultVar}_translation`]: String(json.translation) };
+            if (json.translatedText) vars = { ...vars, [`${resultVar}_translatedText`]: String(json.translatedText) };
+            if (json.result) vars = { ...vars, [`${resultVar}_result`]: String(json.result) };
+            if (json.reply) vars = { ...vars, [`${resultVar}_reply`]: String(json.reply) };
+          } catch { /* not JSON */ }
+        } catch (e) {
+          console.error("ExecStep fetchUrl error:", e);
+          vars = { ...vars, [step.resultVar || "fetch_response"]: `error: ${e}` };
+        }
+        break;
+      }
+
+      case "callFunction": {
+        const funcName = step.function || "";
+        if (!funcName) break;
+        try {
+          // Interpolate all body values
+          const rawBody = step.functionBody || {};
+          const body: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(rawBody)) {
+            body[k] = typeof v === "string" ? interp(v, vars) : v;
+          }
+          const resp = await fetch(`${SUPABASE_URL}/functions/v1/${funcName}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: SERVICE_KEY },
+            body: JSON.stringify(body),
+          });
+          const data = await resp.json();
+          const resultVar = step.resultVar || "function_response";
+          vars = { ...vars, [resultVar]: JSON.stringify(data) };
+          // Extract common result fields
+          if (data.translatedText) vars = { ...vars, [resultVar]: String(data.translatedText) };
+          else if (data.reply) vars = { ...vars, [resultVar]: String(data.reply) };
+          else if (data.result) vars = { ...vars, [resultVar]: String(data.result) };
+          else if (data.lang) vars = { ...vars, [resultVar]: String(data.lang) };
+          else if (data.text) vars = { ...vars, [resultVar]: String(data.text) };
+        } catch (e) {
+          console.error("ExecStep callFunction error:", e);
+        }
+        break;
+      }
+
+      case "condition": {
+        const actual = vars[step.variable || ""] ?? "";
+        const val = interp(step.value || "", vars);
+        const ok = evalCond(step.variable || "", step.operator || "equals", val, vars);
+        const branch = ok ? (step.thenSteps || []) : (step.elseSteps || []);
+        if (branch.length > 0) {
+          const result = await runExecSteps(branch, token, chatId, vars);
+          vars = result.vars;
+          if (result.waitInput || result.waitButtons) return result;
+        }
+        break;
+      }
+
+      case "waitInput": {
+        const prompt = interp(step.prompt || step.text || "Введите значение:", vars);
+        const body: Record<string, unknown> = { chat_id: chatId, text: prompt };
+        if (step.inputType === "choice" && step.choices?.length) {
+          body.reply_markup = {
+            keyboard: step.choices.map(c => [{ text: interp(c, vars) }]),
+            one_time_keyboard: true,
+            resize_keyboard: true,
+          };
+        }
+        await tg(token, "sendMessage", body);
+        return {
+          vars,
+          waitInput: {
+            prompt,
+            variableName: step.variableName || "user_input",
+            inputType: step.inputType,
+            choices: step.choices,
+          },
+        };
+      }
+
+      default:
+        console.log(`Unknown exec step action: ${step.action}`);
+        break;
+    }
+  }
+  return { vars };
+}
+
 // ── Flow executor ----------------------------------------------------------------
 async function runFlow(
   token: string,
@@ -361,10 +572,60 @@ async function runFlow(
         return { waitNodeId: id, variables: vars };
       }
 
-      // ── default: skip unknown nodes ──────────────────────────────────────────
-      default:
+      // ── default: execute custom node via executionSteps ─────────────────────
+      default: {
+        const steps = node.data.executionSteps as ExecStep[] | undefined;
+        if (steps && steps.length > 0) {
+          try {
+            const result = await runExecSteps(steps, token, chatId, vars);
+            vars = result.vars;
+            // If step requested waitInput — save as wait node
+            if (result.waitInput) {
+              // Store the variableName in node data context so we can consume input later
+              vars = { ...vars, __customWaitVar: result.waitInput.variableName };
+              return { waitNodeId: id, variables: vars };
+            }
+            // If step sent buttons — wait for callback
+            if (result.waitButtons) {
+              return { waitNodeId: id, variables: vars };
+            }
+          } catch (e) {
+            console.error(`ExecSteps error on node ${id} (${node.type}):`, e);
+          }
+        } else {
+          // Legacy: custom node without executionSteps — try text/message
+          const text = interp((node.data.text as string) || (node.data.message as string) || "", vars);
+          if (text) {
+            const buttons = (node.data.buttons as { id: string; label: string; url?: string }[]) || [];
+            if (buttons.length > 0) {
+              const rows: unknown[][] = [];
+              let row: unknown[] = [];
+              buttons.forEach((b, i) => {
+                const item: Record<string, string> = { text: b.label };
+                if (b.url) item.url = b.url;
+                else item.callback_data = String(i);
+                row.push(item);
+                if (row.length >= 2) { rows.push(row); row = []; }
+              });
+              if (row.length) rows.push(row);
+              await tg(token, "sendMessage", {
+                chat_id: chatId,
+                text,
+                parse_mode: node.data.parseMode !== "plain" ? ((node.data.parseMode as string) || "Markdown") : undefined,
+                reply_markup: { inline_keyboard: rows },
+              });
+              return { waitNodeId: id, variables: vars };
+            }
+            await tg(token, "sendMessage", {
+              chat_id: chatId,
+              text,
+              parse_mode: node.data.parseMode !== "plain" ? ((node.data.parseMode as string) || "Markdown") : undefined,
+            });
+          }
+        }
         cur = edge(id)?.target ?? null;
         break;
+      }
     }
   }
 
@@ -559,6 +820,24 @@ serve(async (req) => {
       if (currentNode?.type === "userInput") {
         // Standard: user responding to an input prompt
         startId = session.current_node_id;
+      } else if (vars.__customWaitVar) {
+        // Custom node was waiting for input via executionSteps waitInput
+        const varName = vars.__customWaitVar;
+        const newVars = { ...vars, [varName]: textInput };
+        delete newVars.__customWaitVar;
+        // Continue from next node after the custom wait node
+        const nextEdge = edges.find(e => e.source === session.current_node_id);
+        startId = nextEdge?.target ?? null;
+        if (startId) {
+          try {
+            const result = await runFlow(bot.token, chatId, nodes, edges, startId, newVars, null);
+            await supabase.from("bot_sessions").upsert(
+              { bot_id: botId, chat_id: chatId, current_node_id: result.waitNodeId, variables: result.variables, updated_at: new Date().toISOString() },
+              { onConflict: "bot_id,chat_id" },
+            );
+          } catch (e) { console.error("Flow error:", e); }
+        }
+        return new Response("OK");
       } else {
         // User typed text while bot waited for a button click (message, userLangPref, etc.)
         // Search forward in flow for the nearest userInput node

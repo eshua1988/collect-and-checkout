@@ -318,12 +318,178 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
       return processNode(nextId, newVars);
     }
 
-    // Generic handler for all unknown/custom node types — show info and continue
+    // Generic handler for all unknown/custom node types
     {
+      const steps = data.executionSteps as any[] | undefined;
+      if (steps && steps.length > 0) {
+        // Execute steps sequentially
+        let currentVars = { ...vars };
+        for (const step of steps) {
+          switch (step.action) {
+            case 'sendMessage': {
+              const text = interpolate(step.text || '', currentVars);
+              if (text) {
+                const btnLabels = (step.buttons || []).map((b: any) => interpolate(b.label, currentVars));
+                addBotMessage(text, btnLabels.length > 0 ? btnLabels : undefined);
+                if (btnLabels.length > 0) {
+                  setCurrentNodeId(nodeId);
+                  setWaitingChoice(btnLabels);
+                  setWaitingInput(false);
+                  setVariables(currentVars);
+                  return;
+                }
+              }
+              break;
+            }
+            case 'setVariable': {
+              const name = step.variable || step.variableName || '';
+              if (name) {
+                const val = interpolate(step.value || '', currentVars);
+                const op = step.operation || 'set';
+                const cur = currentVars[name] ?? '';
+                switch (op) {
+                  case 'set': currentVars[name] = val; break;
+                  case 'increment': currentVars[name] = String((parseFloat(cur) || 0) + (parseFloat(val) || 1)); break;
+                  case 'decrement': currentVars[name] = String((parseFloat(cur) || 0) - (parseFloat(val) || 1)); break;
+                  case 'append': currentVars[name] = cur + val; break;
+                  case 'clear': delete currentVars[name]; break;
+                  default: currentVars[name] = val; break;
+                }
+              }
+              break;
+            }
+            case 'fetchUrl': {
+              const url = interpolate(step.url || '', currentVars);
+              if (url) {
+                const typingId = addTyping();
+                try {
+                  const method = (step.method || 'GET').toUpperCase();
+                  const opts: RequestInit = { method };
+                  if (method !== 'GET' && step.body) {
+                    opts.body = interpolate(step.body, currentVars);
+                    opts.headers = { 'Content-Type': 'application/json', ...(step.headers || {}) };
+                  }
+                  const resp = await fetch(url, opts);
+                  const txt = await resp.text();
+                  const resultVar = step.resultVar || 'fetch_response';
+                  currentVars[resultVar] = txt;
+                  try {
+                    const json = JSON.parse(txt);
+                    if (step.resultPath) {
+                      const parts = step.resultPath.split('.');
+                      let val: any = json;
+                      for (const p of parts) val = val?.[p];
+                      if (val !== undefined) currentVars[resultVar] = String(val);
+                    }
+                    if (json.translatedText) currentVars[resultVar] = String(json.translatedText);
+                    else if (json.reply) currentVars[resultVar] = String(json.reply);
+                    else if (json.result) currentVars[resultVar] = String(json.result);
+                  } catch {}
+                  removeTyping(typingId);
+                } catch (e) {
+                  removeTyping(typingId);
+                  addBotMessage(`⚠️ Ошибка запроса: ${url}`);
+                }
+              }
+              break;
+            }
+            case 'callFunction': {
+              const funcName = step.function || '';
+              if (funcName) {
+                const typingId = addTyping();
+                try {
+                  const rawBody: Record<string, any> = step.functionBody || {};
+                  const body: Record<string, any> = {};
+                  for (const [k, v] of Object.entries(rawBody)) {
+                    body[k] = typeof v === 'string' ? interpolate(v, currentVars) : v;
+                  }
+                  const { data: fnData, error } = await supabase.functions.invoke(funcName, { body });
+                  removeTyping(typingId);
+                  const resultVar = step.resultVar || 'function_response';
+                  if (error) {
+                    currentVars[resultVar] = `error: ${error.message}`;
+                  } else if (fnData) {
+                    if (fnData.translatedText) currentVars[resultVar] = String(fnData.translatedText);
+                    else if (fnData.reply) currentVars[resultVar] = String(fnData.reply);
+                    else if (fnData.result) currentVars[resultVar] = String(fnData.result);
+                    else if (fnData.lang) currentVars[resultVar] = String(fnData.lang);
+                    else if (fnData.text) currentVars[resultVar] = String(fnData.text);
+                    else currentVars[resultVar] = JSON.stringify(fnData);
+                  }
+                } catch (e) {
+                  removeTyping(typingId);
+                  addBotMessage(`⚠️ Ошибка вызова ${funcName}`);
+                }
+              }
+              break;
+            }
+            case 'condition': {
+              const varVal = currentVars[step.variable || ''] || '';
+              const condVal = interpolate(step.value || '', currentVars);
+              let ok = false;
+              switch (step.operator || 'equals') {
+                case 'equals': ok = varVal === condVal; break;
+                case 'notEquals': ok = varVal !== condVal; break;
+                case 'contains': ok = varVal.includes(condVal); break;
+                case 'notContains': ok = !varVal.includes(condVal); break;
+                case 'greater': ok = parseFloat(varVal) > parseFloat(condVal); break;
+                case 'less': ok = parseFloat(varVal) < parseFloat(condVal); break;
+                case 'isEmpty': ok = !varVal; break;
+                case 'isNotEmpty': ok = !!varVal; break;
+              }
+              // Execute branch steps inline (simplified — no nested wait support)
+              const branch = ok ? (step.thenSteps || []) : (step.elseSteps || []);
+              for (const sub of branch) {
+                if (sub.action === 'sendMessage') {
+                  const t = interpolate(sub.text || '', currentVars);
+                  if (t) addBotMessage(t);
+                } else if (sub.action === 'setVariable' && (sub.variable || sub.variableName)) {
+                  currentVars[sub.variable || sub.variableName] = interpolate(sub.value || '', currentVars);
+                }
+              }
+              break;
+            }
+            case 'waitInput': {
+              const prompt = interpolate(step.prompt || step.text || 'Введите значение:', currentVars);
+              if (step.inputType === 'choice' && step.choices?.length) {
+                addBotMessage(prompt, step.choices);
+                setCurrentNodeId(nodeId);
+                setWaitingChoice(step.choices);
+                setWaitingInput(false);
+              } else {
+                addBotMessage(prompt);
+                setCurrentNodeId(nodeId);
+                setWaitingInput(true);
+                setWaitingChoice(null);
+              }
+              // Store variable name for when input arrives
+              currentVars.__customWaitVar = step.variableName || 'user_input';
+              setVariables(currentVars);
+              return;
+            }
+          }
+        }
+        setVariables(currentVars);
+        const nextId = getNextNodeId(nodeId, edges);
+        return processNode(nextId, currentVars);
+      }
+
+      // Fallback: show text/message if present, otherwise show type label
       const typeLabel = node.type || 'unknown';
       const dataText = data.text || data.message || data.caption || '';
       const displayText = dataText ? interpolate(dataText, vars) : '';
-      addBotMessage(`⚙️ [${typeLabel}]${displayText ? ': ' + displayText : ''}`);
+      if (displayText) {
+        const buttonLabels = (data.buttons as any[] || []).map((b: any) => b.label);
+        addBotMessage(displayText, buttonLabels.length > 0 ? buttonLabels : undefined);
+        if (buttonLabels.length > 0) {
+          setCurrentNodeId(nodeId);
+          setWaitingChoice(buttonLabels);
+          setWaitingInput(false);
+          return;
+        }
+      } else {
+        addBotMessage(`⚙️ [${typeLabel}]`);
+      }
       const nextId = getNextNodeId(nodeId, edges);
       return processNode(nextId, vars);
     }
@@ -355,6 +521,11 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
     const newVars = { ...variables, _lastUserInput: input };
     if (node?.type === 'userInput' && node.data.variableName) {
       newVars[node.data.variableName] = input;
+    }
+    // Custom node waitInput: save input to the stored variable name
+    if (variables.__customWaitVar) {
+      newVars[variables.__customWaitVar] = input;
+      delete newVars.__customWaitVar;
     }
     setVariables(newVars);
     setInputValue('');

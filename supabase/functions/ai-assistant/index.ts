@@ -333,13 +333,83 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент платформы FormBot
 - Магазин: start → message(каталог+кнопки) → [кнопки→message(описание товара)] → userInput(количество) → variable(set:order) → action(webhook)
 - Мультиязычный: start → userLangPref(выбор языка) → langDetect → condition(lang==ru) → [ru:message] [en:translate+message]
 
-## ❼ КАСТОМНЫЕ ТИПЫ УЗЛОВ (авторегистрация)
+## ❼ КАСТОМНЫЕ ТИПЫ УЗЛОВ (авторегистрация + бекенд-логика)
 Если для задачи НЕ хватает встроенных узлов — **ИЗОБРЕТИ кастомный тип**!
 Примеры: paymentNode, ratingNode, subscriptionNode, calendarNode, notificationNode, qrCodeNode, pollNode, bookingNode, reviewNode.
 - Придумай уникальное camelCase имя для type
 - Добавь в data: {label:"Название",icon:"💳",description:"Описание",...}
 - Объяви в newNodeTypes: [{"nodeType":"paymentNode","label":"Оплата","icon":"💳","color":"bg-green-500/10 text-green-400 border-green-500/30","description":"Приём платежа"}]
 - Узел автоматически появится в панели инструментов!
+
+### 🔧 executionSteps — БЕКЕНД-ЛОГИКА КАСТОМНЫХ УЗЛОВ
+Кастомные узлы могут содержать **executionSteps** в data — массив шагов, выполняемых на бекенде (Telegram + Supabase). Это позволяет создавать узлы с РЕАЛЬНОЙ логикой!
+
+**Доступные действия (action):**
+1. **sendMessage** — отправить сообщение:
+   \`{"action":"sendMessage","text":"Привет, {{user_name}}!","parseMode":"Markdown","buttons":[{"id":"b1","label":"OK"}]}\`
+   Если есть buttons — бот ЖДЁТ нажатия кнопки.
+
+2. **setVariable** — установить переменную:
+   \`{"action":"setVariable","variable":"total","value":"{{price}}","operation":"set"}\`
+   Операции: set, increment, decrement, append, clear
+
+3. **fetchUrl** — HTTP-запрос к любому API:
+   \`{"action":"fetchUrl","url":"https://api.example.com/translate","method":"POST","body":"{\\"text\\":\\"{{inputText}}\\",\\"lang\\":\\"{{targetLang}}\\"}","headers":{"Authorization":"Bearer {{api_key}}"},"resultVar":"api_result","resultPath":"data.translation"}\`
+   - resultVar: имя переменной для результата
+   - resultPath: JSON-путь для извлечения значения (напр. "data.translation")
+
+4. **callFunction** — вызвать Supabase Edge Function:
+   \`{"action":"callFunction","function":"bot-yandex-translate","functionBody":{"text":"{{inputText}}","targetLang":"{{lang}}"},"resultVar":"translation"}\`
+   Доступные функции: bot-translate, bot-yandex-translate, bot-ai-chat, bot-lang-detect, и любые другие edge functions.
+
+5. **condition** — условное ветвление внутри узла:
+   \`{"action":"condition","variable":"user_lang","operator":"equals","value":"ru","thenSteps":[...],"elseSteps":[...]}\`
+
+6. **waitInput** — запросить ввод от пользователя:
+   \`{"action":"waitInput","prompt":"Введите текст:","variableName":"user_text","inputType":"text"}\`
+   inputType: text, choice. Для choice добавь choices: ["Вариант1","Вариант2"]
+   Бот ЖДЁТ ответа пользователя, сохраняет в переменную и продолжает к следующему узлу.
+
+### 💡 ПРИМЕР: Кастомный узел перевода с AI
+\`\`\`json
+{
+  "id": "node_translate_pro",
+  "type": "translatePro",
+  "data": {
+    "label": "AI Перевод Pro",
+    "icon": "🌐",
+    "description": "Перевод через AI с определением языка",
+    "executionSteps": [
+      {"action": "callFunction", "function": "bot-lang-detect", "functionBody": {"text": "{{inputText}}"}, "resultVar": "detected_lang"},
+      {"action": "condition", "variable": "detected_lang", "operator": "equals", "value": "ru",
+        "thenSteps": [{"action": "setVariable", "variable": "target_lang", "value": "en"}],
+        "elseSteps": [{"action": "setVariable", "variable": "target_lang", "value": "ru"}]
+      },
+      {"action": "callFunction", "function": "bot-yandex-translate", "functionBody": {"text": "{{inputText}}", "targetLang": "{{target_lang}}"}, "resultVar": "translation"},
+      {"action": "sendMessage", "text": "🌐 Перевод ({{detected_lang}}→{{target_lang}}):\n\n{{translation}}"}
+    ]
+  }
+}
+\`\`\`
+
+### 💡 ПРИМЕР: Кастомный узел оплаты
+\`\`\`json
+{
+  "type": "paymentNode",
+  "data": {
+    "label": "Оплата",
+    "icon": "💳",
+    "executionSteps": [
+      {"action": "sendMessage", "text": "💳 К оплате: {{order_total}} {{currency}}"},
+      {"action": "fetchUrl", "url": "https://api.payment.com/create", "method": "POST", "body": "{\\"amount\\":\\"{{order_total}}\\",\\"currency\\":\\"{{currency}}\\"}", "resultVar": "payment_url", "resultPath": "url"},
+      {"action": "sendMessage", "text": "Перейдите по ссылке для оплаты:", "buttons": [{"id":"pay","label":"💳 Оплатить","url":"{{payment_url}}"}]}
+    ]
+  }
+}
+\`\`\`
+
+**ПРАВИЛО: Когда создаёшь кастомный узел — ВСЕГДА добавляй executionSteps для реальной работы в Telegram!**
+Без executionSteps узел просто покажет текст и перейдёт дальше.
 
 ## ❼b КАСТОМНЫЕ ТИПЫ ПОЛЕЙ ФОРМЫ (авторегистрация)
 Если для задачи НЕ хватает встроенных полей (text,textarea,number,email,phone,select,radio,checkbox,image,payment) — **ИЗОБРЕТИ кастомный тип поля**!
