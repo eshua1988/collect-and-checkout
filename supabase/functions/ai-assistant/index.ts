@@ -510,6 +510,12 @@ serve(async (req) => {
 
     // Build system prompt with injected context
     let systemContent = SYSTEM_PROMPT;
+
+    // Detect if user is asking for diagnostics (to include extended instructions)
+    const lastMsg = messages.filter((m: any) => m.role === "user").pop();
+    const lastMsgText = lastMsg ? (typeof lastMsg.content === "string" ? lastMsg.content : Array.isArray(lastMsg.content) ? lastMsg.content.filter((c: any) => c.type === "text").map((c: any) => c.text).join(" ") : "") : "";
+    const wantsDiag = /проверь|диагност|не работа|ошибк|почему|debug|fix|broken|issue/i.test(lastMsgText);
+
     // context.type can be "bot" (from bot editor page) or "bot_editor" (legacy)
     if (context?.type === "bot" || context?.type === "bot_editor") {
       const existingTypes = (context.nodeTypes || []).join(", ") || "только start";
@@ -537,82 +543,27 @@ serve(async (req) => {
 - **Кастомные узлы в тулбаре:** ${customTypes}
 ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}\n\`\`\`\n` : ''}${edgesJson ? `\n### ТЕКУЩИЕ СВЯЗИ:\n\`\`\`json\n${edgesJson}\n\`\`\`\n` : ''}
 ### ЧТО ДЕЛАТЬ В ЭТОМ РЕЖИМЕ:
-
-**Анализ:** Просмотри текущие узлы и связи. Если видишь проблемы (отсутствующие связи, пустые тексты, нелогичная структура) — сообщи пользователю и ПРЕДЛОЖИ исправление.
-
-**Создание:** Если пользователь просит создать/добавить функционал:
-1. Проверь какие типы узлов УЖЕ есть в конструкторе (см. список выше ❻)
-2. Если нужного узла НЕТ — СОЗДАЙ кастомный тип через newNodeTypes
-3. Собери полноценную структуру со всеми связями
-
-**Исправление:** Если что-то не работает:
-- Используй EDIT_BOT_NODE чтобы поправить данные конкретного узла
-- Используй REMOVE_BOT_NODES чтобы удалить сломанные узлы
-- Используй REPLACE_BOT чтобы полностью пересобрать бота с нуля (при "улучши"/"переделай")
-- Предложи АЛЬТЕРНАТИВНЫЙ вариант если прямое исправление невозможно
-
+**Анализ:** Просмотри узлы/связи → сообщи о проблемах → ПРЕДЛОЖИ исправление.
+**Создание:** Проверь типы узлов (❻), если нет нужного → создай кастомный через newNodeTypes.
+**Исправление:** EDIT_BOT_NODE / REMOVE_BOT_NODES / REPLACE_BOT.
+${wantsDiag ? `
 ### 🔍 ДИАГНОСТИКА: КОНСТРУКТОР vs ТЕЛЕГРАМ-БОТ
-
-Когда пользователь говорит "работает в симуляторе, но не работает в Telegram" или "бот не работает в Telegram" — проведи **глубокую диагностику** по ВСЕМ пунктам ниже.
-
-**ОБЯЗАТЕЛЬНО:** Проверь КАЖДЫЙ пункт, даже если проблема кажется очевидной!
-
-#### А. ПРОВЕРКА СВЯЗЕЙ (edges):
-1. **Каждый узел (кроме конечных) должен иметь исходящее ребро** — если нет → бот остановится тут
-2. **condition** — должен иметь ДВА ребра: sourceHandle="yes" И sourceHandle="no"
-3. **message с кнопками** — каждая кнопка = ребро с sourceHandle="0","1","2"... Если кнопок 2 и ребро только одно → кнопка без действия
-4. **userLangPref** — должен иметь хотя бы одно исходящее ребро (без sourceHandle) для продолжения после выбора языка
-5. **randomizer** — рёбра с sourceHandle="0","1"... по количеству весов
-6. **Циклы/петли** — если jump ведёт назад к message с кнопками, а промежуточного userInput нет → бот зацикливается в Telegram (юзер не может ввести текст)
-
-#### Б. ПРОВЕРКА ДАННЫХ УЗЛОВ:
-1. **message** — проверь что text не пустой, что {{переменные}} определены ПЕРЕД этим узлом
-2. **userInput** — проверь variableName (должен быть уникальный, не пустой)
-3. **condition** — проверь variable (соответствует variableName из userInput), operator и value
-4. **translate/yandexTranslate** — проверь что translateSourceVar/yandexSourceVar указывает на РЕАЛЬНУЮ переменную, которая уже установлена в потоке выше
-5. **aiChat** — КРИТИЧНО: в Telegram используются параметры: systemPrompt (из aiPrompt), userMessage (из _lastUserInput), model, temperature. Проверь что aiPrompt содержит внятный системный промпт. Также _lastUserInput устанавливается ТОЛЬКО в узле userInput — если перед aiChat нет userInput, AI получит дефолтное "Привет"!
-6. **Кастомные узлы** — проверь наличие executionSteps. Без них узел просто покажет текст
-7. **variable** — проверь varName и varValue, особенно если используются в {{...}} дальше
-
-#### В. ТИПИЧНЫЕ БАГИ "РАБОТАЕТ В СИМУЛЯТОРЕ, НЕ РАБОТАЕТ В TELEGRAM":
-
-| # | Симптом в Telegram | Причина | Как исправить |
-|---|---|---|---|
-| 1 | Бот отвечает "Привет! Чем могу помочь?" вместо правильного ответа | aiChat не получает userMessage — перед ним нет userInput | Добавь узел userInput ПЕРЕД aiChat, используй его variableName |
-| 2 | Бот перезапускается сначала при вводе текста | Бот ждёт нажатия кнопки (message с buttons), а юзер пишет текст → нет userInput дальше по потоку → restart | Добавь userInput после message с кнопками ИЛИ убери кнопки |
-| 3 | Бот зацикливается (одно сообщение повторяется) | Текстовый ввод при ожидании кнопки → перезапуск → тот же message | Реорганизуй поток: добавь userInput для текстового ввода |
-| 4 | Перевод не работает (пустой результат) | translateSourceVar ссылается на переменную, которая ещё не установлена | Убедись что userInput с правильным variableName идёт ПЕРЕД translate |
-| 5 | Кастомный узел молчит | Нет executionSteps → узел просто пропускается (в симуляторе показывает ⚙️) | Добавь executionSteps в data кастомного узла |
-| 6 | Кнопки "Копировать/Оценить" не работают | callback_data кнопки не совпадает с sourceHandle ребра | Проверь что sourceHandle рёбер = "0","1",... соответствуют индексам кнопок |
-| 7 | После выбора языка бот молчит | userLangPref не имеет исходящего ребра | Добавь ребро от userLangPref к следующему узлу |
-| 8 | Переменные {{var}} показываются как есть | Переменная не установлена к моменту отображения | Проверь порядок: set/userInput → message, не наоборот |
-
-#### Г. АЛГОРИТМ ПРОВЕРКИ:
-1. Найди START узел → проследи ВСЕ пути потока до конца
-2. Для каждого пути: проверь что ВСЕ узлы связаны рёбрами
-3. Для каждого использования {{переменной}} — проверь что она устанавливается РАНЬШЕ в потоке
-4. Для aiChat — проверь что перед ним есть userInput
-5. Для condition — проверь что both yes и no имеют рёбра
-6. Для message с кнопками — проверь что КАЖДАЯ кнопка имеет ребро (sourceHandle)
-7. Для кастомных узлов — проверь наличие executionSteps
-8. Для translate/yandexTranslate — проверь что sourceVar ссылается на реальную переменную
-
-#### Д. ФОРМАТ ОТВЕТА ДИАГНОСТИКИ:
-При диагностике ОБЯЗАТЕЛЬНО:
-1. 📋 Выведи список ВСЕХ найденных проблем (нумерованный)
-2. ⚠️ Пометь критичность: 🔴 критично, 🟡 предупреждение, 🟢 совет
-3. 🔧 Для КАЖДОЙ проблемы — предложи конкретное исправление через action блок
-4. Если проблем много — используй REPLACE_BOT для полной пересборки с исправлениями
+**Проверь ВСЕ пункты:**
+А. СВЯЗИ: каждый узел→исходящее ребро; condition→yes+no; message+buttons→sourceHandle="0","1"...; userLangPref→ребро; randomizer→"0","1"...; нет циклов без userInput
+Б. ДАННЫЕ: message.text не пуст; userInput.variableName уникален; condition.variable существует; translate/yandex sourceVar установлена; aiChat: перед ним ОБЯЗАТЕЛЕН userInput (иначе _lastUserInput="Привет"); кастомные→executionSteps; variable→varName+varValue
+В. ТИПИЧНЫЕ БАГИ: 1)aiChat без userInput→"Привет! Чем помочь?" 2)текст при ожидании кнопки→restart 3)цикл без userInput→зацикливание 4)translateSourceVar не установлена 5)кастомный без executionSteps→молчит 6)sourceHandle≠индексу кнопки 7)userLangPref без ребра 8){{var}} не установлена
+Г. АЛГОРИТМ: start→проследи ВСЕ пути→проверь рёбра+переменные+aiChat+condition+buttons
+Д. ФОРМАТ: 📋 нумерованный список, ⚠️ 🔴/🟡/🟢, 🔧 action блок для каждой проблемы` : `
+При "не работает в Telegram"/"проверь"/"диагностика" — проверь связи, данные узлов, переменные.`}
 
 ### ПРАВИЛА:
-1. **botId = "${context.botId}"** — всегда используй это значение
+1. **botId = "${context.botId}"**
 2. Оборачивай команды в \`\`\`action блок
-3. "Улучши бота" → REPLACE_BOT с полностью новой улучшенной версией
+3. "Улучши бота" → REPLACE_BOT
 4. "Добавь ..." → ADD_BOT_NODES
-5. "Измени текст/кнопку..." → EDIT_BOT_NODE
+5. "Измени..." → EDIT_BOT_NODE
 6. НЕ используй CREATE_BOT когда есть botId
-7. После ЛЮБОГО действия — предложи что ещё можно улучшить
-8. "Не работает в Telegram" / "Проверь бота" / "Диагностика" → проведи ПОЛНУЮ проверку по алгоритму выше`;
+7. После действия — предложи улучшения`;
     }
 
     // Form editor context
@@ -627,63 +578,13 @@ ${nodesJson ? `\n### ТЕКУЩИЕ УЗЛЫ БОТА:\n\`\`\`json\n${nodesJson}
 - **Название формы:** "${context.formTitle}"
 - **Полей:** ${context.fieldCount}
 ${fieldsJson ? `\n### ТЕКУЩИЕ ПОЛЯ ФОРМЫ:\n\`\`\`json\n${fieldsJson}\n\`\`\`\n` : ''}
-### ЧТО ДЕЛАТЬ В ЭТОМ РЕЖИМЕ:
-
-**Анализ:** Просмотри текущие поля. Если видишь проблемы (дублирование, отсутствие важных полей, неправильные типы) — предложи исправление.
-
-**Добавление:** ADD_FORM_FIELDS для добавления новых полей
-**Изменение:** EDIT_FORM_FIELD для правки одного поля
-**Замена:** REPLACE_FORM для полной переделки формы
-**Удаление:** REMOVE_FORM_FIELDS для удаления лишних полей
-**Кастомные поля:** Если нужного типа НЕТ — СОЗДАЙ кастомный через newFieldTypes (см. ❼b)
-
+### ЧТО ДЕЛАТЬ: ADD_FORM_FIELDS / EDIT_FORM_FIELD / REPLACE_FORM / REMOVE_FORM_FIELDS / newFieldTypes для кастомных.
+${wantsDiag ? `
 ### 🔍 ДИАГНОСТИКА ФОРМЫ
+Проверь: пустые label, дубликаты id, select/radio без options, нет required:true, payment без baseAmount, плохой контраст theme, нет completionMessage, >15 полей.
+Формат: 📋 нумерованный список, 🔴/🟡/🟢, 🔧 action блок.` : ''}
 
-Когда пользователь говорит "проверь форму", "форма не работает", "что не так" — проведи **полную диагностику**:
-
-#### А. ПРОВЕРКА ПОЛЕЙ:
-1. **Пустые label** — поле без названия → пользователь не поймёт что вводить
-2. **Дубликаты** — два поля с одинаковым label или одинаковым id → конфликт данных
-3. **select/radio без options** — выпадающий список или радио-кнопки без вариантов → поле сломано
-4. **required поля** — нет ни одного required:true → форма примет пустую отправку
-5. **email/phone отсутствуют** — если форма для связи, но нет контактного поля → нет способа ответить
-6. **payment без baseAmount** — поле оплаты без базовой суммы → расчёт не работает
-7. **dynamicNumber без dynamicFieldsCount** — некорректная конфигурация → поле не отобразится
-8. **Порядок полей** — имя/контакты обычно вверху, комментарий внизу, оплата в конце
-
-#### Б. ПРОВЕРКА ТЕМЫ И UX:
-1. **Нет theme** — форма выглядит стандартно, без бренда
-2. **Плохой контраст** — textColor близок к backgroundColor → текст нечитаемый
-3. **Нет completionMessage** — после отправки пользователь не видит подтверждения
-4. **Нет placeholder** — поля без подсказок → непонятно какой формат ожидается
-5. **Слишком много полей (>15)** — пользователи бросают длинные формы → разбей на секции или убери лишнее
-
-#### В. ТИПИЧНЫЕ БАГИ ФОРМ:
-
-| # | Симптом | Причина | Исправление |
-|---|---|---|---|
-| 1 | Поле не отображается | Неизвестный type без newFieldTypes | Добавь кастомный тип в newFieldTypes |
-| 2 | Выпадающий список пуст | select без options массива | Добавь options: [{id,label,value}] |
-| 3 | Оплата показывает 0 | payment без baseAmount или paymentFields | Задай baseAmount и paymentFields с multiplier |
-| 4 | Форма принимает пустые ответы | Все required:false или отсутствует | Добавь required:true на обязательные поля |
-| 5 | Текст нечитаемый | Плохой контраст theme цветов | Измени textColor/backgroundColor для контраста |
-
-#### Г. ФОРМАТ ДИАГНОСТИКИ:
-1. 📋 Список ВСЕХ найденных проблем (нумерованный)
-2. ⚠️ Критичность: 🔴 критично, 🟡 предупреждение, 🟢 совет
-3. 🔧 Для КАЖДОЙ проблемы — конкретное исправление через action блок
-4. Если проблем много — REPLACE_FORM с полностью исправленной версией
-
-### ПРАВИЛА:
-1. **formId = "${context.formId}"** — всегда используй это значение
-2. "Улучши форму" → REPLACE_FORM с полностью новой улучшенной версией
-3. "Добавь поля" → ADD_FORM_FIELDS
-4. "Измени поле" → EDIT_FORM_FIELD
-5. "Удали поля" → REMOVE_FORM_FIELDS
-6. НЕ используй CREATE_FORM когда есть formId
-7. После ЛЮБОГО действия — предложи что ещё можно улучшить
-8. Если нет подходящего типа поля — ИЗОБРЕТИ кастомный тип через newFieldTypes
-9. "Проверь форму" / "Не работает" / "Диагностика" → ПОЛНАЯ проверка по алгоритму выше`;
+### ПРАВИЛА: formId="${context.formId}", "улучши"→REPLACE_FORM, "добавь"→ADD_FORM_FIELDS, "измени"→EDIT_FORM_FIELD, "удали"→REMOVE_FORM_FIELDS, НЕ используй CREATE_FORM когда есть formId.`;
     }
 
     // Website editor context
@@ -700,93 +601,22 @@ ${fieldsJson ? `\n### ТЕКУЩИЕ ПОЛЯ ФОРМЫ:\n\`\`\`json\n${fieldsJ
 - **Блоков:** ${context.blockCount}
 - **Страниц:** ${context.pageCount}
 ${pagesJson ? `\n### ТЕКУЩИЕ СТРАНИЦЫ САЙТА:\n\`\`\`json\n${pagesJson}\n\`\`\`\n` : blocksJson ? `\n### ТЕКУЩИЕ БЛОКИ САЙТА:\n\`\`\`json\n${blocksJson}\n\`\`\`\n` : ''}
-### ЧТО ДЕЛАТЬ В ЭТОМ РЕЖИМЕ:
-
-**Анализ:** Просмотри текущие блоки/страницы. Если видишь проблемы (нет navbar, отсутствует footer, мало контента) — предложи исправление.
-
-**Добавление:** ADD_WEBSITE_BLOCKS для добавления новых секций
-**Изменение:** EDIT_WEBSITE_BLOCK для правки одного блока
-**Замена:** REPLACE_WEBSITE для полной переделки сайта
-**Удаление:** REMOVE_WEBSITE_BLOCKS для удаления лишних блоков
-**Кастомные блоки:** Если нужного типа блока НЕТ — СОЗДАЙ кастомный через newBlockTypes (см. ❼c)
-
+### ЧТО ДЕЛАТЬ: ADD_WEBSITE_BLOCKS / EDIT_WEBSITE_BLOCK / REPLACE_WEBSITE / REMOVE_WEBSITE_BLOCKS / newBlockTypes для кастомных.
+${wantsDiag ? `
 ### 🔍 ДИАГНОСТИКА САЙТА
+Структура: нет navbar/footer/hero, <3 блоков, нет CTA. Контент: пустые title, features/pricing/testimonials без items. Навигация: href≠slug, страницы без navbar. Стили: нет globalStyles, плохой контраст, нет padding.
+Формат: 📋 нумерованный список, 🔴/🟡/🟢, 🔧 action блок.` : ''}
 
-Когда пользователь говорит "проверь сайт", "сайт не работает", "что не так", "улучши" — проведи **полную диагностику**:
-
-#### А. ПРОВЕРКА СТРУКТУРЫ:
-1. **Нет navbar** — сайт без навигации → пользователь не может перемещаться между страницами
-2. **Нет footer** — нет подвала с контактами/копирайтом → выглядит незаконченным
-3. **Нет hero** — нет главного баннера → непонятно о чём сайт
-4. **Мало блоков (<3)** — страница почти пустая → добавь контентные секции
-5. **Нет CTA** — нет призыва к действию → посетитель не знает что делать дальше
-6. **Дублирование блоков** — два одинаковых типа подряд без смысла → удали лишний
-
-#### Б. ПРОВЕРКА КОНТЕНТА:
-1. **Пустой title/subtitle** — блок без текста → пустое место на странице
-2. **Hero без ctaText** — баннер без кнопки → нет конверсии
-3. **Features без items** — блок преимуществ пуст → удали или заполни
-4. **Pricing без plans** — тарифы пустые → нет предложения
-5. **Testimonials без items** — отзывы пустые → удали или заполни
-6. **Contact без email/phone** — контакты без данных → бесполезный блок
-7. **FAQ без items** — вопросы-ответы пустые → удали или заполни
-
-#### В. ПРОВЕРКА НАВИГАЦИИ (многостраничный):
-1. **navbar.links не совпадают с pages** — ссылка ведёт на несуществующую страницу
-2. **Страница без navbar** — пользователь застрянет без навигации
-3. **href без "/"** — ссылка "about" вместо "/about" → не сработает
-4. **Страница без footer** — подвал должен быть на каждой странице
-5. **Разные navbar на страницах** — навигация должна быть одинаковой
-
-#### Г. ПРОВЕРКА СТИЛЕЙ:
-1. **Нет globalStyles** — сайт без единого стиля → выглядит бессистемно
-2. **Нет bgColor/textColor на блоках** — блоки без цветов → всё серое
-3. **Плохой контраст** — светлый текст на светлом фоне → нечитаемо
-4. **Нет styles на блоках** — нет padding/градиентов/теней → плоский дизайн
-5. **Нет fontFamily** — стандартный шрифт → непрофессионально
-
-#### Д. ТИПИЧНЫЕ БАГИ САЙТОВ:
-
-| # | Симптом | Причина | Исправление |
-|---|---|---|---|
-| 1 | Страница пустая | Нет блоков или все блоки с пустым content | Добавь блоки через ADD_WEBSITE_BLOCKS |
-| 2 | Навигация не работает | href не совпадает со slug страницы | Исправь href="/correct-slug" |
-| 3 | Блок не отображается | Неизвестный type без newBlockTypes | Добавь кастомный тип в newBlockTypes |
-| 4 | Всё одного цвета | Нет globalStyles и bgColor на блоках | Задай палитру в globalStyles + цвета блоков |
-| 5 | Текст наезжает | Нет padding в styles | Добавь styles.padding на блоки |
-| 6 | Страница без меню | Забыли navbar на внутренней странице | Добавь navbar блок первым на каждую страницу |
-
-#### Е. ФОРМАТ ДИАГНОСТИКИ:
-1. 📋 Список ВСЕХ проблем (нумерованный)
-2. ⚠️ Критичность: 🔴 критично, 🟡 предупреждение, 🟢 совет
-3. 🔧 Для КАЖДОЙ проблемы — action блок с исправлением
-4. Если проблем много — REPLACE_WEBSITE с полностью исправленной версией
-
-### ПРАВИЛА:
-1. **websiteId = "${context.websiteId}"** — всегда используй это значение
-2. "Улучши сайт" → REPLACE_WEBSITE с полностью новой улучшенной версией
-3. "Добавь секции" → ADD_WEBSITE_BLOCKS
-4. "Измени блок" → EDIT_WEBSITE_BLOCK
-5. "Удали блоки" → REMOVE_WEBSITE_BLOCKS
-6. НЕ используй CREATE_WEBSITE когда есть websiteId
-7. После ЛЮБОГО действия — предложи что ещё можно улучшить
-8. Если нет подходящего типа блока — ИЗОБРЕТИ кастомный тип через newBlockTypes
-9. "Проверь сайт" / "Не работает" / "Диагностика" → ПОЛНАЯ проверка по алгоритму выше`;
+### ПРАВИЛА: websiteId="${context.websiteId}", "улучши"→REPLACE_WEBSITE, "добавь"→ADD_WEBSITE_BLOCKS, "измени"→EDIT_WEBSITE_BLOCK, "удали"→REMOVE_WEBSITE_BLOCKS, НЕ создавай CREATE_WEBSITE когда есть websiteId.`;
     }
 
     // --- Multi-provider fallback chain ---
-    type Provider = { name: string; url: string; model: string; key: string | undefined; isAnthropic?: boolean; extraHeaders?: Record<string, string> };
+    type Provider = { name: string; url: string; model: string; key: string | undefined; isAnthropic?: boolean; extraHeaders?: Record<string, string>; maxTokens?: number };
     const providers: Provider[] = [
       {
         name: "groq",
         url: "https://api.groq.com/openai/v1/chat/completions",
         model: "llama-3.3-70b-versatile",
-        key: Deno.env.get("GROQ_API_KEY"),
-      },
-      {
-        name: "groq-llama4",
-        url: "https://api.groq.com/openai/v1/chat/completions",
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
         key: Deno.env.get("GROQ_API_KEY"),
       },
       {
@@ -796,13 +626,6 @@ ${pagesJson ? `\n### ТЕКУЩИЕ СТРАНИЦЫ САЙТА:\n\`\`\`json\n${
         key: Deno.env.get("GEMINI_API_KEY"),
       },
       {
-        name: "openrouter-gemini",
-        url: "https://openrouter.ai/api/v1/chat/completions",
-        model: "google/gemini-2.0-flash-exp:free",
-        key: Deno.env.get("OPENROUTER_API_KEY"),
-        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
-      },
-      {
         name: "openrouter",
         url: "https://openrouter.ai/api/v1/chat/completions",
         model: "meta-llama/llama-3.3-70b-instruct:free",
@@ -810,16 +633,9 @@ ${pagesJson ? `\n### ТЕКУЩИЕ СТРАНИЦЫ САЙТА:\n\`\`\`json\n${
         extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
       },
       {
-        name: "openrouter-deepseek",
-        url: "https://openrouter.ai/api/v1/chat/completions",
-        model: "openai/gpt-oss-120b:free",
-        key: Deno.env.get("OPENROUTER_API_KEY"),
-        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
-      },
-      {
         name: "openrouter-qwen",
         url: "https://openrouter.ai/api/v1/chat/completions",
-        model: "nvidia/nemotron-3-super-120b-a12b:free",
+        model: "qwen/qwen3-32b:free",
         key: Deno.env.get("OPENROUTER_API_KEY"),
         extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
       },
@@ -868,12 +684,6 @@ ${pagesJson ? `\n### ТЕКУЩИЕ СТРАНИЦЫ САЙТА:\n\`\`\`json\n${
         name: "github-gpt4o-mini",
         url: "https://models.inference.ai.azure.com/chat/completions",
         model: "gpt-4o-mini",
-        key: Deno.env.get("GITHUB_TOKEN"),
-      },
-      {
-        name: "github-llama",
-        url: "https://models.inference.ai.azure.com/chat/completions",
-        model: "meta-llama-3.3-70b-instruct",
         key: Deno.env.get("GITHUB_TOKEN"),
       },
     ];
@@ -1153,7 +963,7 @@ H1-H3: ${page.headings.slice(0, 5).join(" | ")}
             },
             body: JSON.stringify({
               model: provider.model,
-              max_tokens: 16000,
+              max_tokens: provider.maxTokens ?? 16000,
               stream: true,
               system: anthropicSystem,
               messages: anthropicMessages,
@@ -1227,7 +1037,7 @@ H1-H3: ${page.headings.slice(0, 5).join(" | ")}
             messages: providerMessages,
             stream: true,
             temperature: 0.7,
-            max_tokens: 16000,
+            max_tokens: provider.maxTokens ?? 16000,
           }),
         });
 
