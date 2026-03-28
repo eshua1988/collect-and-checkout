@@ -228,6 +228,16 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
     if (node.type === 'jump') {
       return processNode(data.jumpTarget || null, vars);
     }
+
+    // Generic handler for all unknown/custom node types — show info and continue
+    {
+      const typeLabel = node.type || 'unknown';
+      const dataText = data.text || data.message || data.caption || '';
+      const displayText = dataText ? interpolate(dataText, vars) : '';
+      addBotMessage(`⚙️ [${typeLabel}]${displayText ? ': ' + displayText : ''}`);
+      const nextId = getNextNodeId(nodeId, edges);
+      return processNode(nextId, vars);
+    }
   };
 
   const startSimulation = async () => {
