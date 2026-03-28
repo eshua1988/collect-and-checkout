@@ -496,6 +496,7 @@ export function useAIAssistant(aiContext?: AIContext) {
       };
 
       saveBot(updatedBot);
+      window.dispatchEvent(new CustomEvent('botDataUpdated', { detail: { botId: targetBotId } }));
       toast.success(`Добавлено ${newNodes.length} узлов в бот "${existingBot.name}"! Переключись на вкладку "Поток".`);
 
       const currentPath = location.pathname;
@@ -536,6 +537,7 @@ export function useAIAssistant(aiContext?: AIContext) {
 
       const updatedBot: TelegramBot = { ...existingBot, nodes: mappedNodes, edges: mappedEdges, updatedAt: now };
       saveBot(updatedBot);
+      window.dispatchEvent(new CustomEvent('botDataUpdated', { detail: { botId: targetBotId } }));
       toast.success(`Бот "${existingBot.name}" полностью обновлён! ${mappedNodes.length} узлов, ${mappedEdges.length} связей.`);
       return targetBotId;
     }
@@ -557,6 +559,7 @@ export function useAIAssistant(aiContext?: AIContext) {
       if (patchedCount === 0) { toast.error(`Узел "${nodeId}" не найден`); return; }
 
       saveBot({ ...existingBot, nodes: updatedNodes, updatedAt: now });
+      window.dispatchEvent(new CustomEvent('botDataUpdated', { detail: { botId: targetBotId } }));
       toast.success(`Узел "${nodeId}" обновлён.`);
       return targetBotId;
     }
@@ -576,6 +579,7 @@ export function useAIAssistant(aiContext?: AIContext) {
       const filteredEdges: BotEdge[] = existingBot.edges.filter(e => !removeSet.has(e.source) && !removeSet.has(e.target));
 
       saveBot({ ...existingBot, nodes: filteredNodes, edges: filteredEdges, updatedAt: now });
+      window.dispatchEvent(new CustomEvent('botDataUpdated', { detail: { botId: targetBotId } }));
       toast.success(`Удалено ${removeIds.length} узлов из бота "${existingBot.name}".`);
       return targetBotId;
     }

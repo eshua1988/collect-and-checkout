@@ -182,6 +182,32 @@ function BotFlowEditorInner({ bot, forms, onSave, sidePanel, onSidePanelChange, 
       : [{ id: 'start', type: 'start', position: { x: 60, y: 200 }, data: {} }]
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(bot.edges as Edge[]);
+
+  // Live-refresh nodes/edges when AI modifies the bot (EDIT_BOT_NODE, ADD_BOT_NODES, REPLACE_BOT, etc.)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.botId !== bot.id) return;
+      // Read fresh data from localStorage
+      try {
+        const saved = localStorage.getItem('formbuilder_bots');
+        const bots = saved ? JSON.parse(saved) : [];
+        const fresh = bots.find((b: any) => b.id === bot.id);
+        if (!fresh) return;
+        setNodes((fresh.nodes || []).map((n: any, i: number) => ({
+          ...n,
+          position: {
+            x: n.position?.x ?? 100 + (i % 3) * 250,
+            y: n.position?.y ?? 100 + Math.floor(i / 3) * 180,
+          },
+        })));
+        setEdges(fresh.edges || []);
+      } catch { /* ignore parse errors */ }
+    };
+    window.addEventListener('botDataUpdated', handler);
+    return () => window.removeEventListener('botDataUpdated', handler);
+  }, [bot.id, setNodes, setEdges]);
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // sidePanel is controlled by parent via props
