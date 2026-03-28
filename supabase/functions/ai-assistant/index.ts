@@ -514,8 +514,17 @@ serve(async (req) => {
     if (context?.type === "bot" || context?.type === "bot_editor") {
       const existingTypes = (context.nodeTypes || []).join(", ") || "только start";
       const customTypes = context.customNodeTypes || "нет";
-      const nodesJson = context.nodes && context.nodes.length > 0 ? JSON.stringify(context.nodes) : null;
-      const edgesJson = context.edges && context.edges.length > 0 ? JSON.stringify(context.edges) : null;
+      // Truncate large JSON to prevent 413 errors (max ~6000 chars each)
+      const MAX_JSON = 6000;
+      let nodesJson = context.nodes && context.nodes.length > 0 ? JSON.stringify(context.nodes) : null;
+      let edgesJson = context.edges && context.edges.length > 0 ? JSON.stringify(context.edges) : null;
+      if (nodesJson && nodesJson.length > MAX_JSON) {
+        // Strip position data first to save space
+        const slim = context.nodes.map((n: any) => ({ id: n.id, type: n.type, data: n.data }));
+        nodesJson = JSON.stringify(slim);
+        if (nodesJson.length > MAX_JSON) nodesJson = nodesJson.slice(0, MAX_JSON) + '...(обрезано)';
+      }
+      if (edgesJson && edgesJson.length > MAX_JSON) edgesJson = edgesJson.slice(0, MAX_JSON) + '...(обрезано)';
       systemContent += `
 
 ---
@@ -775,10 +784,23 @@ ${pagesJson ? `\n### ТЕКУЩИЕ СТРАНИЦЫ САЙТА:\n\`\`\`json\n${
         key: Deno.env.get("GROQ_API_KEY"),
       },
       {
+        name: "groq-llama4",
+        url: "https://api.groq.com/openai/v1/chat/completions",
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        key: Deno.env.get("GROQ_API_KEY"),
+      },
+      {
         name: "gemini",
         url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         model: "gemini-2.0-flash",
         key: Deno.env.get("GEMINI_API_KEY"),
+      },
+      {
+        name: "openrouter-gemini",
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        model: "google/gemini-2.0-flash-exp:free",
+        key: Deno.env.get("OPENROUTER_API_KEY"),
+        extraHeaders: { "HTTP-Referer": "https://ejsoplwnkzropadjvoco.supabase.co", "X-Title": "FormBot Studio" },
       },
       {
         name: "openrouter",
@@ -858,7 +880,7 @@ ${pagesJson ? `\n### ТЕКУЩИЕ СТРАНИЦЫ САЙТА:\n\`\`\`json\n${
 
     // --- Helper: convert messages for different providers ---
     // Vision-capable providers that accept OpenAI image_url format
-    const VISION_PROVIDERS = new Set(["github-gpt4o-mini", "gemini"]);
+    const VISION_PROVIDERS = new Set(["github-gpt4o-mini", "gemini", "openrouter-gemini"]);
 
     /** Strip images from multimodal messages, add text note */
     function stripImages(msgs: any[]): any[] {
@@ -1219,6 +1241,11 @@ H1-H3: ${page.headings.slice(0, 5).join(" | ")}
         const txt = await response.text();
         console.error(`Provider ${provider.name} failed: ${response.status} ${txt.substring(0, 200)}`);
 
+        if (response.status === 413) {
+          lastError = `Запрос слишком большой для ${provider.name}`;
+          errors.push(`${provider.name}: 413 too large`);
+          continue;
+        }
         if (response.status === 429 || response.status === 503) {
           lastError = `Лимит запросов у ${provider.name}`;
           errors.push(`${provider.name}: ${response.status} rate limit`);
