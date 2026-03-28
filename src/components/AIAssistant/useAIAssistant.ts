@@ -18,7 +18,7 @@ export interface ChatMessage {
 }
 
 export interface ParsedAction {
-  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS' | 'ADD_FORM_FIELDS' | 'REPLACE_FORM' | 'EDIT_FORM_FIELD' | 'REMOVE_FORM_FIELDS' | 'REPLACE_WEBSITE' | 'EDIT_WEBSITE_BLOCK' | 'REMOVE_WEBSITE_BLOCKS';
+  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS' | 'ADD_FORM_FIELDS' | 'REPLACE_FORM' | 'EDIT_FORM_FIELD' | 'REMOVE_FORM_FIELDS' | 'REPLACE_WEBSITE' | 'EDIT_WEBSITE_BLOCK' | 'REMOVE_WEBSITE_BLOCKS' | 'REGISTER_FIELD_TYPE' | 'REGISTER_BLOCK_TYPE';
   data: any;
   executed?: boolean;
 }
@@ -72,6 +72,40 @@ const BASE_NODE_TYPES_SET = new Set([
   'translate', 'langDetect', 'youtubeMonitor', 'socialShare',
   'instagramMonitor', 'facebookMonitor', 'userLangPref',
 ]);
+
+// Custom FORM field types registered by AI — stored in localStorage
+const CUSTOM_FIELDS_KEY = 'ai_custom_field_types';
+
+export function getCustomFieldTypes(): Record<string, { label: string; icon: string; description: string; defaultProps?: Record<string, any> }> {
+  try {
+    const raw = localStorage.getItem(CUSTOM_FIELDS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveCustomFieldType(type: string, meta: { label: string; icon: string; description: string; defaultProps?: Record<string, any> }) {
+  const existing = getCustomFieldTypes();
+  existing[type] = meta;
+  localStorage.setItem(CUSTOM_FIELDS_KEY, JSON.stringify(existing));
+  window.dispatchEvent(new CustomEvent('customFieldTypesUpdated'));
+}
+
+// Custom WEBSITE block types registered by AI — stored in localStorage
+const CUSTOM_BLOCKS_KEY = 'ai_custom_block_types';
+
+export function getCustomBlockTypes(): Record<string, { label: string; icon: string; description: string; defaultContent?: Record<string, any> }> {
+  try {
+    const raw = localStorage.getItem(CUSTOM_BLOCKS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveCustomBlockType(type: string, meta: { label: string; icon: string; description: string; defaultContent?: Record<string, any> }) {
+  const existing = getCustomBlockTypes();
+  existing[type] = meta;
+  localStorage.setItem(CUSTOM_BLOCKS_KEY, JSON.stringify(existing));
+  window.dispatchEvent(new CustomEvent('customBlockTypesUpdated'));
+}
 
 /** Scans nodes for unknown types and auto-registers them in the toolbar. Returns count of new registrations. */
 function autoRegisterUnknownNodeTypes(nodes: any[]): number {
@@ -167,8 +201,41 @@ export function useAIAssistant(aiContext?: AIContext) {
       return nodeType;
     }
 
+    // ── REGISTER CUSTOM FIELD TYPE (для форм) ──────────────────────
+    if (action.type === 'REGISTER_FIELD_TYPE') {
+      const { fieldType, label, icon, description, defaultProps } = action.data;
+      if (!fieldType || !label) {
+        toast.error('Не указан тип или название поля');
+        return;
+      }
+      saveCustomFieldType(fieldType, { label, icon: icon || '📝', description: description || '', defaultProps: defaultProps || {} });
+      toast.success(`Тип поля "${label}" зарегистрирован в панели формы!`);
+      return fieldType;
+    }
+
+    // ── REGISTER CUSTOM BLOCK TYPE (для сайтов) ────────────────────
+    if (action.type === 'REGISTER_BLOCK_TYPE') {
+      const { blockType, label, icon, description, defaultContent } = action.data;
+      if (!blockType || !label) {
+        toast.error('Не указан тип или название блока');
+        return;
+      }
+      saveCustomBlockType(blockType, { label, icon: icon || '🧩', description: description || '', defaultContent: defaultContent || {} });
+      toast.success(`Тип блока "${label}" зарегистрирован в конструкторе сайтов!`);
+      return blockType;
+    }
+
     // ── CREATE FORM ────────────────────────────────────────────────
     if (action.type === 'CREATE_FORM') {
+      // Register any new field types declared by AI
+      if (action.data.newFieldTypes && Array.isArray(action.data.newFieldTypes)) {
+        for (const ft of action.data.newFieldTypes) {
+          if (ft.fieldType && ft.label) {
+            saveCustomFieldType(ft.fieldType, { label: ft.label, icon: ft.icon || '📝', description: ft.description || '', defaultProps: ft.defaultProps || {} });
+          }
+        }
+        if (action.data.newFieldTypes.length > 0) toast.info(`🔧 ${action.data.newFieldTypes.length} новых типов полей добавлено`);
+      }
       const form: FormData = {
         id: genId(),
         title: action.data.title || 'Новая форма',
@@ -189,6 +256,14 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── ADD FORM FIELDS (добавление полей в существующую форму) ───
     if (action.type === 'ADD_FORM_FIELDS') {
+      // Register any new field types declared by AI
+      if (action.data.newFieldTypes && Array.isArray(action.data.newFieldTypes)) {
+        for (const ft of action.data.newFieldTypes) {
+          if (ft.fieldType && ft.label) {
+            saveCustomFieldType(ft.fieldType, { label: ft.label, icon: ft.icon || '📝', description: ft.description || '', defaultProps: ft.defaultProps || {} });
+          }
+        }
+      }
       const targetFormId = action.data.formId || (aiContext?.type === 'form' ? aiContext.formId : null);
       if (!targetFormId) { toast.error('Не указан ID формы'); return; }
       const existingForm = getForm(targetFormId);
@@ -210,6 +285,14 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── REPLACE FORM (полная замена полей формы) ───────────────────
     if (action.type === 'REPLACE_FORM') {
+      // Register any new field types declared by AI
+      if (action.data.newFieldTypes && Array.isArray(action.data.newFieldTypes)) {
+        for (const ft of action.data.newFieldTypes) {
+          if (ft.fieldType && ft.label) {
+            saveCustomFieldType(ft.fieldType, { label: ft.label, icon: ft.icon || '📝', description: ft.description || '', defaultProps: ft.defaultProps || {} });
+          }
+        }
+      }
       const targetFormId = action.data.formId || (aiContext?.type === 'form' ? aiContext.formId : null);
       if (!targetFormId) { toast.error('Не указан ID формы'); return; }
       const existingForm = getForm(targetFormId);
@@ -499,6 +582,15 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── CREATE WEBSITE ─────────────────────────────────────────────
     if (action.type === 'CREATE_WEBSITE') {
+      // Register any new block types declared by AI
+      if (action.data.newBlockTypes && Array.isArray(action.data.newBlockTypes)) {
+        for (const bt of action.data.newBlockTypes) {
+          if (bt.blockType && bt.label) {
+            saveCustomBlockType(bt.blockType, { label: bt.label, icon: bt.icon || '🧩', description: bt.description || '', defaultContent: bt.defaultContent || {} });
+          }
+        }
+        if (action.data.newBlockTypes.length > 0) toast.info(`🧩 ${action.data.newBlockTypes.length} новых типов блоков добавлено`);
+      }
       // Support multi-page: action.data.pages or fallback to action.data.blocks
       const pages = action.data.pages
         ? (action.data.pages as any[]).map((p: any) => ({
@@ -530,6 +622,14 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── ADD WEBSITE BLOCKS (добавление блоков в существующий сайт) ─
     if (action.type === 'ADD_WEBSITE_BLOCKS') {
+      // Register any new block types declared by AI
+      if (action.data.newBlockTypes && Array.isArray(action.data.newBlockTypes)) {
+        for (const bt of action.data.newBlockTypes) {
+          if (bt.blockType && bt.label) {
+            saveCustomBlockType(bt.blockType, { label: bt.label, icon: bt.icon || '🧩', description: bt.description || '', defaultContent: bt.defaultContent || {} });
+          }
+        }
+      }
       const targetSiteId = action.data.websiteId || (aiContext?.type === 'website' ? aiContext.websiteId : null);
       if (!targetSiteId) { toast.error('Не указан ID сайта'); return; }
       const existingSite = getWebsite(targetSiteId);
@@ -572,6 +672,14 @@ export function useAIAssistant(aiContext?: AIContext) {
 
     // ── REPLACE WEBSITE (полная замена блоков сайта) ────────────────
     if (action.type === 'REPLACE_WEBSITE') {
+      // Register any new block types declared by AI
+      if (action.data.newBlockTypes && Array.isArray(action.data.newBlockTypes)) {
+        for (const bt of action.data.newBlockTypes) {
+          if (bt.blockType && bt.label) {
+            saveCustomBlockType(bt.blockType, { label: bt.label, icon: bt.icon || '🧩', description: bt.description || '', defaultContent: bt.defaultContent || {} });
+          }
+        }
+      }
       const targetSiteId = action.data.websiteId || (aiContext?.type === 'website' ? aiContext.websiteId : null);
       if (!targetSiteId) { toast.error('Не указан ID сайта'); return; }
       const existingSite = getWebsite(targetSiteId);

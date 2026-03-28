@@ -5,10 +5,12 @@ import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
 import { WebsitePreview } from '@/components/WebsiteBuilder/WebsitePreview';
 import { WebsiteBlockEditor } from '@/components/WebsiteBuilder/WebsiteBlockEditor';
 import { WEBSITE_TEMPLATES, TEMPLATE_CATEGORIES, TemplateCategory } from '@/components/WebsiteBuilder/WebsiteTemplates';
+import { getCustomBlockTypes } from '@/components/AIAssistant/useAIAssistant';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 import {
   ArrowLeft, Plus, Trash2, Eye, Save, Copy, Link, GripVertical,
   Globe, Layout, Type, Image, Video, AlignLeft, Star, DollarSign,
@@ -89,6 +91,25 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [templateCategory, setTemplateCategory] = useState<TemplateCategory>('all');
   const [showPreviewFull, setShowPreviewFull] = useState(false);
   const [currentPageSlug, setCurrentPageSlug] = useState('home');
+
+  // Custom AI-registered block types
+  const [customBlocks, setCustomBlocks] = useState(() => getCustomBlockTypes());
+  useEffect(() => {
+    const handler = () => setCustomBlocks(getCustomBlockTypes());
+    window.addEventListener('customBlockTypesUpdated', handler);
+    return () => window.removeEventListener('customBlockTypesUpdated', handler);
+  }, []);
+
+  // Merge built-in + custom block palette
+  const fullBlockPalette = [
+    ...BLOCK_PALETTE,
+    ...Object.entries(customBlocks).map(([type, meta]) => ({
+      type: type as WebsiteBlockType,
+      label: meta.label,
+      icon: <span className="text-sm">{meta.icon || '🧩'}</span>,
+      defaultContent: meta.defaultContent || {},
+    })),
+  ];
 
   const hasPages = !!(website.pages && website.pages.length > 0);
   const currentPage = hasPages ? (website.pages!.find(p => p.slug === currentPageSlug) || website.pages![0]) : null;
@@ -326,7 +347,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
 
                 <p className="text-xs text-muted-foreground mb-3">Нажмите на блок, чтобы добавить его на страницу{hasPages ? ` «${currentPage?.title}»` : ''}</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {BLOCK_PALETTE.map(({ type, label, icon, defaultContent }) => (
+                  {fullBlockPalette.map(({ type, label, icon, defaultContent }) => (
                     <button
                       key={type}
                       onClick={() => addBlock(type, defaultContent)}
@@ -346,7 +367,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                     <p className="text-xs font-medium text-muted-foreground mb-2">Слои ({activeBlocks.length})</p>
                     <div className="space-y-1">
                       {activeBlocks.map((block, idx) => {
-                        const palette = BLOCK_PALETTE.find(p => p.type === block.type);
+                        const palette = fullBlockPalette.find(p => p.type === block.type);
                         return (
                           <div
                             key={block.id}
