@@ -554,8 +554,34 @@ serve(async (req) => {
       startId = btnEdge?.target ?? (edges.find(e => e.source === srcId)?.target ?? null);
       textInput = null; // button click, not text
     } else if (textInput !== null) {
-      // Text input — continue from current node (should be a userInput node)
-      startId = session.current_node_id;
+      // Text input — check if current node accepts text
+      const currentNode = nodes.find(n => n.id === session.current_node_id);
+      if (currentNode?.type === "userInput") {
+        // Standard: user responding to an input prompt
+        startId = session.current_node_id;
+      } else {
+        // User typed text while bot waited for a button click (message, userLangPref, etc.)
+        // Search forward in flow for the nearest userInput node
+        let found: string | null = null;
+        const visited = new Set<string>();
+        let searchId: string | null = session.current_node_id;
+        while (searchId && !visited.has(searchId)) {
+          visited.add(searchId);
+          const outEdge = edges.find(e => e.source === searchId);
+          if (!outEdge) break;
+          searchId = outEdge.target;
+          const n = nodes.find(nd => nd.id === searchId);
+          if (!n) break;
+          if (n.type === "userInput") { found = searchId; break; }
+        }
+        if (found) {
+          startId = found;
+        } else {
+          // No userInput downstream — restart from start
+          const startNode = nodes.find(n => n.type === "start");
+          startId = startNode?.id ?? null;
+        }
+      }
     } else {
       return new Response("OK");
     }

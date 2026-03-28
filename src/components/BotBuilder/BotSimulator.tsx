@@ -229,6 +229,95 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
       return processNode(data.jumpTarget || null, vars);
     }
 
+    // ── userLangPref: show language buttons, wait for selection ─────────────
+    if (node.type === 'userLangPref') {
+      const langs = (data.ulpLanguages as string[]) || ['ru', 'en'];
+      const flags: Record<string, string> = { ru:'🇷🇺', en:'🇬🇧', de:'🇩🇪', fr:'🇫🇷', es:'🇪🇸', uk:'🇺🇦', zh:'🇨🇳', ar:'🇸🇦', pt:'🇵🇹', it:'🇮🇹', tr:'🇹🇷', pl:'🇵🇱' };
+      const showFlags = data.ulpShowFlags !== false;
+      const labels = langs.map(l => showFlags ? `${flags[l] || ''}${l.toUpperCase()}` : l.toUpperCase());
+      const question = interpolate((data.ulpQuestion as string) || 'Выберите язык:', vars);
+      addBotMessage(question, labels);
+      setCurrentNodeId(nodeId);
+      setWaitingChoice(labels);
+      setWaitingInput(false);
+      return;
+    }
+
+    // ── translate: simulate translation ────────────────────────────────────
+    if (node.type === 'translate') {
+      const sourceVar = (data.translateSourceVar as string) || '';
+      const resultVar = (data.translateResultVar as string) || 'translated_text';
+      const src = vars[sourceVar] || '';
+      const newVars = { ...vars };
+      if (src) {
+        const typingId = addTyping();
+        try {
+          const { data: fnData } = await supabase.functions.invoke('bot-translate', {
+            body: { text: src, targetLang: data.translateTargetLang || 'en' },
+          });
+          removeTyping(typingId);
+          newVars[resultVar] = fnData?.translatedText || fnData?.translated || src;
+        } catch {
+          removeTyping(typingId);
+          newVars[resultVar] = `[перевод: ${src}]`;
+        }
+      }
+      setVariables(newVars);
+      const nextId = getNextNodeId(nodeId, edges);
+      return processNode(nextId, newVars);
+    }
+
+    // ── yandexTranslate: simulate Yandex translation ────────────────────────
+    if (node.type === 'yandexTranslate') {
+      const sourceVar = (data.yandexSourceVar as string) || '';
+      const resultVar = (data.yandexResultVar as string) || 'translated_text';
+      const src = vars[sourceVar] || '';
+      const newVars = { ...vars };
+      if (src) {
+        const typingId = addTyping();
+        try {
+          const { data: fnData } = await supabase.functions.invoke('bot-yandex-translate', {
+            body: {
+              text: src,
+              targetLang: data.yandexTargetLang || 'ru',
+              sourceLang: data.yandexSourceLang || '',
+              folderId: data.yandexFolderId || '',
+              apiKey: data.yandexApiKey || '',
+            },
+          });
+          removeTyping(typingId);
+          newVars[resultVar] = fnData?.translatedText || src;
+        } catch {
+          removeTyping(typingId);
+          newVars[resultVar] = `[перевод: ${src}]`;
+        }
+      }
+      setVariables(newVars);
+      const nextId = getNextNodeId(nodeId, edges);
+      return processNode(nextId, newVars);
+    }
+
+    // ── langDetect: detect language ─────────────────────────────────────────
+    if (node.type === 'langDetect') {
+      const sourceVar = (data.langDetectVar as string) || '';
+      const resultVar = (data.langResultVar as string) || 'user_lang';
+      const src = vars[sourceVar] || '';
+      const newVars = { ...vars };
+      if (src) {
+        try {
+          const { data: fnData } = await supabase.functions.invoke('bot-lang-detect', {
+            body: { text: src },
+          });
+          newVars[resultVar] = fnData?.lang || 'ru';
+        } catch {
+          newVars[resultVar] = 'ru';
+        }
+      }
+      setVariables(newVars);
+      const nextId = getNextNodeId(nodeId, edges);
+      return processNode(nextId, newVars);
+    }
+
     // Generic handler for all unknown/custom node types — show info and continue
     {
       const typeLabel = node.type || 'unknown';
@@ -286,6 +375,13 @@ export function BotSimulator({ nodes, edges, botName, onClose }: BotSimulatorPro
     const newVars = { ...variables, _lastUserInput: btnLabel, _lastButtonClick: btnLabel, _lastButtonIndex: String(btnIndex) };
     if (node?.type === 'userInput' && node.data.variableName) {
       newVars[node.data.variableName] = btnLabel;
+    }
+    // userLangPref: extract lang code from button label and save to variable
+    if (node?.type === 'userLangPref') {
+      const langs = (node.data.ulpLanguages as string[]) || ['ru', 'en'];
+      const lang = langs[btnIndex] || btnLabel.replace(/[^\w]/g, '').toLowerCase();
+      const ulpVar = (node.data.ulpSaveVar as string) || 'user_lang';
+      newVars[ulpVar] = lang;
     }
     setVariables(newVars);
     setInputValue('');
