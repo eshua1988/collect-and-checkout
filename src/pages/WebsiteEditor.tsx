@@ -354,14 +354,19 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                               onClick={() => {
                                 setCurrentPageSlug(page.slug);
                                 setSelectedBlockId(null);
-                                setExpandedPages(prev => {
-                                  const next = new Set(prev);
-                                  if (next.has(page.slug)) next.delete(page.slug); else next.add(page.slug);
-                                  return next;
-                                });
                               }}
                             >
-                              <span className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                              <span
+                                className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} p-0.5 rounded hover:bg-muted-foreground/20`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedPages(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(page.slug)) next.delete(page.slug); else next.add(page.slug);
+                                    return next;
+                                  });
+                                }}
+                              >
                                 <ChevronRight className="w-3 h-3 text-muted-foreground" />
                               </span>
                               <FileText className="w-3 h-3 text-muted-foreground shrink-0" />
