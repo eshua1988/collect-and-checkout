@@ -618,8 +618,8 @@ ${wantsDiag ? `
             const internalLinks = extractInternalLinks(mainHtml, rootOrigin, rootUrl);
             console.log(`Found ${internalLinks.length} internal links`);
 
-            // Step 3: Fetch up to 3 key internal pages (more = too much output for AI)
-            const MAX_PAGES = 3;
+            // Step 3: Fetch up to 5 key internal pages
+            const MAX_PAGES = 5;
             // Prioritize important-looking pages: about, sermons, contact, ministries
             const priorityWords = ["about", "contact", "sermons", "ministr", "services", "connect", "give", "news"];
             const scored = internalLinks.map(link => {
@@ -646,45 +646,38 @@ ${wantsDiag ? `
             }
             const siteColors = [...allColorsSet].slice(0, 5);
 
-            // Build COMPACT per-page specs (keep total under 4000 chars)
-            const pageSpecs: string[] = [];
-            for (const page of allPages) {
+            // ── MULTI-STEP PARALLEL GENERATION ─────────────────────
+            // Instead of asking one model to generate all pages (too many tokens),
+            // we generate each page in parallel using different providers, then assemble.
+            const siteTitle = home?.title || "Website";
+            const navLinksStr = navItems.slice(0, 6).join(" | ") || "Home | About | Contact";
+            const colorsStr = siteColors.join("; ") || "#1e293b, #fff";
+            const siteLang = /[а-яА-Я]/.test(home?.bodyText || "") ? "ru" : "en";
+            const globalStylesHint = `globalStyles:{primaryColor:"${siteColors[0]?.replace(/.*:\s*/, '') || '#1e293b'}",backgroundColor:"#ffffff",textColor:"#1e293b",fontFamily:"Inter"}`;
+            const navbarJson = `{type:"navbar",id:"nav1",content:{logo:"${siteTitle.replace(/"/g, '')}",links:[${allPages.map(p => `{label:"${(p.title || p.slug).replace(/"/g, '').slice(0, 25)}",href:"/${p.slug === 'home' ? '' : p.slug}"}`).join(",")}],bgColor:"${siteColors[0]?.replace(/.*:\s*/, '') || '#1e293b'}",textColor:"#fff"},styles:{padding:"12px 24px"}}`;
+
+            // Build per-page specs
+            const pageDataList = allPages.map(page => {
               const headingsStr = page.headings.slice(0, 5).join(" | ");
-              const bodySnippet = page.bodyText.slice(0, 600).replace(/\n/g, " ");
-              let spec = `📄 ${page.slug} — ${page.title}`;
-              if (page.metaDesc) spec += `\nОписание: ${page.metaDesc.slice(0, 150)}`;
-              if (headingsStr) spec += `\nH: ${headingsStr}`;
-              if (bodySnippet.length > 30) spec += `\nТекст: ${bodySnippet}`;
-              pageSpecs.push(spec);
-            }
+              const bodySnippet = page.bodyText.slice(0, 500).replace(/\n/g, " ");
+              return { slug: page.slug, title: page.title, metaDesc: page.metaDesc || "", headings: headingsStr, body: bodySnippet };
+            });
 
-            let pagesContent = pageSpecs.join("\n\n");
-            if (pagesContent.length > 4000) {
-              pagesContent = pagesContent.slice(0, 4000) + "...";
-            }
+            // Mark that we're doing multi-step generation (will bypass normal flow)
+            scrapedSiteContent = `__MULTISTEP_WEBSITE__`;
 
-            scrapedSiteContent = `
-
----
-СОЗДАЙ САЙТ ПО ОБРАЗЦУ: ${rootUrl}
-Название: ${home?.title || "Website"}
-Навигация: ${navItems.slice(0, 6).join(" | ") || "Home | About | Contact"}
-Цвета: ${siteColors.join("; ") || "#1e293b, #fff"}
-${home?.metaDesc ? `Описание: ${home.metaDesc.slice(0, 150)}` : ""}
-Страниц: ${allPages.length}
-
-${pagesContent}
-
----
-ИНСТРУКЦИЯ: Создай \`\`\`action CREATE_WEBSITE. СРАЗУ action блок, без объяснений!
-- pages: ${allPages.map(p => `"${p.slug}"`).join(", ")} (slug,title,blocks[])
-- Каждая page: navbar + hero + 2-3 контентных блока + footer (5-6 блоков)
-- navbar одинаковый, links=[{label,href:"/slug"}]
-- globalStyles: primaryColor/backgroundColor/textColor из цветов выше, fontFamily:"Inter"
-- Каждый блок: content + styles{padding,bgColor,textColor}
-- РЕАЛЬНЫЙ текст из данных выше! НЕ "Заголовок"/"Текст"!
-- Язык контента = язык оригинала
-- JSON компактный, ОДИН action блок!`;
+            // Store data for the multi-step handler below
+            (req as any).__multiStepSite = {
+              rootUrl,
+              siteTitle,
+              navLinksStr,
+              colorsStr,
+              siteLang,
+              globalStylesHint,
+              navbarJson,
+              pageDataList,
+              allPageSlugs: allPages.map(p => p.slug),
+            };
           } else {
             console.error(`Failed to fetch main site: ${mainResp.status}`);
             scrapedSiteContent = `\n\n[Не удалось загрузить сайт ${rootUrl}: HTTP ${mainResp.status}. Попроси пользователя прислать скриншот.]`;
@@ -694,6 +687,150 @@ ${pagesContent}
           scrapedSiteContent = `\n\n[Ошибка при загрузке сайта ${rootUrl}. Попроси пользователя прислать скриншот.]`;
         }
       }
+    }
+
+    // ── MULTI-STEP WEBSITE GENERATION (parallel page-by-page) ─────────
+    if (scrapedSiteContent === `__MULTISTEP_WEBSITE__`) {
+      const msData = (req as any).__multiStepSite;
+      console.log(`Multi-step website generation for ${msData.rootUrl}, ${msData.pageDataList.length} pages`);
+
+      // Helper: call any provider (non-streaming) with retries across providers
+      async function callAI(prompt: string, providerList: Provider[]): Promise<string | null> {
+        for (const provider of providerList) {
+          if (!provider.key) continue;
+          try {
+            if (provider.isAnthropic) {
+              const resp = await fetch(provider.url, {
+                method: "POST",
+                headers: { "x-api-key": provider.key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+                body: JSON.stringify({ model: provider.model, max_tokens: 8000, system: prompt, messages: [{ role: "user", content: "Generate" }] }),
+              });
+              if (!resp.ok) { console.error(`callAI ${provider.name}: ${resp.status}`); continue; }
+              const data = await resp.json();
+              return data.content?.[0]?.text || null;
+            } else {
+              const resp = await fetch(provider.url, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${provider.key}`, "Content-Type": "application/json", ...(provider.extraHeaders ?? {}) },
+                body: JSON.stringify({ model: provider.model, messages: [{ role: "system", content: prompt }, { role: "user", content: "Generate" }], temperature: 0.7, max_tokens: 8000 }),
+              });
+              if (!resp.ok) { console.error(`callAI ${provider.name}: ${resp.status}`); continue; }
+              const data = await resp.json();
+              return data.choices?.[0]?.message?.content || null;
+            }
+          } catch (e) { console.error(`callAI ${provider.name} error:`, e); continue; }
+        }
+        return null;
+      }
+
+      // Prepare available providers (with keys)
+      const availableProviders = providers.filter(p => p.key);
+      // Shuffle for load distribution
+      const shuffled = [...availableProviders].sort(() => Math.random() - 0.5);
+
+      // Generate each page in parallel, each using a different sub-set of providers
+      const pagePromises = msData.pageDataList.map((pd: any, idx: number) => {
+        // Rotate providers: each page starts from a different position
+        const rotated = [...shuffled.slice(idx % shuffled.length), ...shuffled.slice(0, idx % shuffled.length)];
+        const isHome = pd.slug === "home";
+        const pagePrompt = `Ты генератор JSON-блоков для конструктора сайтов. Верни ТОЛЬКО чистый JSON массив блоков (без \`\`\` и без текста).
+Сайт: "${msData.siteTitle}" (${msData.rootUrl})
+Язык: ${msData.siteLang}
+Цвета: ${msData.colorsStr}
+
+Страница: "${pd.slug}" — ${pd.title}
+${pd.metaDesc ? `Описание: ${pd.metaDesc}` : ""}
+${pd.headings ? `Заголовки: ${pd.headings}` : ""}
+${pd.body ? `Текст: ${pd.body}` : ""}
+
+Сгенерируй JSON массив из 5-7 блоков для этой страницы:
+1. navbar: ${msData.navbarJson}
+${isHome ? `2. hero: {type:"hero",id:"...",content:{title:"(из H1)",subtitle:"(из описания)",ctaText:"...",ctaHref:"/about",bgColor:"...",textColor:"#fff",align:"center"},styles:{padding:"80px 24px"}}` : `2. hero с title="${pd.title}" и subtitle из описания`}
+3-5. Контентные блоки (text, features, gallery, testimonials, contact, faq — выбери подходящие). Используй РЕАЛЬНЫЙ текст со страницы!
+6. footer: {type:"footer",id:"...",content:{companyName:"${msData.siteTitle.replace(/"/g, '')}",copyright:"© 2026",links:[]},styles:{padding:"24px",bgColor:"#1e293b",textColor:"#94a3b8"}}
+
+КАЖДЫЙ блок: {type,id(уникальный),content:{...},styles:{padding,bgColor,textColor}}
+Верни ТОЛЬКО JSON массив: [{...},{...},...] без обёртки!`;
+
+        return callAI(pagePrompt, rotated).then(result => ({ slug: pd.slug, title: pd.title, result }));
+      });
+
+      const pageResults = await Promise.all(pagePromises);
+      console.log(`Pages generated: ${pageResults.filter(r => r.result).length}/${pageResults.length}`);
+
+      // Parse results and assemble
+      const assembledPages: any[] = [];
+      for (const pr of pageResults) {
+        if (!pr.result) {
+          // Fallback: create minimal page
+          assembledPages.push({ slug: pr.slug, title: pr.title, blocks: [
+            JSON.parse(msData.navbarJson.replace(/(\w+):/g, '"$1":').replace(/'/g, '"')),
+            { type: "hero", id: `hero_${pr.slug}`, content: { title: pr.title, subtitle: "", bgColor: "#1e293b", textColor: "#fff", align: "center" }, styles: { padding: "60px 24px" } },
+            { type: "footer", id: `footer_${pr.slug}`, content: { companyName: msData.siteTitle, copyright: "© 2026", links: [] }, styles: { padding: "24px", bgColor: "#1e293b", textColor: "#94a3b8" } },
+          ]});
+          continue;
+        }
+
+        try {
+          // Extract JSON array from response (might have markdown wrappers)
+          let jsonStr = pr.result.trim();
+          // Remove ```json ... ``` wrappers
+          jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+          // Try to find array
+          const arrStart = jsonStr.indexOf("[");
+          const arrEnd = jsonStr.lastIndexOf("]");
+          if (arrStart >= 0 && arrEnd > arrStart) {
+            jsonStr = jsonStr.slice(arrStart, arrEnd + 1);
+          }
+          const blocks = JSON.parse(jsonStr);
+          if (Array.isArray(blocks) && blocks.length > 0) {
+            // Ensure each block has an id
+            const withIds = blocks.map((b: any, i: number) => ({ ...b, id: b.id || `${pr.slug}_b${i}` }));
+            assembledPages.push({ slug: pr.slug, title: pr.title, blocks: withIds });
+          } else {
+            throw new Error("Not an array");
+          }
+        } catch (parseErr) {
+          console.error(`Failed to parse page ${pr.slug}:`, parseErr);
+          assembledPages.push({ slug: pr.slug, title: pr.title, blocks: [
+            { type: "hero", id: `hero_${pr.slug}`, content: { title: pr.title, subtitle: "", bgColor: "#1e293b", textColor: "#fff", align: "center" }, styles: { padding: "60px 24px" } },
+            { type: "footer", id: `footer_${pr.slug}`, content: { companyName: msData.siteTitle, copyright: "© 2026", links: [] }, styles: { padding: "24px", bgColor: "#1e293b", textColor: "#94a3b8" } },
+          ]});
+        }
+      }
+
+      // Build final CREATE_WEBSITE action
+      const totalBlocks = assembledPages.reduce((s, p) => s + p.blocks.length, 0);
+      const actionJson = JSON.stringify({
+        type: "CREATE_WEBSITE",
+        data: {
+          name: msData.siteTitle,
+          globalStyles: { primaryColor: msData.colorsStr?.split(";")[0]?.replace(/.*:\s*/, '').trim() || "#1e293b", backgroundColor: "#ffffff", textColor: "#1e293b", fontFamily: "Inter", borderRadius: "8px" },
+          pages: assembledPages,
+        }
+      });
+
+      // Stream the assembled result as SSE (simulating AI response with the action block)
+      const encoder = new TextEncoder();
+      const responseText = `Создаю сайт "${msData.siteTitle}" по образцу ${msData.rootUrl}...\n\n✅ Сгенерировано ${assembledPages.length} страниц, ${totalBlocks} блоков (параллельная генерация).\n\n\`\`\`action\n${actionJson}\n\`\`\``;
+
+      const stream = new ReadableStream({
+        start(controller) {
+          // Split into small chunks to simulate streaming
+          const chunkSize = 200;
+          for (let i = 0; i < responseText.length; i += chunkSize) {
+            const text = responseText.slice(i, i + chunkSize);
+            const chunk = JSON.stringify({ choices: [{ delta: { content: text } }] });
+            controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
     }
 
     const baseMessages = [{ role: "system", content: systemContent + scrapedSiteContent }, ...messages];
