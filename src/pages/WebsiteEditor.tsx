@@ -229,6 +229,18 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     setEditingBlock(null);
   };
 
+  // Live style update (from drag resize) — doesn't close editor
+  const updateBlockStyles = useCallback((blockId: string, newStyles: Record<string, string>) => {
+    if (hasPages && currentPage) {
+      setWebsite(prev => ({
+        ...prev,
+        pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, styles: newStyles } : b) } : p),
+      }));
+    } else {
+      setWebsite(prev => ({ ...prev, blocks: prev.blocks.map(b => b.id === blockId ? { ...b, styles: newStyles } : b) }));
+    }
+  }, [hasPages, currentPage]);
+
   const addPage = () => {
     const slug = `page-${Date.now()}`;
     const newPage: WebsitePage = {
@@ -612,6 +624,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 const block = activeBlocks.find(b => b.id === id);
                 if (block) setEditingBlock(block);
               }}
+              onBlockStyleUpdate={updateBlockStyles}
               selectedBlockId={selectedBlockId}
               globalStyles={website.globalStyles}
             />

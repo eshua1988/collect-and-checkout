@@ -52,6 +52,7 @@ interface WebsitePreviewProps {
   currentPageSlug?: string;
   onPageNavigate?: (slug: string) => void;
   onBlockClick?: (blockId: string) => void;
+  onBlockStyleUpdate?: (blockId: string, styles: Record<string, string>) => void;
   selectedBlockId?: string | null;
   globalStyles?: GlobalStyles;
 }
@@ -196,7 +197,7 @@ function NavLinkWithPreview({ link, pages, onNavigate, textColor, navBgColor }: 
   );
 }
 
-function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[]) {
+function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void) {
   const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
@@ -241,20 +242,79 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     }
   };
 
-  const wrap = (node: React.ReactNode) => (
-    <div key={block.id} className={wrapperClass} style={blockStyle} onClick={() => onClick?.(block.id)}>
-      {onClick && (
-        <div className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? 'opacity-100' : ''}`}>
-          ✏️ Редактировать
-        </div>
-      )}
-      {node}
-      {/* Render extras at bottom of any block (except navbar which renders inline) */}
-      {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
-        <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
-      )}
-    </div>
-  );
+  const wrap = (node: React.ReactNode) => {
+    const startDrag = (axis: 'height' | 'width' | 'both') => (e: React.MouseEvent) => {
+      if (!onStyleUpdate) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const el = (e.target as HTMLElement).closest('[data-block-wrap]') as HTMLElement;
+      if (!el) return;
+      const startW = el.offsetWidth;
+      const startH = el.offsetHeight;
+      const onMove = (ev: MouseEvent) => {
+        const newStyles: Record<string, string> = { ...(block.styles || {}) };
+        if (axis === 'height' || axis === 'both') {
+          newStyles.minHeight = Math.max(40, startH + (ev.clientY - startY)) + 'px';
+        }
+        if (axis === 'width' || axis === 'both') {
+          newStyles.maxWidth = Math.max(100, startW + (ev.clientX - startX)) + 'px';
+        }
+        onStyleUpdate(block.id, newStyles);
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.body.style.cursor = axis === 'height' ? 'row-resize' : axis === 'width' ? 'col-resize' : 'nwse-resize';
+      document.body.style.userSelect = 'none';
+    };
+
+    return (
+      <div key={block.id} data-block-wrap className={wrapperClass} style={blockStyle} onClick={() => onClick?.(block.id)}>
+        {onClick && (
+          <div className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? 'opacity-100' : ''}`}>
+            ✏️ Редактировать
+          </div>
+        )}
+        {node}
+        {/* Render extras at bottom of any block (except navbar which renders inline) */}
+        {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
+          <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
+        )}
+        {/* Resize handles — only when block is selected and editable */}
+        {isSelected && onStyleUpdate && (
+          <>
+            {/* Bottom edge */}
+            <div onMouseDown={startDrag('height')} className="absolute bottom-0 left-4 right-4 h-1.5 cursor-row-resize z-20 group/rh">
+              <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary/40 group-hover/rh:bg-primary group-hover/rh:h-1 transition-all" />
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-8 h-1.5 rounded-t bg-primary/60 opacity-0 group-hover/rh:opacity-100 transition-opacity" />
+            </div>
+            {/* Right edge */}
+            <div onMouseDown={startDrag('width')} className="absolute top-4 bottom-4 right-0 w-1.5 cursor-col-resize z-20 group/rw">
+              <div className="absolute inset-y-0 right-0 w-0.5 bg-primary/40 group-hover/rw:bg-primary group-hover/rw:w-1 transition-all" />
+              <div className="absolute top-1/2 -translate-y-1/2 right-0 h-8 w-1.5 rounded-l bg-primary/60 opacity-0 group-hover/rw:opacity-100 transition-opacity" />
+            </div>
+            {/* Corner */}
+            <div onMouseDown={startDrag('both')} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-20 group/rc">
+              <div className="absolute bottom-0.5 right-0.5 w-2 h-2 border-b-2 border-r-2 border-primary/40 group-hover/rc:border-primary transition-colors" />
+            </div>
+            {/* Size indicator */}
+            {(blockStyle.minHeight || blockStyle.maxWidth) && (
+              <div className="absolute bottom-1 left-1 text-[9px] text-primary/60 bg-background/80 px-1 rounded z-20">
+                {blockStyle.maxWidth && `W:${blockStyle.maxWidth}`}{blockStyle.maxWidth && blockStyle.minHeight && ' | '}{blockStyle.minHeight && `H:${blockStyle.minHeight}`}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   switch (block.type) {
     case 'navbar':
@@ -827,7 +887,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   }
 }
 
-export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
+export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onBlockStyleUpdate, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
   // Determine which blocks to display: use pages if available
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
 
@@ -871,7 +931,7 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
 
   return (
     <div className="min-h-screen bg-background" style={containerStyle}>
-      {displayBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages))}
+      {displayBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate))}
     </div>
   );
 }
