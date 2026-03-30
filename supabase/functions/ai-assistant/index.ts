@@ -618,55 +618,138 @@ ${wantsDiag ? `
             const internalLinks = extractInternalLinks(mainHtml, rootOrigin, rootUrl);
             console.log(`Found ${internalLinks.length} internal links`);
 
-            // Step 3: Fetch up to 8 internal pages in parallel
-            const MAX_PAGES = 8;
+            // Step 3: Fetch up to 6 internal pages in parallel
+            const MAX_PAGES = 6;
             const linksToFetch = internalLinks.slice(0, MAX_PAGES);
             const subPages = await Promise.all(linksToFetch.map(link => scrapePage(link)));
             const validPages = subPages.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof scrapePage>>>[];
 
-            // Step 4: Build rich context for AI
+            // Step 4: Build actionable context for AI — map scraped data to block suggestions
             const allPages = [mainData, ...validPages].filter(Boolean) as NonNullable<typeof mainData>[];
+            const home = allPages[0];
 
-            // Determine if site is likely SPA (main page body text very short)
-            const mainBodyLen = mainData?.bodyText?.length || 0;
-            const isSPA = mainBodyLen < 150;
+            // Extract navigation links from homepage
+            const navItems = home?.nav?.split(/\s*\|\s*/).filter((s: string) => s.length > 1 && s.length < 50).slice(0, 8) || [];
+
+            // Collect all unique colors across pages
+            const allColorsSet = new Set<string>();
+            for (const p of allPages) {
+              if (p.colors) p.colors.split(";").map(c => c.trim()).filter(Boolean).forEach(c => allColorsSet.add(c));
+            }
+            const siteColors = [...allColorsSet].slice(0, 6);
+
+            // Build per-page block suggestions
+            const pageSpecs: string[] = [];
+            const MAX_CONTENT_PER_PAGE = 1800; // chars of body text per page to avoid bloat
+
+            for (const page of allPages) {
+              let spec = `\n### Страница: "${page.slug}" (${page.title})\n`;
+
+              // Suggest blocks based on content found
+              const suggestedBlocks: string[] = [];
+
+              // 1. Navbar (same on all pages)
+              suggestedBlocks.push(`  1. navbar: logo="${home?.title || 'Site'}", links=[${navItems.map((n: string) => `"${n}"`).join(",")}]`);
+
+              // 2. Hero block if homepage or has strong h1
+              if (page.slug === "home" || page.headings.length > 0) {
+                const heroTitle = page.headings[0] || page.title || "Welcome";
+                const heroSub = page.metaDesc || page.headings[1] || "";
+                suggestedBlocks.push(`  2. hero: title="${heroTitle}", subtitle="${heroSub.slice(0, 150)}"`);
+              }
+
+              // 3. Map sections to blocks
+              let blockNum = 3;
+              const bodyChunks = page.bodyText.slice(0, MAX_CONTENT_PER_PAGE).split(/(?<=[.!?])\s+/);
+              const paragraphs: string[] = [];
+              let currentPara = "";
+              for (const chunk of bodyChunks) {
+                if (currentPara.length + chunk.length > 300) {
+                  if (currentPara) paragraphs.push(currentPara.trim());
+                  currentPara = chunk;
+                } else {
+                  currentPara += " " + chunk;
+                }
+              }
+              if (currentPara.trim()) paragraphs.push(currentPara.trim());
+
+              // Use headings to create text/features/cta blocks
+              for (let hi = 0; hi < Math.min(page.headings.length, 6); hi++) {
+                const h = page.headings[hi];
+                const para = paragraphs[hi] || "";
+                if (hi === 0 && page.slug === "home") continue; // already in hero
+
+                // Determine best block type based on content
+                if (h.toLowerCase().includes("feature") || h.toLowerCase().includes("service") || h.toLowerCase().includes("ministr")) {
+                  suggestedBlocks.push(`  ${blockNum}. features: title="${h}", items from content`);
+                } else if (h.toLowerCase().includes("contact") || h.toLowerCase().includes("location") || h.toLowerCase().includes("address")) {
+                  suggestedBlocks.push(`  ${blockNum}. contact: title="${h}", ${para.slice(0, 100)}`);
+                } else if (h.toLowerCase().includes("event") || h.toLowerCase().includes("upcoming") || h.toLowerCase().includes("calendar")) {
+                  suggestedBlocks.push(`  ${blockNum}. features: title="${h}", items=events from content`);
+                } else if (h.toLowerCase().includes("team") || h.toLowerCase().includes("staff") || h.toLowerCase().includes("leader")) {
+                  suggestedBlocks.push(`  ${blockNum}. team: title="${h}", members from content`);
+                } else if (h.toLowerCase().includes("faq") || h.toLowerCase().includes("question")) {
+                  suggestedBlocks.push(`  ${blockNum}. faq: title="${h}"`);
+                } else {
+                  suggestedBlocks.push(`  ${blockNum}. text: title="${h}", body="${para.slice(0, 200)}"`);
+                }
+                blockNum++;
+              }
+
+              // If page has sections but few headings, add more blocks
+              if (page.sections.length > 0 && suggestedBlocks.length < 5) {
+                for (const sec of page.sections.slice(0, 3)) {
+                  const secText = sec.replace(/^\[(.*?)\]\s*/, "");
+                  suggestedBlocks.push(`  ${blockNum}. text: "${secText.slice(0, 250)}"`);
+                  blockNum++;
+                }
+              }
+
+              // Footer
+              suggestedBlocks.push(`  ${blockNum}. footer: copyright + links`);
+
+              spec += suggestedBlocks.join("\n");
+
+              // Add raw body text for AI to use as source material
+              if (page.bodyText.length > 50) {
+                spec += `\n  📝 Исходный текст страницы: "${page.bodyText.slice(0, MAX_CONTENT_PER_PAGE)}"`;
+              }
+
+              pageSpecs.push(spec);
+            }
+
+            // Limit total scrapedSiteContent to ~8000 chars to avoid 413
+            let pagesContent = pageSpecs.join("\n");
+            if (pagesContent.length > 8000) {
+              pagesContent = pagesContent.slice(0, 8000) + "\n...(остальные страницы обрезаны)";
+            }
 
             scrapedSiteContent = `
 
 ---
-## 🌐 ПОЛНЫЙ ОБХОД САЙТА: ${rootUrl}
-### Найдено страниц: ${allPages.length}${isSPA ? "\n⚠️ Сайт использует JavaScript-рендеринг (SPA). Контент может быть неполным. Используй заголовки, навигацию, мета-данные и структуру для воссоздания." : ""}
-`;
+## 🌐 СОЗДАЙ САЙТ ПО ОБРАЗЦУ: ${rootUrl}
+**Название:** ${home?.title || "Website"}
+**Навигация сайта:** ${navItems.join(" | ") || "Home | About | Contact"}
+**Цветовая палитра:** ${siteColors.join("; ") || "темная тема"}
+**Описание:** ${home?.metaDesc || home?.ogData || ""}
+**Найдено страниц:** ${allPages.length}
 
-            for (const page of allPages) {
-              scrapedSiteContent += `
-📄 **${page.slug}** — ${page.title}
-`;
-              if (page.metaDesc) scrapedSiteContent += `Описание: ${page.metaDesc}\n`;
-              if (page.ogData) scrapedSiteContent += `OG: ${page.ogData}\n`;
-              if (page.nav) scrapedSiteContent += `Навигация: ${page.nav.slice(0, 300)}\n`;
-              if (page.headings.length > 0) scrapedSiteContent += `Заголовки: ${page.headings.slice(0, 10).join(" | ")}\n`;
-              if (page.colors) scrapedSiteContent += `Цвета: ${page.colors}\n`;
-              if (page.images.length > 0) scrapedSiteContent += `Изображения: ${page.images.slice(0, 3).join(", ")}\n`;
-              if (page.sections.length > 0) {
-                scrapedSiteContent += `Секции:\n`;
-                for (const sec of page.sections.slice(0, 6)) {
-                  scrapedSiteContent += `  - ${sec}\n`;
-                }
-              }
-              if (page.bodyText.length > 30) scrapedSiteContent += `Текст: ${page.bodyText.slice(0, 2000)}\n`;
-            }
+## СТРУКТУРА БЛОКОВ ДЛЯ КАЖДОЙ СТРАНИЦЫ:
+${pagesContent}
 
-            scrapedSiteContent += `
 ---
-### ЗАДАЧА: СРАЗУ создай \`\`\`action CREATE_WEBSITE с pages массивом! НЕ описывай и НЕ объясняй — ТОЛЬКО action блок!
-- Одна page на каждую найденную страницу. Navbar одинаковый на всех, links содержат href="/slug" для каждой страницы.
-- Каждая page: минимум 4-6 блоков (navbar + hero/контент + секции + footer).
-- Бери РЕАЛЬНЫЕ тексты из контента выше (заголовки, описания, навигацию).
-- Если контент был неполным (SPA) — создай реалистичный контент на основе заголовков, описания и структуры сайта. Текст должен соответствовать тематике сайта.
-- globalStyles: подбери цвета максимально близко к оригиналу из найденных цветов.
-- Контент на том же языке, что и оригинал!
-- ВАЖНО: Весь JSON в ОДНОМ \`\`\`action блоке! Не разбивай на части!`;
+## ‼️ ОБЯЗАТЕЛЬНЫЕ ТРЕБОВАНИЯ К ГЕНЕРАЦИИ:
+1. **СРАЗУ** создай \`\`\`action CREATE_WEBSITE — БЕЗ объяснений, БЕЗ описаний!
+2. **pages** массив — одна page на каждую страницу выше (slug, title, blocks[])
+3. **Каждая page минимум 6-8 блоков**: navbar → hero → 3-5 контентных блоков → footer
+4. **РЕАЛЬНЫЙ текст** — бери заголовки и тексты ИЗ ДАННЫХ ВЫШЕ! НЕ пиши "Заголовок", "Текст" — копируй настоящий контент!
+5. **navbar** одинаковый на всех страницах, links=[{label,href:"/slug"}] для каждой страницы
+6. **globalStyles**: primaryColor/secondaryColor/backgroundColor/textColor из цветовой палитры выше, fontFamily, borderRadius
+7. **Каждый блок** с content и styles (padding, bgColor, textColor)
+8. **Язык** — тот же что на оригинальном сайте!
+9. **hero** блок: БОЛЬШОЙ title из H1 сайта, subtitle из описания, ctaText+ctaHref
+10. **features/text/contact/faq** — наполни РЕАЛЬНЫМ содержимым из исходных текстов страниц
+11. JSON КОМПАКТНЫЙ, весь action в ОДНОМ блоке!`;
           } else {
             console.error(`Failed to fetch main site: ${mainResp.status}`);
             scrapedSiteContent = `\n\n[Не удалось загрузить сайт ${rootUrl}: HTTP ${mainResp.status}. Попроси пользователя прислать скриншот.]`;
