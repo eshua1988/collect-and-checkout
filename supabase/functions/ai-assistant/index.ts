@@ -401,7 +401,7 @@ ${wantsDiag ? `
         try { rootOrigin = new URL(rootUrl).origin; } catch { rootOrigin = ""; }
 
         /** Fetch and parse one page, return structured data */
-        async function scrapePage(pageUrl: string, prefetchedHtml?: string): Promise<{url: string; slug: string; title: string; nav: string; headings: string[]; colors: string; images: string[]; bodyText: string} | null> {
+        async function scrapePage(pageUrl: string, prefetchedHtml?: string): Promise<{url: string; slug: string; title: string; metaDesc: string; nav: string; headings: string[]; colors: string; images: string[]; bodyText: string; ogData: string; sections: string[]} | null> {
           try {
             let html: string;
             if (prefetchedHtml) {
@@ -432,40 +432,134 @@ ${wantsDiag ? `
               }
             }
 
+            // --- Title ---
             const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-            const title = titleMatch ? titleMatch[1].trim().slice(0, 200) : "";
-            const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+            const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, "").trim().slice(0, 200) : "";
+
+            // --- Meta description ---
+            const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*?)["']/i)
+              || html.match(/<meta[^>]*content=["']([^"']*?)["'][^>]*name=["']description["']/i);
+            const metaDesc = metaDescMatch ? metaDescMatch[1].trim().slice(0, 300) : "";
+
+            // --- Open Graph data ---
+            const ogParts: string[] = [];
+            const ogRegex = /<meta[^>]*property=["'](og:[^"']+)["'][^>]*content=["']([^"']*?)["']/gi;
+            let ogM;
+            while ((ogM = ogRegex.exec(html)) !== null && ogParts.length < 6) {
+              ogParts.push(`${ogM[1]}=${ogM[2]}`);
+            }
+            const ogData = ogParts.join("; ");
+
+            // --- Navigation ---
             const navLinksRaw = html.match(/<nav[\s\S]*?<\/nav>/gi) || [];
-            const nav = navLinksRaw.map(n => n.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()).join(" | ");
+            const nav = navLinksRaw.map(n => n.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()).join(" | ").slice(0, 500);
+
+            // --- Headings ---
             const headings: string[] = [];
             const hRegex = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi;
             let hm;
-            while ((hm = hRegex.exec(html)) !== null) {
+            while ((hm = hRegex.exec(html)) !== null && headings.length < 20) {
               const txt = hm[1].replace(/<[^>]+>/g, "").trim();
-              if (txt) headings.push(txt);
+              if (txt && txt.length > 1) headings.push(txt.slice(0, 150));
             }
-            let bodyHtml = html.replace(/<script[\s\S]*?<\/script>/gi, "")
+
+            // --- Sections: extract text from semantic blocks ---
+            const sections: string[] = [];
+            const sectionRegex = /<(main|article|section|header|footer|aside)[^>]*>([\s\S]*?)<\/\1>/gi;
+            let sm;
+            while ((sm = sectionRegex.exec(html)) !== null && sections.length < 12) {
+              const sectionHtml = sm[2]
+                .replace(/<script[\s\S]*?<\/script>/gi, "")
+                .replace(/<style[\s\S]*?<\/style>/gi, "");
+              const sectionText = sectionHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+              if (sectionText.length > 30) {
+                sections.push(`[${sm[1]}] ${sectionText.slice(0, 400)}`);
+              }
+            }
+
+            // --- Body text extraction (improved for SPAs) ---
+            let cleanHtml = html
+              .replace(/<script[\s\S]*?<\/script>/gi, "")
               .replace(/<style[\s\S]*?<\/style>/gi, "")
-              .replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
-            const bodyMatch = bodyHtml.match(/<body[\s\S]*?<\/body>/i);
-            const bodyText = (bodyMatch ? bodyMatch[0] : bodyHtml)
-              .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 800);
-            const colorMatches = html.match(/(?:background-color|background|color)\s*:\s*[#\w(),.%\s]+/gi) || [];
-            const colors = [...new Set(colorMatches.slice(0, 8))].join("; ");
+              .replace(/<svg[\s\S]*?<\/svg>/gi, "")
+              .replace(/<noscript[\s\S]*?<\/noscript>/gi, "")
+              .replace(/<!--[\s\S]*?-->/g, "");
+
+            // Try semantic containers first: main > article > body
+            let contentHtml = "";
+            const mainMatch = cleanHtml.match(/<main[\s\S]*?<\/main>/i);
+            const articleMatch = cleanHtml.match(/<article[\s\S]*?<\/article>/i);
+            if (mainMatch) {
+              contentHtml = mainMatch[0];
+            } else if (articleMatch) {
+              contentHtml = articleMatch[0];
+            } else {
+              const bodyMatch = cleanHtml.match(/<body[\s\S]*?<\/body>/i);
+              contentHtml = bodyMatch ? bodyMatch[0] : cleanHtml;
+            }
+            let bodyText = contentHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+            // If body text is too short (likely SPA), try fallback sources
+            if (bodyText.length < 100) {
+              // Try __NEXT_DATA__ (Next.js SSR)
+              const nextDataMatch = html.match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
+              if (nextDataMatch) {
+                try {
+                  const nd = JSON.parse(nextDataMatch[1]);
+                  const ndText = JSON.stringify(nd.props?.pageProps || nd).replace(/[{}\[\]"]/g, " ").replace(/\s+/g, " ").trim();
+                  if (ndText.length > bodyText.length) bodyText = ndText;
+                } catch { /* skip */ }
+              }
+              // Try JSON-LD structured data
+              const jsonLdMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+              for (const jm of jsonLdMatches) {
+                const inner = jm.replace(/<script[^>]*>/i, "").replace(/<\/script>/i, "").trim();
+                try {
+                  const ld = JSON.parse(inner);
+                  const ldText = JSON.stringify(ld).replace(/[{}\[\]"]/g, " ").replace(/\s+/g, " ").trim();
+                  bodyText += " " + ldText;
+                } catch { /* skip */ }
+              }
+              // Try noscript content
+              const noscriptMatches = html.match(/<noscript[^>]*>([\s\S]*?)<\/noscript>/gi) || [];
+              for (const ns of noscriptMatches) {
+                const nsText = ns.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+                if (nsText.length > 20) bodyText += " " + nsText;
+              }
+            }
+
+            // Remove common garbage patterns from SPA shells
+            bodyText = bodyText
+              .replace(/\b(webpack|__webpack|__NEXT|_next|chunk|module|exports|require|import)\b[^\s]*/gi, "")
+              .replace(/[{}();=><\[\]]+/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 2500);
+
+            // --- Colors ---
+            const colorMatches = html.match(/(?:background-color|background|color)\s*:\s*#[0-9a-fA-F]{3,8}/gi) || [];
+            const cssVarColors = html.match(/--[\w-]+:\s*#[0-9a-fA-F]{3,8}/gi) || [];
+            const allColors = [...colorMatches, ...cssVarColors];
+            const colors = [...new Set(allColors.slice(0, 10))].join("; ");
+
+            // --- Images ---
             const imgMatches: string[] = [];
             const imgRegex = /<img[^>]*src=["']([^"']+)["'][^>]*/gi;
             let im;
-            while ((im = imgRegex.exec(html)) !== null && imgMatches.length < 3) {
-              imgMatches.push(im[1]);
+            while ((im = imgRegex.exec(html)) !== null && imgMatches.length < 5) {
+              const src = im[1];
+              if (!src.startsWith("data:") && !src.includes("pixel") && !src.includes("tracking")) {
+                imgMatches.push(src);
+              }
             }
 
             // Derive slug from URL path
             try {
               const u = new URL(pageUrl);
               const path = u.pathname.replace(/^\/|\/$/g, "").replace(/\.[a-z]+$/, "");
-              return { url: pageUrl, slug: path || "home", title, nav, headings, colors, images: imgMatches, bodyText };
+              return { url: pageUrl, slug: path || "home", title, metaDesc, nav, headings, colors, images: imgMatches, bodyText, ogData, sections };
             } catch {
-              return { url: pageUrl, slug: "home", title, nav, headings, colors, images: imgMatches, bodyText };
+              return { url: pageUrl, slug: "home", title, metaDesc, nav, headings, colors, images: imgMatches, bodyText, ogData, sections };
             }
           } catch (e) {
             console.error(`Failed to scrape ${pageUrl}:`, e);
@@ -524,38 +618,54 @@ ${wantsDiag ? `
             const internalLinks = extractInternalLinks(mainHtml, rootOrigin, rootUrl);
             console.log(`Found ${internalLinks.length} internal links`);
 
-            // Step 3: Fetch up to 5 internal pages in parallel
-            const MAX_PAGES = 5;
+            // Step 3: Fetch up to 8 internal pages in parallel
+            const MAX_PAGES = 8;
             const linksToFetch = internalLinks.slice(0, MAX_PAGES);
             const subPages = await Promise.all(linksToFetch.map(link => scrapePage(link)));
             const validPages = subPages.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof scrapePage>>>[];
 
-            // Step 4: Build context for AI
+            // Step 4: Build rich context for AI
             const allPages = [mainData, ...validPages].filter(Boolean) as NonNullable<typeof mainData>[];
+
+            // Determine if site is likely SPA (main page body text very short)
+            const mainBodyLen = mainData?.bodyText?.length || 0;
+            const isSPA = mainBodyLen < 150;
 
             scrapedSiteContent = `
 
 ---
 ## 🌐 ПОЛНЫЙ ОБХОД САЙТА: ${rootUrl}
-### Найдено страниц: ${allPages.length}
+### Найдено страниц: ${allPages.length}${isSPA ? "\n⚠️ Сайт использует JavaScript-рендеринг (SPA). Контент может быть неполным. Используй заголовки, навигацию, мета-данные и структуру для воссоздания." : ""}
 `;
 
             for (const page of allPages) {
               scrapedSiteContent += `
 📄 **${page.slug}** — ${page.title}
-Навигация: ${page.nav || "-"}
-H1-H3: ${page.headings.slice(0, 5).join(" | ")}
-Цвета: ${page.colors || "-"}
-Текст: ${page.bodyText.slice(0, 800)}
 `;
+              if (page.metaDesc) scrapedSiteContent += `Описание: ${page.metaDesc}\n`;
+              if (page.ogData) scrapedSiteContent += `OG: ${page.ogData}\n`;
+              if (page.nav) scrapedSiteContent += `Навигация: ${page.nav.slice(0, 300)}\n`;
+              if (page.headings.length > 0) scrapedSiteContent += `Заголовки: ${page.headings.slice(0, 10).join(" | ")}\n`;
+              if (page.colors) scrapedSiteContent += `Цвета: ${page.colors}\n`;
+              if (page.images.length > 0) scrapedSiteContent += `Изображения: ${page.images.slice(0, 3).join(", ")}\n`;
+              if (page.sections.length > 0) {
+                scrapedSiteContent += `Секции:\n`;
+                for (const sec of page.sections.slice(0, 6)) {
+                  scrapedSiteContent += `  - ${sec}\n`;
+                }
+              }
+              if (page.bodyText.length > 30) scrapedSiteContent += `Текст: ${page.bodyText.slice(0, 2000)}\n`;
             }
 
             scrapedSiteContent += `
 ---
 ### ЗАДАЧА: СРАЗУ создай \`\`\`action CREATE_WEBSITE с pages массивом! НЕ описывай и НЕ объясняй — ТОЛЬКО action блок!
-- Одна page на каждую страницу. Navbar одинаковый на всех (href="/slug").
-- Каждая page: минимум 3-5 блоков (navbar + контент + footer). Бери тексты из контента выше.
-- Для экономии: НЕ дублируй одинаковый navbar/footer — копируй id-шаблон.
+- Одна page на каждую найденную страницу. Navbar одинаковый на всех, links содержат href="/slug" для каждой страницы.
+- Каждая page: минимум 4-6 блоков (navbar + hero/контент + секции + footer).
+- Бери РЕАЛЬНЫЕ тексты из контента выше (заголовки, описания, навигацию).
+- Если контент был неполным (SPA) — создай реалистичный контент на основе заголовков, описания и структуры сайта. Текст должен соответствовать тематике сайта.
+- globalStyles: подбери цвета максимально близко к оригиналу из найденных цветов.
+- Контент на том же языке, что и оригинал!
 - ВАЖНО: Весь JSON в ОДНОМ \`\`\`action блоке! Не разбивай на части!`;
           } else {
             console.error(`Failed to fetch main site: ${mainResp.status}`);

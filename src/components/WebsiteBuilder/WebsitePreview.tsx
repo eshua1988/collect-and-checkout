@@ -48,7 +48,7 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
 }
 
 function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles) {
-  const c = block.content;
+  const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
   const wrapperClass = `relative group cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:ring-2 hover:ring-primary/40 hover:ring-offset-1'}`;
