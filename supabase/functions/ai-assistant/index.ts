@@ -618,138 +618,73 @@ ${wantsDiag ? `
             const internalLinks = extractInternalLinks(mainHtml, rootOrigin, rootUrl);
             console.log(`Found ${internalLinks.length} internal links`);
 
-            // Step 3: Fetch up to 6 internal pages in parallel
-            const MAX_PAGES = 6;
-            const linksToFetch = internalLinks.slice(0, MAX_PAGES);
+            // Step 3: Fetch up to 3 key internal pages (more = too much output for AI)
+            const MAX_PAGES = 3;
+            // Prioritize important-looking pages: about, sermons, contact, ministries
+            const priorityWords = ["about", "contact", "sermons", "ministr", "services", "connect", "give", "news"];
+            const scored = internalLinks.map(link => {
+              const lc = link.toLowerCase();
+              const score = priorityWords.reduce((s, w) => s + (lc.includes(w) ? 1 : 0), 0);
+              return { link, score };
+            });
+            scored.sort((a, b) => b.score - a.score);
+            const linksToFetch = scored.slice(0, MAX_PAGES).map(s => s.link);
             const subPages = await Promise.all(linksToFetch.map(link => scrapePage(link)));
             const validPages = subPages.filter(Boolean) as NonNullable<Awaited<ReturnType<typeof scrapePage>>>[];
 
-            // Step 4: Build actionable context for AI — map scraped data to block suggestions
+            // Step 4: Build compact context for AI
             const allPages = [mainData, ...validPages].filter(Boolean) as NonNullable<typeof mainData>[];
             const home = allPages[0];
 
-            // Extract navigation links from homepage
-            const navItems = home?.nav?.split(/\s*\|\s*/).filter((s: string) => s.length > 1 && s.length < 50).slice(0, 8) || [];
+            // Extract nav items from homepage
+            const navItems = home?.nav?.split(/\s*\|\s*/).filter((s: string) => s.length > 1 && s.length < 40).slice(0, 7) || [];
 
-            // Collect all unique colors across pages
+            // Collect unique colors
             const allColorsSet = new Set<string>();
             for (const p of allPages) {
               if (p.colors) p.colors.split(";").map(c => c.trim()).filter(Boolean).forEach(c => allColorsSet.add(c));
             }
-            const siteColors = [...allColorsSet].slice(0, 6);
+            const siteColors = [...allColorsSet].slice(0, 5);
 
-            // Build per-page block suggestions
+            // Build COMPACT per-page specs (keep total under 4000 chars)
             const pageSpecs: string[] = [];
-            const MAX_CONTENT_PER_PAGE = 1800; // chars of body text per page to avoid bloat
-
             for (const page of allPages) {
-              let spec = `\n### Страница: "${page.slug}" (${page.title})\n`;
-
-              // Suggest blocks based on content found
-              const suggestedBlocks: string[] = [];
-
-              // 1. Navbar (same on all pages)
-              suggestedBlocks.push(`  1. navbar: logo="${home?.title || 'Site'}", links=[${navItems.map((n: string) => `"${n}"`).join(",")}]`);
-
-              // 2. Hero block if homepage or has strong h1
-              if (page.slug === "home" || page.headings.length > 0) {
-                const heroTitle = page.headings[0] || page.title || "Welcome";
-                const heroSub = page.metaDesc || page.headings[1] || "";
-                suggestedBlocks.push(`  2. hero: title="${heroTitle}", subtitle="${heroSub.slice(0, 150)}"`);
-              }
-
-              // 3. Map sections to blocks
-              let blockNum = 3;
-              const bodyChunks = page.bodyText.slice(0, MAX_CONTENT_PER_PAGE).split(/(?<=[.!?])\s+/);
-              const paragraphs: string[] = [];
-              let currentPara = "";
-              for (const chunk of bodyChunks) {
-                if (currentPara.length + chunk.length > 300) {
-                  if (currentPara) paragraphs.push(currentPara.trim());
-                  currentPara = chunk;
-                } else {
-                  currentPara += " " + chunk;
-                }
-              }
-              if (currentPara.trim()) paragraphs.push(currentPara.trim());
-
-              // Use headings to create text/features/cta blocks
-              for (let hi = 0; hi < Math.min(page.headings.length, 6); hi++) {
-                const h = page.headings[hi];
-                const para = paragraphs[hi] || "";
-                if (hi === 0 && page.slug === "home") continue; // already in hero
-
-                // Determine best block type based on content
-                if (h.toLowerCase().includes("feature") || h.toLowerCase().includes("service") || h.toLowerCase().includes("ministr")) {
-                  suggestedBlocks.push(`  ${blockNum}. features: title="${h}", items from content`);
-                } else if (h.toLowerCase().includes("contact") || h.toLowerCase().includes("location") || h.toLowerCase().includes("address")) {
-                  suggestedBlocks.push(`  ${blockNum}. contact: title="${h}", ${para.slice(0, 100)}`);
-                } else if (h.toLowerCase().includes("event") || h.toLowerCase().includes("upcoming") || h.toLowerCase().includes("calendar")) {
-                  suggestedBlocks.push(`  ${blockNum}. features: title="${h}", items=events from content`);
-                } else if (h.toLowerCase().includes("team") || h.toLowerCase().includes("staff") || h.toLowerCase().includes("leader")) {
-                  suggestedBlocks.push(`  ${blockNum}. team: title="${h}", members from content`);
-                } else if (h.toLowerCase().includes("faq") || h.toLowerCase().includes("question")) {
-                  suggestedBlocks.push(`  ${blockNum}. faq: title="${h}"`);
-                } else {
-                  suggestedBlocks.push(`  ${blockNum}. text: title="${h}", body="${para.slice(0, 200)}"`);
-                }
-                blockNum++;
-              }
-
-              // If page has sections but few headings, add more blocks
-              if (page.sections.length > 0 && suggestedBlocks.length < 5) {
-                for (const sec of page.sections.slice(0, 3)) {
-                  const secText = sec.replace(/^\[(.*?)\]\s*/, "");
-                  suggestedBlocks.push(`  ${blockNum}. text: "${secText.slice(0, 250)}"`);
-                  blockNum++;
-                }
-              }
-
-              // Footer
-              suggestedBlocks.push(`  ${blockNum}. footer: copyright + links`);
-
-              spec += suggestedBlocks.join("\n");
-
-              // Add raw body text for AI to use as source material
-              if (page.bodyText.length > 50) {
-                spec += `\n  📝 Исходный текст страницы: "${page.bodyText.slice(0, MAX_CONTENT_PER_PAGE)}"`;
-              }
-
+              const headingsStr = page.headings.slice(0, 5).join(" | ");
+              const bodySnippet = page.bodyText.slice(0, 600).replace(/\n/g, " ");
+              let spec = `📄 ${page.slug} — ${page.title}`;
+              if (page.metaDesc) spec += `\nОписание: ${page.metaDesc.slice(0, 150)}`;
+              if (headingsStr) spec += `\nH: ${headingsStr}`;
+              if (bodySnippet.length > 30) spec += `\nТекст: ${bodySnippet}`;
               pageSpecs.push(spec);
             }
 
-            // Limit total scrapedSiteContent to ~8000 chars to avoid 413
-            let pagesContent = pageSpecs.join("\n");
-            if (pagesContent.length > 8000) {
-              pagesContent = pagesContent.slice(0, 8000) + "\n...(остальные страницы обрезаны)";
+            let pagesContent = pageSpecs.join("\n\n");
+            if (pagesContent.length > 4000) {
+              pagesContent = pagesContent.slice(0, 4000) + "...";
             }
 
             scrapedSiteContent = `
 
 ---
-## 🌐 СОЗДАЙ САЙТ ПО ОБРАЗЦУ: ${rootUrl}
-**Название:** ${home?.title || "Website"}
-**Навигация сайта:** ${navItems.join(" | ") || "Home | About | Contact"}
-**Цветовая палитра:** ${siteColors.join("; ") || "темная тема"}
-**Описание:** ${home?.metaDesc || home?.ogData || ""}
-**Найдено страниц:** ${allPages.length}
+СОЗДАЙ САЙТ ПО ОБРАЗЦУ: ${rootUrl}
+Название: ${home?.title || "Website"}
+Навигация: ${navItems.slice(0, 6).join(" | ") || "Home | About | Contact"}
+Цвета: ${siteColors.join("; ") || "#1e293b, #fff"}
+${home?.metaDesc ? `Описание: ${home.metaDesc.slice(0, 150)}` : ""}
+Страниц: ${allPages.length}
 
-## СТРУКТУРА БЛОКОВ ДЛЯ КАЖДОЙ СТРАНИЦЫ:
 ${pagesContent}
 
 ---
-## ‼️ ОБЯЗАТЕЛЬНЫЕ ТРЕБОВАНИЯ К ГЕНЕРАЦИИ:
-1. **СРАЗУ** создай \`\`\`action CREATE_WEBSITE — БЕЗ объяснений, БЕЗ описаний!
-2. **pages** массив — одна page на каждую страницу выше (slug, title, blocks[])
-3. **Каждая page минимум 6-8 блоков**: navbar → hero → 3-5 контентных блоков → footer
-4. **РЕАЛЬНЫЙ текст** — бери заголовки и тексты ИЗ ДАННЫХ ВЫШЕ! НЕ пиши "Заголовок", "Текст" — копируй настоящий контент!
-5. **navbar** одинаковый на всех страницах, links=[{label,href:"/slug"}] для каждой страницы
-6. **globalStyles**: primaryColor/secondaryColor/backgroundColor/textColor из цветовой палитры выше, fontFamily, borderRadius
-7. **Каждый блок** с content и styles (padding, bgColor, textColor)
-8. **Язык** — тот же что на оригинальном сайте!
-9. **hero** блок: БОЛЬШОЙ title из H1 сайта, subtitle из описания, ctaText+ctaHref
-10. **features/text/contact/faq** — наполни РЕАЛЬНЫМ содержимым из исходных текстов страниц
-11. JSON КОМПАКТНЫЙ, весь action в ОДНОМ блоке!`;
+ИНСТРУКЦИЯ: Создай \`\`\`action CREATE_WEBSITE. СРАЗУ action блок, без объяснений!
+- pages: ${allPages.map(p => `"${p.slug}"`).join(", ")} (slug,title,blocks[])
+- Каждая page: navbar + hero + 2-3 контентных блока + footer (5-6 блоков)
+- navbar одинаковый, links=[{label,href:"/slug"}]
+- globalStyles: primaryColor/backgroundColor/textColor из цветов выше, fontFamily:"Inter"
+- Каждый блок: content + styles{padding,bgColor,textColor}
+- РЕАЛЬНЫЙ текст из данных выше! НЕ "Заголовок"/"Текст"!
+- Язык контента = язык оригинала
+- JSON компактный, ОДИН action блок!`;
           } else {
             console.error(`Failed to fetch main site: ${mainResp.status}`);
             scrapedSiteContent = `\n\n[Не удалось загрузить сайт ${rootUrl}: HTTP ${mainResp.status}. Попроси пользователя прислать скриншот.]`;
@@ -790,6 +725,25 @@ ${pagesContent}
       orderedProviders = [...(userChoice ? [userChoice] : []), ...visionFirst, ...rest];
     }
 
+    // For website creation (scraping), prefer providers with high output limits
+    const isWebsiteGen = scrapedSiteContent.length > 100;
+    if (isWebsiteGen) {
+      const HIGH_OUTPUT_PROVIDERS = new Set(["gemini", "claude-haiku", "claude-sonnet", "openrouter-qwen", "openrouter-nemotron"]);
+      const userChoice = (preferredProvider && preferredProvider !== "auto")
+        ? orderedProviders.find(p => p.name === preferredProvider) : null;
+      const highOutput: Provider[] = [];
+      const rest: Provider[] = [];
+      for (const p of orderedProviders) {
+        if (p === userChoice) continue;
+        if (HIGH_OUTPUT_PROVIDERS.has(p.name)) highOutput.push(p);
+        else rest.push(p);
+      }
+      orderedProviders = [...(userChoice ? [userChoice] : []), ...highOutput, ...rest];
+    }
+
+    // Determine max_tokens based on task complexity
+    const defaultMaxTokens = isWebsiteGen ? 32000 : 16000;
+
     let lastError = "Нет доступных AI провайдеров. Настройте хотя бы один API ключ.";
     const errors: string[] = [];
     for (const provider of orderedProviders) {
@@ -810,7 +764,7 @@ ${pagesContent}
             },
             body: JSON.stringify({
               model: provider.model,
-              max_tokens: provider.maxTokens ?? 16000,
+              max_tokens: provider.maxTokens ?? defaultMaxTokens,
               stream: true,
               system: anthropicSystem,
               messages: anthropicMessages,
@@ -884,7 +838,7 @@ ${pagesContent}
             messages: providerMessages,
             stream: true,
             temperature: 0.7,
-            max_tokens: provider.maxTokens ?? 16000,
+            max_tokens: provider.maxTokens ?? defaultMaxTokens,
           }),
         });
 
