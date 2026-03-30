@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FormData, FormSubmission } from '@/types/form';
+import { cloudLoad, cloudSave, cloudDelete, cloudMigrateLocal } from '@/lib/cloudSync';
 
+const TABLE = 'user_forms';
+const SUB_TABLE = 'user_form_submissions';
 const FORMS_KEY = 'formbuilder_forms';
 const SUBMISSIONS_KEY = 'formbuilder_submissions';
 
@@ -8,17 +11,16 @@ export function useFormsStorage() {
   const [forms, setForms] = useState<FormData[]>([]);
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
 
-  // Load from localStorage on mount
+  // Load from cloud on mount + migrate local data
   useEffect(() => {
-    const savedForms = localStorage.getItem(FORMS_KEY);
-    const savedSubmissions = localStorage.getItem(SUBMISSIONS_KEY);
-    
-    if (savedForms) {
-      setForms(JSON.parse(savedForms));
-    }
-    if (savedSubmissions) {
-      setSubmissions(JSON.parse(savedSubmissions));
-    }
+    // Forms
+    cloudMigrateLocal<FormData>(TABLE, FORMS_KEY).then(() =>
+      cloudLoad<FormData>(TABLE, FORMS_KEY).then(items => setForms(items))
+    );
+    // Submissions
+    cloudMigrateLocal<FormSubmission & { id: string }>(SUB_TABLE, SUBMISSIONS_KEY).then(() =>
+      cloudLoad<FormSubmission & { id: string }>(SUB_TABLE, SUBMISSIONS_KEY).then(items => setSubmissions(items as FormSubmission[]))
+    );
   }, []);
 
   // Save forms to localStorage
@@ -39,15 +41,18 @@ export function useFormsStorage() {
     const existingIndex = forms.findIndex(f => f.id === form.id);
     
     let updatedForms: FormData[];
+    const withTs = existingIndex >= 0
+      ? { ...form, updatedAt: now }
+      : { ...form, createdAt: now, updatedAt: now };
+    
     if (existingIndex >= 0) {
-      updatedForms = forms.map((f, i) => 
-        i === existingIndex ? { ...form, updatedAt: now } : f
-      );
+      updatedForms = forms.map((f, i) => i === existingIndex ? withTs : f);
     } else {
-      updatedForms = [...forms, { ...form, createdAt: now, updatedAt: now }];
+      updatedForms = [...forms, withTs];
     }
     
     saveForms(updatedForms);
+    cloudSave(TABLE, FORMS_KEY, withTs);
     return form;
   }, [forms, saveForms]);
 
@@ -55,6 +60,7 @@ export function useFormsStorage() {
   const deleteForm = useCallback((formId: string) => {
     const updatedForms = forms.filter(f => f.id !== formId);
     saveForms(updatedForms);
+    cloudDelete(TABLE, FORMS_KEY, formId);
     // Also delete related submissions
     const updatedSubmissions = submissions.filter(s => s.formId !== formId);
     saveSubmissions(updatedSubmissions);
@@ -71,7 +77,9 @@ export function useFormsStorage() {
       f.id === formId ? { ...f, published: !f.published, updatedAt: Date.now() } : f
     );
     saveForms(updatedForms);
-    return updatedForms.find(f => f.id === formId);
+    const updated = updatedForms.find(f => f.id === formId);
+    if (updated) cloudSave(TABLE, FORMS_KEY, updated);
+    return updated;
   }, [forms, saveForms]);
 
   // Add a submission
@@ -83,6 +91,7 @@ export function useFormsStorage() {
     };
     const updatedSubmissions = [...submissions, newSubmission];
     saveSubmissions(updatedSubmissions);
+    cloudSave(SUB_TABLE, SUBMISSIONS_KEY, { ...newSubmission, createdAt: newSubmission.submittedAt, updatedAt: newSubmission.submittedAt } as any);
     return newSubmission;
   }, [submissions, saveSubmissions]);
 

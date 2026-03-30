@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AppProject } from '@/types/project';
+import { cloudLoad, cloudSave, cloudDelete, cloudMigrateLocal } from '@/lib/cloudSync';
 
+const TABLE = 'user_projects';
 const KEY = 'app_projects';
 
 export function useProjectsStorage() {
@@ -8,21 +10,24 @@ export function useProjectsStorage() {
     try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
   });
 
-  const save = useCallback((list: AppProject[]) => {
-    localStorage.setItem(KEY, JSON.stringify(list));
-    setProjects(list);
+  useEffect(() => {
+    cloudMigrateLocal<AppProject>(TABLE, KEY).then(() =>
+      cloudLoad<AppProject>(TABLE, KEY).then(items => setProjects(items))
+    );
   }, []);
 
   const saveProject = useCallback((p: AppProject) => {
+    const now = Date.now();
+    const withTs = { ...p, updatedAt: now, createdAt: p.createdAt || now };
     setProjects(prev => {
       const idx = prev.findIndex(x => x.id === p.id);
-      const now = Date.now();
       const updated = idx >= 0
-        ? prev.map((x, i) => i === idx ? { ...p, updatedAt: now } : x)
-        : [...prev, { ...p, createdAt: now, updatedAt: now }];
+        ? prev.map((x, i) => i === idx ? withTs : x)
+        : [...prev, withTs];
       localStorage.setItem(KEY, JSON.stringify(updated));
       return updated;
     });
+    cloudSave(TABLE, KEY, withTs);
   }, []);
 
   const deleteProject = useCallback((id: string) => {
@@ -31,6 +36,7 @@ export function useProjectsStorage() {
       localStorage.setItem(KEY, JSON.stringify(updated));
       return updated;
     });
+    cloudDelete(TABLE, KEY, id);
   }, []);
 
   const getProject = useCallback((id: string) => {

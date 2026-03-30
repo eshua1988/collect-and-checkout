@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AppWebsite } from '@/types/website';
+import { cloudLoad, cloudSave, cloudDelete, cloudMigrateLocal } from '@/lib/cloudSync';
 
+const TABLE = 'user_websites';
 const KEY = 'app_websites';
 
 export function useWebsitesStorage() {
@@ -8,16 +10,24 @@ export function useWebsitesStorage() {
     try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
   });
 
+  useEffect(() => {
+    cloudMigrateLocal<AppWebsite>(TABLE, KEY).then(() =>
+      cloudLoad<AppWebsite>(TABLE, KEY).then(items => setWebsites(items))
+    );
+  }, []);
+
   const saveWebsite = useCallback((w: AppWebsite) => {
+    const now = Date.now();
+    const withTs = { ...w, updatedAt: now, createdAt: w.createdAt || now };
     setWebsites(prev => {
       const idx = prev.findIndex(x => x.id === w.id);
-      const now = Date.now();
       const updated = idx >= 0
-        ? prev.map((x, i) => i === idx ? { ...w, updatedAt: now } : x)
-        : [...prev, { ...w, createdAt: now, updatedAt: now }];
+        ? prev.map((x, i) => i === idx ? withTs : x)
+        : [...prev, withTs];
       localStorage.setItem(KEY, JSON.stringify(updated));
       return updated;
     });
+    cloudSave(TABLE, KEY, withTs);
   }, []);
 
   const deleteWebsite = useCallback((id: string) => {
@@ -26,6 +36,7 @@ export function useWebsitesStorage() {
       localStorage.setItem(KEY, JSON.stringify(updated));
       return updated;
     });
+    cloudDelete(TABLE, KEY, id);
   }, []);
 
   const getWebsite = useCallback((id: string) => {
@@ -46,6 +57,7 @@ export function useWebsitesStorage() {
       localStorage.setItem(KEY, JSON.stringify(updated));
       return updated;
     });
+    if (result) cloudSave(TABLE, KEY, result);
     return result;
   }, []);
 
