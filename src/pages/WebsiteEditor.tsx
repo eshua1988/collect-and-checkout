@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppWebsite, WebsiteBlock, WebsiteBlockType, WebsitePage } from '@/types/website';
 import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
@@ -92,6 +92,25 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [showPreviewFull, setShowPreviewFull] = useState(false);
   const [currentPageSlug, setCurrentPageSlug] = useState('home');
   const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set(['home']));
+  const [sidebarWidth, setSidebarWidth] = useState(288); // 288px = w-72
+  const isResizing = useRef(false);
+
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    const startX = e.clientX;
+    const startW = sidebarWidth;
+    const onMove = (ev: MouseEvent) => {
+      if (!isResizing.current) return;
+      const newW = Math.min(600, Math.max(180, startW + (ev.clientX - startX)));
+      setSidebarWidth(newW);
+    };
+    const onUp = () => { isResizing.current = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor = ''; document.body.style.userSelect = ''; };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [sidebarWidth]);
 
   // Sync website state when AI updates it externally (REPLACE_WEBSITE, ADD_WEBSITE_BLOCKS, etc.)
   useEffect(() => {
@@ -316,7 +335,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel */}
-        <aside className="w-72 border-r bg-card flex flex-col shrink-0 overflow-hidden">
+        <aside style={{ width: sidebarWidth }} className="border-r bg-card flex flex-col shrink-0 overflow-hidden relative">
           {/* Tabs */}
           <div className="flex border-b">
             {([['blocks', 'Блоки'], ['templates', 'Шаблоны'], ['settings', 'Настройки']] as const).map(([tab, label]) => (
@@ -570,6 +589,15 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             )}
           </div>
         </aside>
+
+        {/* Resize Handle */}
+        <div
+          onMouseDown={startResize}
+          className="w-1.5 hover:w-2 bg-transparent hover:bg-primary/20 active:bg-primary/40 cursor-col-resize shrink-0 transition-all relative group"
+          title="Перетащите для изменения ширины"
+        >
+          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-border group-hover:bg-primary/40 transition-colors" />
+        </div>
 
         {/* Canvas */}
         <main className="flex-1 overflow-auto bg-muted/30 p-4">
