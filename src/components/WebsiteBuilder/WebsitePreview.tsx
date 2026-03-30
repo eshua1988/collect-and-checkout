@@ -590,34 +590,82 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
 
     default:
       // Generic rendering for custom AI-registered block types
-      const cc = block.content || {};
+      const cc = block.content || {} as any;
+      const blockType = block.type?.toLowerCase() || '';
       return wrap(
         <div className="py-8 px-8" style={{ backgroundColor: cc.bgColor, color: cc.textColor }}>
+          {/* Search bar */}
+          {(blockType.includes('search') || cc.placeholder) && (
+            <div className="flex items-center gap-2 max-w-xl mx-auto mb-4">
+              <input type="text" placeholder={cc.placeholder || 'Поиск...'} className="flex-1 px-4 py-3 rounded-lg border bg-white text-gray-900 outline-none focus:ring-2 focus:ring-blue-400" readOnly />
+              {cc.buttonText && <button className="px-6 py-3 rounded-lg text-white font-semibold" style={{ backgroundColor: gs?.primaryColor || '#2563eb' }}>{cc.buttonText}</button>}
+            </div>
+          )}
+          {/* Image / banner */}
+          {cc.imageUrl && <img src={cc.imageUrl} alt={cc.alt || cc.title || ''} className="w-full max-h-80 object-cover rounded-lg mb-4" />}
+          {cc.src && !cc.imageUrl && <img src={cc.src} alt={cc.alt || cc.title || ''} className="w-full max-h-80 object-cover rounded-lg mb-4" />}
+          {/* Title + subtitle + text */}
           {cc.title && <h2 className="text-2xl font-bold mb-4 text-center">{cc.title}</h2>}
           {cc.subtitle && <p className="text-center text-lg mb-4 opacity-80">{cc.subtitle}</p>}
           {cc.text && <p className="text-center mb-4">{cc.text}</p>}
           {cc.body && <p className="mb-4">{cc.body}</p>}
+          {cc.description && !cc.text && !cc.body && <p className="text-center mb-4 opacity-80">{cc.description}</p>}
+          {/* Buttons / links array */}
+          {cc.buttons && Array.isArray(cc.buttons) && (
+            <div className="flex flex-wrap gap-3 justify-center mt-4">
+              {cc.buttons.map((btn: any, i: number) => (
+                <a key={i} href={btn.href || btn.url || '#'} className="inline-block px-5 py-2.5 rounded-lg font-semibold transition" style={{ backgroundColor: btn.bgColor || gs?.primaryColor || '#2563eb', color: btn.textColor || '#fff' }}>{btn.label || btn.text || 'Кнопка'}</a>
+              ))}
+            </div>
+          )}
+          {cc.links && Array.isArray(cc.links) && !cc.buttons && (
+            <div className="flex flex-wrap gap-4 justify-center mt-4">
+              {cc.links.map((link: any, i: number) => (
+                <a key={i} href={link.href || link.url || '#'} className="text-blue-500 hover:underline font-medium">{link.label || link.text || link.name || 'Ссылка'}</a>
+              ))}
+            </div>
+          )}
+          {/* Grid items */}
           {cc.items && Array.isArray(cc.items) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
               {cc.items.map((item: any, i: number) => (
                 <div key={i} className="p-4 rounded-lg border bg-white/5">
                   {item.icon && <span className="text-2xl">{item.icon}</span>}
+                  {item.imageUrl && <img src={item.imageUrl} alt={item.title || ''} className="w-full h-32 object-cover rounded mb-2" />}
                   {item.title && <h3 className="font-semibold mt-1">{item.title}</h3>}
                   {item.value && <p className="text-xl font-bold">{item.value}</p>}
                   {item.desc && <p className="text-sm opacity-70">{item.desc}</p>}
+                  {item.description && !item.desc && <p className="text-sm opacity-70">{item.description}</p>}
                   {item.label && !item.title && <p className="text-sm">{item.label}</p>}
                   {item.name && <p className="font-medium">{item.name}</p>}
                   {item.text && <p className="text-sm opacity-80">{item.text}</p>}
+                  {item.href && <a href={item.href} className="text-blue-500 text-sm hover:underline mt-1 inline-block">{item.linkText || 'Подробнее →'}</a>}
                 </div>
               ))}
             </div>
           )}
+          {/* Embed / iframe */}
+          {cc.embedUrl && <iframe src={cc.embedUrl} className="w-full rounded-lg border mt-4" style={{ height: cc.height || '300px' }} title={cc.title || 'embed'} />}
+          {/* CTA button */}
           {cc.ctaText && (
             <div className="text-center mt-6">
-              <a href={cc.ctaHref || '#'} className="inline-block px-6 py-3 rounded-lg bg-white/20 font-semibold hover:bg-white/30 transition">{cc.ctaText}</a>
+              <a href={cc.ctaHref || '#'} className="inline-block px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition" style={{ backgroundColor: gs?.primaryColor || '#2563eb', color: '#fff' }}>{cc.ctaText}</a>
             </div>
           )}
-          {!cc.title && !cc.text && !cc.items && (
+          {/* Form fields */}
+          {cc.fields && Array.isArray(cc.fields) && (
+            <div className="max-w-md mx-auto space-y-3 mt-4">
+              {cc.fields.map((f: any, i: number) => (
+                <div key={i}>
+                  {f.label && <label className="block text-sm font-medium mb-1">{f.label}</label>}
+                  <input type={f.type || 'text'} placeholder={f.placeholder || f.label || ''} className="w-full px-3 py-2 rounded border bg-white text-gray-900" readOnly />
+                </div>
+              ))}
+              {cc.buttonText && <button className="w-full px-4 py-2.5 rounded-lg text-white font-semibold mt-2" style={{ backgroundColor: gs?.primaryColor || '#2563eb' }}>{cc.buttonText}</button>}
+            </div>
+          )}
+          {/* Fallback: show type name if completely empty */}
+          {!cc.title && !cc.text && !cc.items && !cc.buttons && !cc.placeholder && !cc.imageUrl && !cc.src && !cc.fields && !cc.embedUrl && !cc.body && !cc.links && (
             <p className="text-center text-muted-foreground">🧩 {block.type}</p>
           )}
         </div>
