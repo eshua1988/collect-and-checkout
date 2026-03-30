@@ -92,6 +92,21 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [showPreviewFull, setShowPreviewFull] = useState(false);
   const [currentPageSlug, setCurrentPageSlug] = useState('home');
 
+  // Sync website state when AI updates it externally (REPLACE_WEBSITE, ADD_WEBSITE_BLOCKS, etc.)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.id === website.id) {
+        const fresh = getWebsite(website.id);
+        if (fresh && fresh.updatedAt !== website.updatedAt) {
+          setWebsite(fresh);
+        }
+      }
+    };
+    window.addEventListener('websiteStorageUpdated', handler);
+    return () => window.removeEventListener('websiteStorageUpdated', handler);
+  }, [website.id, website.updatedAt, getWebsite]);
+
   // Custom AI-registered block types
   const [customBlocks, setCustomBlocks] = useState(() => getCustomBlockTypes());
   useEffect(() => {

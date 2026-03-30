@@ -28,6 +28,8 @@ export function useWebsitesStorage() {
       return updated;
     });
     cloudSave(TABLE, KEY, withTs);
+    // Notify open editors about the change
+    window.dispatchEvent(new CustomEvent('websiteStorageUpdated', { detail: { id: w.id } }));
   }, []);
 
   const deleteWebsite = useCallback((id: string) => {
