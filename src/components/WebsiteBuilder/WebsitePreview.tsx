@@ -107,12 +107,12 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     case 'navbar':
       return wrap(
         <nav style={{ backgroundColor: c.bgColor || '#1e293b', color: c.textColor || '#fff' }} className="px-6 py-4 flex items-center justify-between">
-          <div className="font-bold text-xl cursor-pointer" onClick={(e) => { e.stopPropagation(); onNavigate?.('home'); }}>{c.logo || 'Сайт'}</div>
-          <div className="flex items-center gap-6">
+          <div className="font-bold text-xl cursor-pointer shrink-0" onClick={(e) => { e.stopPropagation(); onNavigate?.('home'); }}>{c.logo || 'Сайт'}</div>
+          <div className="flex items-center gap-4 flex-wrap justify-end overflow-hidden max-h-20">
             {(c.links || []).map((link: any, i: number) => (
-              <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm opacity-80 hover:opacity-100 cursor-pointer">{link.label}</a>
+              <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm opacity-80 hover:opacity-100 cursor-pointer whitespace-nowrap">{link.label}</a>
             ))}
-            {c.ctaText && <button onClick={(e) => { e.stopPropagation(); handleLinkClick(e as any, c.ctaHref); }} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors">{c.ctaText}</button>}
+            {c.ctaText && <button onClick={(e) => { e.stopPropagation(); handleLinkClick(e as any, c.ctaHref); }} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors whitespace-nowrap">{c.ctaText}</button>}
           </div>
         </nav>
       );

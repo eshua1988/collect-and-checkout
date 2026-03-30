@@ -14,11 +14,16 @@ interface WebsiteBlockEditorProps {
 
 export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEditorProps) {
   const [content, setContent] = useState({ ...block.content });
+  const [styles, setStyles] = useState({ ...(block.styles || {}) });
 
-  const save = () => onUpdate({ ...block, content });
+  const save = () => onUpdate({ ...block, content, styles });
 
   const set = (key: string, value: any) => {
     setContent(prev => ({ ...prev, [key]: value }));
+  };
+
+  const setStyle = (key: string, value: any) => {
+    setStyles(prev => ({ ...prev, [key]: value }));
   };
 
   const renderEditor = () => {
@@ -591,6 +596,22 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEdi
               <span className="text-sm">🧩</span>
               <p className="text-xs text-muted-foreground">Кастомный блок <strong>{block.type}</strong> — все свойства доступны для редактирования</p>
             </div>
+
+            {/* ─── Styles section ─── */}
+            <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Стили блока</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div><Label className="text-xs">Фон</Label><Input type="color" value={styles.bgColor || styles.backgroundColor || '#ffffff'} onChange={e => setStyle('bgColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
+                <div><Label className="text-xs">Текст</Label><Input type="color" value={styles.textColor || styles.color || '#1e293b'} onChange={e => setStyle('textColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
+              </div>
+              <div><Label className="text-xs">Отступы (padding)</Label><Input value={styles.padding || '16px 24px'} onChange={e => setStyle('padding', e.target.value)} placeholder="16px 24px" className="mt-1 text-xs" /></div>
+              {styles.borderRadius !== undefined && (
+                <div><Label className="text-xs">Скругление (borderRadius)</Label><Input value={styles.borderRadius || ''} onChange={e => setStyle('borderRadius', e.target.value)} className="mt-1 text-xs" /></div>
+              )}
+            </div>
+
+            {/* ─── Content properties ─── */}
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Содержимое</Label>
             {Object.entries(content).map(([key, val]) => (
               <div key={key}>
                 <Label>{key}</Label>

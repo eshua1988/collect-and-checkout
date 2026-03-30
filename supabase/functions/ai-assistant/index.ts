@@ -655,7 +655,16 @@ ${wantsDiag ? `
             const colorsStr = siteColors.join("; ") || "#1e293b, #fff";
             const siteLang = /[а-яА-Я]/.test(home?.bodyText || "") ? "ru" : "en";
             const globalStylesHint = `globalStyles:{primaryColor:"${siteColors[0]?.replace(/.*:\s*/, '') || '#1e293b'}",backgroundColor:"#ffffff",textColor:"#1e293b",fontFamily:"Inter"}`;
-            const navbarJson = `{type:"navbar",id:"nav1",content:{logo:"${siteTitle.replace(/"/g, '')}",links:[${allPages.map(p => `{label:"${(p.title || p.slug).replace(/"/g, '').slice(0, 25)}",href:"/${p.slug === 'home' ? '' : p.slug}"}`).join(",")}],bgColor:"${siteColors[0]?.replace(/.*:\s*/, '') || '#1e293b'}",textColor:"#fff"},styles:{padding:"12px 24px"}}`;
+            // Build short nav labels: prefer navItems from original site, fallback to capitalized slug
+            const navbarLinks = allPages.map((p, i) => {
+              if (p.slug === 'home') return `{label:"Home",href:"/"}`;
+              // Try to match a navItem to this page's slug
+              const slugWords = p.slug.toLowerCase().split(/[-_]/);
+              const matched = navItems.find((n: string) => slugWords.some((w: string) => w.length > 2 && n.toLowerCase().includes(w)));
+              const label = (matched || p.slug.replace(/[-_]/g, ' ')).replace(/"/g, '').replace(/\b\w/g, (c: string) => c.toUpperCase()).slice(0, 15);
+              return `{label:"${label}",href:"/${p.slug}"}`;
+            }).join(",");
+            const navbarJson = `{type:"navbar",id:"nav1",content:{logo:"${siteTitle.replace(/"/g, '')}",links:[${navbarLinks}],bgColor:"${siteColors[0]?.replace(/.*:\s*/, '') || '#1e293b'}",textColor:"#fff"},styles:{padding:"12px 24px"}}`;
 
             // Build per-page specs
             const pageDataList = allPages.map(page => {
@@ -784,8 +793,11 @@ ${isHome ? `2. hero: {type:"hero",id:"...",content:{title:"(из H1)",subtitle:"
 13-14. CTA или дополнительные секции
 15. footer: {type:"footer",id:"...",content:{companyName:"${msData.siteTitle.replace(/"/g, '')}",copyright:"© 2026",links:[]},styles:{padding:"24px",bgColor:"#1e293b",textColor:"#94a3b8"}}
 
-Кастомный блок: {type:"searchBar",id:"search1",content:{placeholder:"Поиск...",buttonText:"Найти",bgColor:"#f1f5f9"},styles:{padding:"16px 24px"}}
-КАЖДЫЙ блок: {type,id(уникальный),content:{...все нужные свойства...},styles:{padding,bgColor,textColor}}
+Кастомный блок ОБЯЗАТЕЛЬНО должен иметь МНОГО свойств в content для настройки:
+Пример searchBar: {type:"searchBar",id:"search1",content:{placeholder:"Поиск...",buttonText:"Найти",bgColor:"#f1f5f9",textColor:"#1e293b",borderColor:"#e2e8f0",maxWidth:"600px",iconPosition:"left"},styles:{padding:"16px 24px",bgColor:"#f8fafc",textColor:"#1e293b"}}
+Пример slider: {type:"slider",id:"slider1",content:{slides:[{title:"...",subtitle:"...",imageUrl:"...",ctaText:"...",ctaHref:"..."}],autoPlay:true,interval:5000,showDots:true,showArrows:true,bgColor:"#1e293b",textColor:"#fff"},styles:{padding:"0",bgColor:"#1e293b"}}
+КАЖДЫЙ кастомный блок: min 5-8 свойств в content (текст, цвета, размеры, опции) + styles:{padding,bgColor,textColor}!
+КАЖДЫЙ стандартный блок: {type,id(уникальный),content:{...все нужные свойства...},styles:{padding,bgColor,textColor}}
 newBlockTypes — ТОЛЬКО для типов не из стандартного списка. Если все стандартные — пустой [].
 Верни ТОЛЬКО: {"blocks":[...],"newBlockTypes":[...]}!`;
 
