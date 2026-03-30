@@ -15,7 +15,7 @@ import {
   ArrowLeft, Plus, Trash2, Eye, Save, Copy, Link, GripVertical,
   Globe, Layout, Type, Image, Video, AlignLeft, Star, DollarSign,
   MessageSquare, Phone, Timer, Users, HelpCircle, Code2, Minus,
-  ChevronUp, ChevronDown, Layers, ExternalLink, Smartphone, Monitor, Tablet,
+  ChevronUp, ChevronDown, ChevronRight, Layers, ExternalLink, Smartphone, Monitor, Tablet,
   FileText, BarChart3, Award, Megaphone, GitBranch, Share2, Mail,
   Bell, PanelTop, ChevronsRight, ListChecks, Table2, MoveHorizontal,
   Quote, MapPin, Columns3, ClipboardList, ArrowUpDown
@@ -91,6 +91,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [templateCategory, setTemplateCategory] = useState<TemplateCategory>('all');
   const [showPreviewFull, setShowPreviewFull] = useState(false);
   const [currentPageSlug, setCurrentPageSlug] = useState('home');
+  const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set(['home']));
 
   // Sync website state when AI updates it externally (REPLACE_WEBSITE, ADD_WEBSITE_BLOCKS, etc.)
   useEffect(() => {
@@ -335,27 +336,123 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
               <div className="p-3">
                 {/* Page tabs for multi-page sites */}
                 {hasPages && (
-                  <div className="mb-3 pb-3 border-b">
+                  <div className="mb-3">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-medium text-muted-foreground">Страницы ({website.pages!.length})</p>
                       <button onClick={addPage} className="text-xs text-primary hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Добавить</button>
                     </div>
-                    <div className="space-y-1">
-                      {website.pages!.map(page => (
-                        <div
-                          key={page.slug}
-                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${currentPageSlug === page.slug ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'}`}
-                          onClick={() => { setCurrentPageSlug(page.slug); setSelectedBlockId(null); }}
-                        >
-                          <FileText className="w-3 h-3 text-muted-foreground shrink-0" />
-                          <span className="flex-1 text-xs truncate font-medium">{page.title} <span className="text-muted-foreground font-normal">/{page.slug}</span></span>
-                          {page.slug !== 'home' && (
-                            <button onClick={e => { e.stopPropagation(); deletePage(page.slug); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                    <div className="space-y-0.5">
+                      {website.pages!.map(page => {
+                        const isExpanded = expandedPages.has(page.slug);
+                        const isActive = currentPageSlug === page.slug;
+                        const pageBlocks = page.blocks || [];
+                        return (
+                          <div key={page.slug}>
+                            {/* Page header row */}
+                            <div
+                              className={`flex items-center gap-1 p-2 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'}`}
+                              onClick={() => {
+                                setCurrentPageSlug(page.slug);
+                                setSelectedBlockId(null);
+                                setExpandedPages(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(page.slug)) next.delete(page.slug); else next.add(page.slug);
+                                  return next;
+                                });
+                              }}
+                            >
+                              <span className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                                <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                              </span>
+                              <FileText className="w-3 h-3 text-muted-foreground shrink-0" />
+                              <span className="flex-1 text-xs truncate font-medium">{page.title}</span>
+                              <span className="text-[10px] text-muted-foreground shrink-0">{pageBlocks.length}</span>
+                              {page.slug !== 'home' && (
+                                <button onClick={e => { e.stopPropagation(); deletePage(page.slug); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                            {/* Expanded block list */}
+                            {isExpanded && pageBlocks.length > 0 && (
+                              <div className="ml-4 pl-2 border-l border-border/50 space-y-0.5 mt-0.5 mb-1">
+                                {pageBlocks.map((block, idx) => {
+                                  const palette = fullBlockPalette.find(p => p.type === block.type);
+                                  const blockTitle = (block.content as any)?.title || (block.content as any)?.logo || (block.content as any)?.text?.slice?.(0, 20) || palette?.label || block.type;
+                                  return (
+                                    <div
+                                      key={block.id}
+                                      className={`flex items-center gap-1.5 py-1 px-2 rounded cursor-pointer transition-colors text-xs ${selectedBlockId === block.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground hover:text-foreground'}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCurrentPageSlug(page.slug);
+                                        setSelectedBlockId(block.id);
+                                      }}
+                                    >
+                                      <GripVertical className="w-2.5 h-2.5 shrink-0 opacity-50" />
+                                      <span className="w-3 h-3 shrink-0 flex items-center justify-center">{palette?.icon}</span>
+                                      <span className="flex-1 truncate">{blockTitle}</span>
+                                      <div className="flex gap-0.5 shrink-0">
+                                        <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'up'); }} disabled={idx === 0} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-20">
+                                          <ChevronUp className="w-2.5 h-2.5" />
+                                        </button>
+                                        <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'down'); }} disabled={idx === pageBlocks.length - 1} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-20">
+                                          <ChevronDown className="w-2.5 h-2.5" />
+                                        </button>
+                                        <button onClick={e => { e.stopPropagation(); setEditingBlock(block); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
+                                          <AlignLeft className="w-2.5 h-2.5" />
+                                        </button>
+                                        <button onClick={e => { e.stopPropagation(); deleteBlock(block.id); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
+                                          <Trash2 className="w-2.5 h-2.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {isExpanded && pageBlocks.length === 0 && (
+                              <p className="ml-6 text-[10px] text-muted-foreground py-1">Пусто — добавьте блоки ниже</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Single-page block list (no pages) */}
+                {!hasPages && activeBlocks.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Блоки ({activeBlocks.length})</p>
+                    <div className="space-y-0.5">
+                      {activeBlocks.map((block, idx) => {
+                        const palette = fullBlockPalette.find(p => p.type === block.type);
+                        return (
+                          <div
+                            key={block.id}
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedBlockId === block.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'}`}
+                            onClick={() => setSelectedBlockId(block.id)}
+                          >
+                            <GripVertical className="w-3 h-3 text-muted-foreground shrink-0" />
+                            <span className="flex-1 text-xs truncate">{palette?.label || block.type}</span>
+                            <div className="flex gap-0.5">
+                              <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'up'); }} disabled={idx === 0} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-30">
+                                <ChevronUp className="w-3 h-3" />
+                              </button>
+                              <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'down'); }} disabled={idx === activeBlocks.length - 1} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-30">
+                                <ChevronDown className="w-3 h-3" />
+                              </button>
+                              <button onClick={e => { e.stopPropagation(); setEditingBlock(block); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
+                                <AlignLeft className="w-3 h-3" />
+                              </button>
+                              <button onClick={e => { e.stopPropagation(); deleteBlock(block.id); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -384,42 +481,6 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                     </button>
                   ))}
                 </div>
-
-                {/* Block list */}
-                {activeBlocks.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Слои ({activeBlocks.length})</p>
-                    <div className="space-y-1">
-                      {activeBlocks.map((block, idx) => {
-                        const palette = fullBlockPalette.find(p => p.type === block.type);
-                        return (
-                          <div
-                            key={block.id}
-                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedBlockId === block.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted'}`}
-                            onClick={() => setSelectedBlockId(block.id)}
-                          >
-                            <GripVertical className="w-3 h-3 text-muted-foreground shrink-0" />
-                            <span className="flex-1 text-xs truncate">{palette?.label || block.type}</span>
-                            <div className="flex gap-0.5">
-                              <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'up'); }} disabled={idx === 0} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-30">
-                                <ChevronUp className="w-3 h-3" />
-                              </button>
-                              <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'down'); }} disabled={idx === activeBlocks.length - 1} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-30">
-                                <ChevronDown className="w-3 h-3" />
-                              </button>
-                              <button onClick={e => { e.stopPropagation(); const b = activeBlocks.find(bl => bl.id === block.id); if (b) setEditingBlock(b); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
-                                <AlignLeft className="w-3 h-3" />
-                              </button>
-                              <button onClick={e => { e.stopPropagation(); deleteBlock(block.id); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
