@@ -656,13 +656,26 @@ ${wantsDiag ? `
             const siteLang = /[а-яА-Я]/.test(home?.bodyText || "") ? "ru" : "en";
             const globalStylesHint = `globalStyles:{primaryColor:"${siteColors[0]?.replace(/.*:\s*/, '') || '#1e293b'}",backgroundColor:"#ffffff",textColor:"#1e293b",fontFamily:"Inter"}`;
             // Build short nav labels: prefer navItems from original site, fallback to capitalized slug
+            // Group pages by nav category for mega-menu sections
             const navbarLinks = allPages.map((p, i) => {
-              if (p.slug === 'home') return `{label:"Home",href:"/"}`;
-              // Try to match a navItem to this page's slug
+              if (p.slug === 'home') return `{label:"Home",href:"/",mode:"navigate"}`;
               const slugWords = p.slug.toLowerCase().split(/[-_]/);
               const matched = navItems.find((n: string) => slugWords.some((w: string) => w.length > 2 && n.toLowerCase().includes(w)));
               const label = (matched || p.slug.replace(/[-_]/g, ' ')).replace(/"/g, '').replace(/\b\w/g, (c: string) => c.toUpperCase()).slice(0, 15);
-              return `{label:"${label}",href:"/${p.slug}"}`;
+              // Build megamenu sections from page headings
+              const pageHeadings = p.headings?.slice(0, 8) || [];
+              if (pageHeadings.length >= 3) {
+                // Split headings into 2-3 columns for mega-menu
+                const perCol = Math.ceil(pageHeadings.length / 2);
+                const col1 = pageHeadings.slice(0, perCol);
+                const col2 = pageHeadings.slice(perCol);
+                const secs = [
+                  `{title:"${col1[0]?.replace(/"/g, '').slice(0, 30) || label}",links:[${col1.map(h => `{label:"${h.replace(/"/g, '').slice(0, 30)}",href:"/${p.slug}"}`).join(",")}]}`,
+                  col2.length > 0 ? `{title:"${col2[0]?.replace(/"/g, '').slice(0, 30) || ''}",links:[${col2.map(h => `{label:"${h.replace(/"/g, '').slice(0, 30)}",href:"/${p.slug}"}`).join(",")}]}` : ''
+                ].filter(Boolean).join(",");
+                return `{label:"${label}",href:"/${p.slug}",mode:"megamenu",sections:[${secs}]}`;
+              }
+              return `{label:"${label}",href:"/${p.slug}",mode:"navigate"}`;
             }).join(",");
             const navbarJson = `{type:"navbar",id:"nav1",content:{logo:"${siteTitle.replace(/"/g, '')}",links:[${navbarLinks}],bgColor:"${siteColors[0]?.replace(/.*:\s*/, '') || '#1e293b'}",textColor:"#fff"},styles:{padding:"12px 24px"}}`;
 

@@ -47,79 +47,115 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
   );
 }
 
-/** Navbar link with hover dropdown showing page mini-preview */
-function NavLinkWithPreview({ link, pages, onNavigate, textColor, onClick: blockClick }: {
-  link: { label: string; href?: string };
+/** Navbar link — supports two modes: direct navigation or mega-menu dropdown */
+function NavLinkWithPreview({ link, pages, onNavigate, textColor, navBgColor }: {
+  link: { label: string; href?: string; mode?: 'navigate' | 'megamenu'; sections?: { title: string; links: { label: string; href: string }[] }[]; description?: string };
   pages?: WebsitePage[];
   onNavigate?: (slug: string) => void;
   textColor?: string;
-  onClick?: () => void;
+  navBgColor?: string;
 }) {
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(null);
   const slug = (link.href || '').replace(/^\//, '') || 'home';
-  const targetPage = pages?.find(p => p.slug === slug);
-  const hasPreview = !!targetPage && (targetPage.blocks?.length || 0) > 0;
+  const mode = link.mode || (link.sections && link.sections.length > 0 ? 'megamenu' : 'navigate');
 
-  const enter = () => { if (timer.current) clearTimeout(timer.current); setOpen(true); };
-  const leave = () => { timer.current = setTimeout(() => setOpen(false), 200); };
+  const enter = () => { if (timer.current) clearTimeout(timer.current); if (mode === 'megamenu') setOpen(true); };
+  const leave = () => { timer.current = setTimeout(() => setOpen(false), 250); };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const goTo = (e: React.MouseEvent, href?: string) => {
     e.preventDefault();
     e.stopPropagation();
     setOpen(false);
-    if (link.href?.startsWith('/') && onNavigate) {
-      onNavigate(slug);
-    }
+    const target = (href || link.href || '').replace(/^\//, '') || 'home';
+    onNavigate?.(target);
   };
 
-  // Build mini-preview: show first hero title + first 2-3 block titles
-  const previewBlocks = targetPage?.blocks?.filter(b => b.type !== 'navbar' && b.type !== 'footer').slice(0, 4) || [];
+  // Auto-generate sections from page blocks when no sections defined
+  const sections = link.sections && link.sections.length > 0
+    ? link.sections
+    : (() => {
+        const targetPage = pages?.find(p => p.slug === slug);
+        if (!targetPage || !targetPage.blocks?.length) return [];
+        const contentBlocks = targetPage.blocks.filter(b => b.type !== 'navbar' && b.type !== 'footer' && b.type !== 'divider' && b.type !== 'spacer');
+        if (contentBlocks.length === 0) return [];
+        // Group blocks into 2-3 columns
+        const perCol = Math.ceil(contentBlocks.length / 3);
+        const cols: { title: string; links: { label: string; href: string }[] }[] = [];
+        for (let i = 0; i < 3 && i * perCol < contentBlocks.length; i++) {
+          const chunk = contentBlocks.slice(i * perCol, (i + 1) * perCol);
+          const colTitle = chunk[0]?.content?.title || chunk[0]?.content?.heading || link.label;
+          cols.push({
+            title: i === 0 ? colTitle : (chunk[0]?.content?.title || chunk[0]?.content?.heading || ''),
+            links: chunk.map(b => ({
+              label: b.content?.title || b.content?.heading || b.content?.label || b.content?.name || b.type,
+              href: link.href || '#'
+            }))
+          });
+        }
+        return cols;
+      })();
 
+  const description = link.description || '';
+
+  // Navigate mode — simple link
+  if (mode === 'navigate' || sections.length === 0) {
+    return (
+      <a
+        href={link.href}
+        onClick={(e) => goTo(e, link.href)}
+        className="text-sm opacity-80 hover:opacity-100 cursor-pointer whitespace-nowrap py-2 block relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-current after:transition-all hover:after:w-full"
+      >
+        {link.label}
+      </a>
+    );
+  }
+
+  // Mega-menu mode
   return (
     <div className="relative" onMouseEnter={enter} onMouseLeave={leave}>
       <a
         href={link.href}
-        onClick={handleClick}
-        className="text-sm opacity-80 hover:opacity-100 cursor-pointer whitespace-nowrap py-2 block"
+        onClick={(e) => goTo(e, link.href)}
+        className="text-sm opacity-80 hover:opacity-100 cursor-pointer whitespace-nowrap py-2 block relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-current after:transition-all"
+        style={{ ['--tw-after-w' as any]: open ? '100%' : '0%' }}
       >
         {link.label}
+        {open && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-yellow-600" />}
       </a>
-      {open && hasPreview && (
+      {open && (
         <div
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+          className="fixed left-0 right-0 z-50 bg-white shadow-2xl border-t border-gray-200"
+          style={{ top: 'auto', marginTop: '8px' }}
           onMouseEnter={enter}
           onMouseLeave={leave}
         >
-          {/* Mini header */}
-          <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{targetPage!.title}</p>
-          </div>
-          {/* Block list */}
-          <div className="py-1">
-            {previewBlocks.map((b, i) => {
-              const title = b.content?.title || b.content?.heading || b.content?.label || b.content?.companyName || '';
-              const subtitle = b.content?.subtitle || b.content?.body?.slice(0, 50) || '';
-              const icon = b.type === 'hero' ? '🏠' : b.type === 'text' ? '📝' : b.type === 'features' ? '✨' : b.type === 'gallery' ? '🖼' : b.type === 'testimonials' ? '💬' : b.type === 'faq' ? '❓' : b.type === 'contact' ? '📧' : b.type === 'cta' ? '📢' : b.type === 'pricing' ? '💰' : b.type === 'team' ? '👥' : b.type === 'timeline' ? '📅' : '📋';
-              return (
-                <div key={i} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors" onClick={handleClick}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs">{icon}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{title || b.type}</p>
-                      {subtitle && <p className="text-[10px] text-gray-500 truncate">{subtitle}</p>}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            {(targetPage!.blocks?.length || 0) > 5 && (
-              <div className="px-3 py-1 text-[10px] text-gray-400 text-center">+ ещё {(targetPage!.blocks!.length || 0) - 4} блоков</div>
+          <div className="max-w-6xl mx-auto px-8 py-10 grid gap-8" style={{ gridTemplateColumns: description ? `1fr ${sections.map(() => '1fr').join(' ')}` : sections.map(() => '1fr').join(' ') }}>
+            {/* Description column (like "Our Mission") */}
+            {description && (
+              <div className="pr-8 border-r border-gray-100">
+                <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">{link.label}</h4>
+                <p className="text-gray-500 text-sm leading-relaxed italic">{description}</p>
+              </div>
             )}
-          </div>
-          {/* Go to page link */}
-          <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-            <button onClick={handleClick} className="text-xs text-blue-600 dark:text-blue-400 hover:underline w-full text-center">Перейти →</button>
+            {/* Section columns */}
+            {sections.map((section, si) => (
+              <div key={si}>
+                <h4 className="text-sm font-bold text-gray-900 mb-3">{section.title}</h4>
+                <div className="space-y-2">
+                  {(section.links || []).map((sl, li) => (
+                    <a
+                      key={li}
+                      href={sl.href}
+                      onClick={(e) => goTo(e, sl.href)}
+                      className="block text-sm text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
+                    >
+                      {sl.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -190,7 +226,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           <div className="font-bold text-xl cursor-pointer shrink-0" onClick={(e) => { e.stopPropagation(); onNavigate?.('home'); }}>{c.logo || 'Сайт'}</div>
           <div className="flex items-center gap-4 flex-wrap justify-end overflow-visible max-h-20">
             {(c.links || []).map((link: any, i: number) => (
-              <NavLinkWithPreview key={i} link={link} pages={pages} onNavigate={onNavigate} textColor={c.textColor} />
+              <NavLinkWithPreview key={i} link={link} pages={pages} onNavigate={onNavigate} textColor={c.textColor} navBgColor={c.bgColor} />
             ))}
             {c.ctaText && <button onClick={(e) => { e.stopPropagation(); handleLinkClick(e as any, c.ctaHref); }} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors whitespace-nowrap">{c.ctaText}</button>}
           </div>

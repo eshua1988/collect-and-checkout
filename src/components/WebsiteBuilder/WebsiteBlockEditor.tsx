@@ -64,23 +64,105 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEdi
             <div>
               <Label>Ссылки меню</Label>
               {(content.links || []).map((link: any, i: number) => (
-                <div key={i} className="flex gap-2 mt-1">
-                  <Input placeholder="Название" value={link.label} onChange={e => {
-                    const links = [...(content.links || [])];
-                    links[i] = { ...links[i], label: e.target.value };
-                    set('links', links);
-                  }} />
-                  <Input placeholder="Ссылка" value={link.href} onChange={e => {
-                    const links = [...(content.links || [])];
-                    links[i] = { ...links[i], href: e.target.value };
-                    set('links', links);
-                  }} />
-                  <Button size="icon" variant="ghost" onClick={() => set('links', (content.links || []).filter((_: any, j: number) => j !== i))}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                <div key={i} className="border rounded-lg p-3 mt-2 space-y-2 bg-muted/30">
+                  <div className="flex gap-2">
+                    <Input placeholder="Название" value={link.label} onChange={e => {
+                      const links = [...(content.links || [])];
+                      links[i] = { ...links[i], label: e.target.value };
+                      set('links', links);
+                    }} />
+                    <Input placeholder="Ссылка" value={link.href} onChange={e => {
+                      const links = [...(content.links || [])];
+                      links[i] = { ...links[i], href: e.target.value };
+                      set('links', links);
+                    }} />
+                    <Button size="icon" variant="ghost" onClick={() => set('links', (content.links || []).filter((_: any, j: number) => j !== i))}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {/* Mode selector */}
+                  <div className="flex gap-2 items-center">
+                    <span className="text-xs text-muted-foreground shrink-0">При наведении:</span>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant={(!link.mode || link.mode === 'navigate') ? 'default' : 'outline'} className="h-6 text-[10px] px-2" onClick={() => {
+                        const links = [...(content.links || [])]; links[i] = { ...links[i], mode: 'navigate' }; set('links', links);
+                      }}>Переход</Button>
+                      <Button size="sm" variant={link.mode === 'megamenu' ? 'default' : 'outline'} className="h-6 text-[10px] px-2" onClick={() => {
+                        const links = [...(content.links || [])];
+                        links[i] = { ...links[i], mode: 'megamenu', sections: links[i].sections || [{ title: 'Раздел', links: [{ label: 'Ссылка', href: '#' }] }] };
+                        set('links', links);
+                      }}>Мега-меню</Button>
+                    </div>
+                  </div>
+                  {/* Description for megamenu */}
+                  {link.mode === 'megamenu' && (
+                    <div>
+                      <Label className="text-xs">Описание (слева)</Label>
+                      <Textarea value={link.description || ''} onChange={e => {
+                        const links = [...(content.links || [])]; links[i] = { ...links[i], description: e.target.value }; set('links', links);
+                      }} rows={2} className="mt-1 text-xs" placeholder="Отображается как текст слева в мега-меню" />
+                    </div>
+                  )}
+                  {/* Sections editor for megamenu */}
+                  {link.mode === 'megamenu' && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Колонки меню</Label>
+                      {(link.sections || []).map((section: any, si: number) => (
+                        <div key={si} className="border rounded p-2 space-y-1 bg-background">
+                          <div className="flex gap-2 items-center">
+                            <Input placeholder="Заголовок колонки" value={section.title || ''} className="h-7 text-xs font-semibold" onChange={e => {
+                              const links = [...(content.links || [])];
+                              const secs = [...(links[i].sections || [])]; secs[si] = { ...secs[si], title: e.target.value };
+                              links[i] = { ...links[i], sections: secs }; set('links', links);
+                            }} />
+                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
+                              const links = [...(content.links || [])];
+                              links[i] = { ...links[i], sections: (links[i].sections || []).filter((_: any, j: number) => j !== si) };
+                              set('links', links);
+                            }}><Trash2 className="w-3 h-3" /></Button>
+                          </div>
+                          {(section.links || []).map((sl: any, li: number) => (
+                            <div key={li} className="flex gap-1 items-center ml-2">
+                              <Input placeholder="Текст" value={sl.label || ''} className="h-6 text-[11px]" onChange={e => {
+                                const links = [...(content.links || [])];
+                                const secs = [...(links[i].sections || [])];
+                                const sLinks = [...(secs[si].links || [])]; sLinks[li] = { ...sLinks[li], label: e.target.value };
+                                secs[si] = { ...secs[si], links: sLinks };
+                                links[i] = { ...links[i], sections: secs }; set('links', links);
+                              }} />
+                              <Input placeholder="Ссылка" value={sl.href || ''} className="h-6 text-[11px] w-24" onChange={e => {
+                                const links = [...(content.links || [])];
+                                const secs = [...(links[i].sections || [])];
+                                const sLinks = [...(secs[si].links || [])]; sLinks[li] = { ...sLinks[li], href: e.target.value };
+                                secs[si] = { ...secs[si], links: sLinks };
+                                links[i] = { ...links[i], sections: secs }; set('links', links);
+                              }} />
+                              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => {
+                                const links = [...(content.links || [])];
+                                const secs = [...(links[i].sections || [])];
+                                secs[si] = { ...secs[si], links: (secs[si].links || []).filter((_: any, j: number) => j !== li) };
+                                links[i] = { ...links[i], sections: secs }; set('links', links);
+                              }}><Trash2 className="w-2.5 h-2.5" /></Button>
+                            </div>
+                          ))}
+                          <Button size="sm" variant="ghost" className="h-5 text-[10px] ml-2" onClick={() => {
+                            const links = [...(content.links || [])];
+                            const secs = [...(links[i].sections || [])];
+                            secs[si] = { ...secs[si], links: [...(secs[si].links || []), { label: 'Ссылка', href: '#' }] };
+                            links[i] = { ...links[i], sections: secs }; set('links', links);
+                          }}><Plus className="w-2.5 h-2.5 mr-1" /> Ссылка</Button>
+                        </div>
+                      ))}
+                      <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => {
+                        const links = [...(content.links || [])];
+                        links[i] = { ...links[i], sections: [...(links[i].sections || []), { title: 'Раздел', links: [{ label: 'Ссылка', href: '#' }] }] };
+                        set('links', links);
+                      }}><Plus className="w-3 h-3 mr-1" /> Колонка</Button>
+                    </div>
+                  )}
                 </div>
               ))}
-              <Button size="sm" variant="outline" className="mt-2" onClick={() => set('links', [...(content.links || []), { label: 'Ссылка', href: '#' }])}>
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => set('links', [...(content.links || []), { label: 'Ссылка', href: '#', mode: 'navigate' }])}>
                 <Plus className="w-3 h-3 mr-1" /> Добавить ссылку
               </Button>
             </div>
