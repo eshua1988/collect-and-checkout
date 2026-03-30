@@ -35,11 +35,18 @@ export type WebsiteBlockType =
   | 'quote'
   | (string & {});
 
+export interface WebsiteBlockExtra {
+  type: 'button' | 'search' | 'icon' | 'text' | 'link' | 'badge' | 'divider' | 'social';
+  content: Record<string, any>;
+  styles?: Record<string, string>;
+}
+
 export interface WebsiteBlock {
   id: string;
   type: WebsiteBlockType;
   content: Record<string, any>;
   styles?: Record<string, string>;
+  extras?: WebsiteBlockExtra[];
 }
 
 export interface WebsitePage {

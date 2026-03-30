@@ -1,10 +1,34 @@
 import { useState } from 'react';
-import { WebsiteBlock } from '@/types/website';
+import { WebsiteBlock, WebsiteBlockExtra } from '@/types/website';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+
+const EXTRA_TYPES: { type: WebsiteBlockExtra['type']; label: string; icon: string }[] = [
+  { type: 'button', label: 'Кнопка', icon: '🔘' },
+  { type: 'search', label: 'Поиск', icon: '🔍' },
+  { type: 'text', label: 'Текст', icon: '📝' },
+  { type: 'link', label: 'Ссылка', icon: '🔗' },
+  { type: 'icon', label: 'Иконка', icon: '⭐' },
+  { type: 'badge', label: 'Бейдж', icon: '🏷' },
+  { type: 'social', label: 'Соцсети', icon: '💬' },
+  { type: 'divider', label: 'Разделитель', icon: '—' },
+];
+
+function newExtra(type: WebsiteBlockExtra['type']): WebsiteBlockExtra {
+  switch (type) {
+    case 'button': return { type, content: { text: 'Кнопка', href: '#', variant: 'primary' }, styles: { padding: '8px 20px', borderRadius: '8px' } };
+    case 'search': return { type, content: { placeholder: 'Поиск...', buttonText: '🔍' }, styles: { maxWidth: '300px' } };
+    case 'text': return { type, content: { text: 'Текст' }, styles: { fontSize: '14px' } };
+    case 'link': return { type, content: { text: 'Ссылка', href: '#' }, styles: {} };
+    case 'icon': return { type, content: { emoji: '⭐', size: '24px' }, styles: {} };
+    case 'badge': return { type, content: { text: 'NEW', bgColor: '#ef4444', textColor: '#fff' }, styles: { borderRadius: '99px', padding: '2px 8px', fontSize: '10px' } };
+    case 'social': return { type, content: { links: [{ icon: '📘', href: '#' }, { icon: '🐦', href: '#' }] }, styles: {} };
+    case 'divider': return { type, content: { vertical: true }, styles: { height: '24px' } };
+  }
+}
 
 interface WebsiteBlockEditorProps {
   block: WebsiteBlock;
@@ -15,8 +39,12 @@ interface WebsiteBlockEditorProps {
 export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEditorProps) {
   const [content, setContent] = useState({ ...block.content });
   const [styles, setStyles] = useState({ ...(block.styles || {}) });
+  const [extras, setExtras] = useState<WebsiteBlockExtra[]>(block.extras || []);
+  const [showStyles, setShowStyles] = useState(false);
+  const [showExtras, setShowExtras] = useState((block.extras || []).length > 0);
+  const [showAddExtra, setShowAddExtra] = useState(false);
 
-  const save = () => onUpdate({ ...block, content, styles });
+  const save = () => onUpdate({ ...block, content, styles, extras: extras.length > 0 ? extras : undefined });
 
   const set = (key: string, value: any) => {
     setContent(prev => ({ ...prev, [key]: value }));
@@ -767,8 +795,118 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEdi
           <h3 className="font-semibold">Редактировать: {BLOCK_LABELS[block.type] || block.type}</h3>
           <Button size="icon" variant="ghost" onClick={onClose}><X className="w-4 h-4" /></Button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {renderEditor()}
+
+          {/* ─── Universal Styles Section (collapsible) ─── */}
+          <div className="border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setShowStyles(!showStyles)}
+              className="w-full flex items-center gap-2 p-3 text-left text-sm font-medium bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              {showStyles ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              🎨 Размер и стили
+            </button>
+            {showStyles && (
+              <div className="p-3 space-y-3 border-t">
+                <div className="grid grid-cols-2 gap-2">
+                  <div><Label className="text-xs">Фон</Label><Input type="color" value={styles.bgColor || styles.backgroundColor || '#ffffff'} onChange={e => setStyle('bgColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
+                  <div><Label className="text-xs">Текст</Label><Input type="color" value={styles.textColor || styles.color || '#1e293b'} onChange={e => setStyle('textColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
+                </div>
+                <div><Label className="text-xs">Отступы (padding)</Label><Input value={styles.padding || ''} onChange={e => setStyle('padding', e.target.value)} placeholder="16px 24px" className="mt-1 text-xs" /></div>
+                <div><Label className="text-xs">Минимальная высота</Label><Input value={styles.minHeight || ''} onChange={e => setStyle('minHeight', e.target.value)} placeholder="200px" className="mt-1 text-xs" /></div>
+                <div><Label className="text-xs">Макс. ширина</Label><Input value={styles.maxWidth || ''} onChange={e => setStyle('maxWidth', e.target.value)} placeholder="1200px" className="mt-1 text-xs" /></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><Label className="text-xs">Скругление</Label><Input value={styles.borderRadius || ''} onChange={e => setStyle('borderRadius', e.target.value)} placeholder="8px" className="mt-1 text-xs" /></div>
+                  <div><Label className="text-xs">Тень</Label>
+                    <select value={styles.boxShadow || ''} onChange={e => setStyle('boxShadow', e.target.value)} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
+                      <option value="">Нет</option>
+                      <option value="0 1px 3px rgba(0,0,0,0.1)">Лёгкая</option>
+                      <option value="0 4px 12px rgba(0,0,0,0.15)">Средняя</option>
+                      <option value="0 10px 30px rgba(0,0,0,0.2)">Большая</option>
+                    </select>
+                  </div>
+                </div>
+                <div><Label className="text-xs">Рамка</Label><Input value={styles.border || ''} onChange={e => setStyle('border', e.target.value)} placeholder="1px solid #e2e8f0" className="mt-1 text-xs" /></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><Label className="text-xs">Размер шрифта</Label><Input value={styles.fontSize || ''} onChange={e => setStyle('fontSize', e.target.value)} placeholder="16px" className="mt-1 text-xs" /></div>
+                  <div><Label className="text-xs">Прозрачность</Label><Input type="range" min="0" max="1" step="0.05" value={styles.opacity || '1'} onChange={e => setStyle('opacity', e.target.value)} className="mt-2" /></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ─── Embedded Elements (Extras) Section ─── */}
+          <div className="border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setShowExtras(!showExtras)}
+              className="w-full flex items-center gap-2 p-3 text-left text-sm font-medium bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              {showExtras ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              ✨ Встроенные элементы ({extras.length})
+            </button>
+            {showExtras && (
+              <div className="p-3 space-y-2 border-t">
+                {extras.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">Нет элементов. Добавьте кнопку, поиск, значок и др.</p>
+                )}
+                {extras.map((extra, ei) => (
+                  <div key={ei} className="border rounded-lg p-2 space-y-1.5 bg-muted/20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{EXTRA_TYPES.find(t => t.type === extra.type)?.icon || '📦'}</span>
+                      <span className="text-xs font-medium flex-1">{EXTRA_TYPES.find(t => t.type === extra.type)?.label || extra.type}</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
+                        if (ei > 0) { const arr = [...extras]; [arr[ei - 1], arr[ei]] = [arr[ei], arr[ei - 1]]; setExtras(arr); }
+                      }}>↑</Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
+                        if (ei < extras.length - 1) { const arr = [...extras]; [arr[ei], arr[ei + 1]] = [arr[ei + 1], arr[ei]]; setExtras(arr); }
+                      }}>↓</Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => setExtras(extras.filter((_, j) => j !== ei))}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    {/* Extra content editor */}
+                    {Object.entries(extra.content || {}).map(([k, v]) => (
+                      <div key={k} className="flex gap-2 items-center">
+                        <span className="text-[10px] text-muted-foreground w-16 shrink-0">{k}</span>
+                        {typeof v === 'boolean' ? (
+                          <input type="checkbox" checked={v} onChange={e => {
+                            const arr = [...extras]; arr[ei] = { ...arr[ei], content: { ...arr[ei].content, [k]: e.target.checked } }; setExtras(arr);
+                          }} />
+                        ) : typeof v === 'string' && k.toLowerCase().includes('color') ? (
+                          <Input type="color" value={v || '#000000'} className="h-6 w-16" onChange={e => {
+                            const arr = [...extras]; arr[ei] = { ...arr[ei], content: { ...arr[ei].content, [k]: e.target.value } }; setExtras(arr);
+                          }} />
+                        ) : typeof v === 'string' || typeof v === 'number' ? (
+                          <Input value={String(v)} className="h-6 text-[11px]" onChange={e => {
+                            const arr = [...extras]; arr[ei] = { ...arr[ei], content: { ...arr[ei].content, [k]: typeof v === 'number' ? Number(e.target.value) : e.target.value } }; setExtras(arr);
+                          }} />
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                {/* Add extra button */}
+                {showAddExtra ? (
+                  <div className="grid grid-cols-4 gap-1 p-2 border rounded-lg bg-background">
+                    {EXTRA_TYPES.map(et => (
+                      <button key={et.type} className="flex flex-col items-center gap-1 p-2 rounded hover:bg-muted transition-colors text-center" onClick={() => {
+                        setExtras([...extras, newExtra(et.type)]);
+                        setShowAddExtra(false);
+                      }}>
+                        <span className="text-lg">{et.icon}</span>
+                        <span className="text-[10px]">{et.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <Button size="sm" variant="outline" className="w-full" onClick={() => setShowAddExtra(true)}>
+                    <Plus className="w-3 h-3 mr-1" /> Добавить элемент
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex gap-2 p-4 border-t">
           <Button variant="outline" onClick={onClose} className="flex-1">Отмена</Button>

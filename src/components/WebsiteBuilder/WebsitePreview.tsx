@@ -1,5 +1,38 @@
-import { WebsiteBlock, WebsitePage, AppWebsite } from '@/types/website';
+import { WebsiteBlock, WebsitePage, WebsiteBlockExtra, AppWebsite } from '@/types/website';
 import { useEffect, useState, useRef, useCallback } from 'react';
+
+/** Render embedded extras inline */
+function RenderExtras({ extras, handleLink }: { extras?: WebsiteBlockExtra[]; handleLink?: (e: React.MouseEvent, href?: string) => void }) {
+  if (!extras || extras.length === 0) return null;
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {extras.map((ex, i) => {
+        const c = ex.content || {};
+        const s = ex.styles || {};
+        switch (ex.type) {
+          case 'button':
+            return <a key={i} href={c.href || '#'} onClick={e => handleLink?.(e, c.href)} style={{ padding: s.padding || '6px 16px', borderRadius: s.borderRadius || '6px', backgroundColor: c.variant === 'secondary' ? 'rgba(255,255,255,0.15)' : c.bgColor || 'rgba(255,255,255,0.2)', color: c.textColor || 'inherit', fontSize: s.fontSize || '13px' }} className="hover:opacity-80 transition-opacity cursor-pointer font-medium inline-block">{c.text || 'Кнопка'}</a>;
+          case 'search':
+            return <div key={i} className="flex items-center bg-white/10 rounded-lg overflow-hidden" style={{ maxWidth: s.maxWidth || '250px' }}><input type="text" placeholder={c.placeholder || 'Поиск...'} className="bg-transparent border-none outline-none px-3 py-1.5 text-sm w-full" style={{ color: 'inherit' }} />{c.buttonText && <span className="px-2 opacity-70 cursor-pointer hover:opacity-100">{c.buttonText}</span>}</div>;
+          case 'text':
+            return <span key={i} style={{ fontSize: s.fontSize || '14px', color: c.textColor || 'inherit' }}>{c.text}</span>;
+          case 'link':
+            return <a key={i} href={c.href || '#'} onClick={e => handleLink?.(e, c.href)} className="text-sm opacity-80 hover:opacity-100 cursor-pointer underline">{c.text || 'Ссылка'}</a>;
+          case 'icon':
+            return <span key={i} style={{ fontSize: c.size || '20px' }}>{c.emoji || '⭐'}</span>;
+          case 'badge':
+            return <span key={i} style={{ backgroundColor: c.bgColor || '#ef4444', color: c.textColor || '#fff', borderRadius: s.borderRadius || '99px', padding: s.padding || '2px 8px', fontSize: s.fontSize || '10px', fontWeight: 600 }}>{c.text || 'NEW'}</span>;
+          case 'social':
+            return <div key={i} className="flex items-center gap-1.5">{(c.links || []).map((sl: any, si: number) => <a key={si} href={sl.href || '#'} onClick={e => handleLink?.(e, sl.href)} className="opacity-70 hover:opacity-100 text-base cursor-pointer">{sl.icon || '🔗'}</a>)}</div>;
+          case 'divider':
+            return c.vertical ? <div key={i} className="w-px bg-current opacity-20" style={{ height: s.height || '24px' }} /> : <hr key={i} className="w-full opacity-20" />;
+          default:
+            return null;
+        }
+      })}
+    </div>
+  );
+}
 
 interface GlobalStyles {
   primaryColor?: string;
@@ -216,6 +249,10 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         </div>
       )}
       {node}
+      {/* Render extras at bottom of any block (except navbar which renders inline) */}
+      {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
+        <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
+      )}
     </div>
   );
 
@@ -228,6 +265,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
             {(c.links || []).map((link: any, i: number) => (
               <NavLinkWithPreview key={i} link={link} pages={pages} onNavigate={onNavigate} textColor={c.textColor} navBgColor={c.bgColor} />
             ))}
+            <RenderExtras extras={block.extras} handleLink={handleLinkClick} />
             {c.ctaText && <button onClick={(e) => { e.stopPropagation(); handleLinkClick(e as any, c.ctaHref); }} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors whitespace-nowrap">{c.ctaText}</button>}
           </div>
         </nav>
