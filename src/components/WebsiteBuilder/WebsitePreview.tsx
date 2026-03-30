@@ -1,5 +1,5 @@
 import { WebsiteBlock, WebsitePage, AppWebsite } from '@/types/website';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 interface GlobalStyles {
   primaryColor?: string;
@@ -47,7 +47,87 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
   );
 }
 
-function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles) {
+/** Navbar link with hover dropdown showing page mini-preview */
+function NavLinkWithPreview({ link, pages, onNavigate, textColor, onClick: blockClick }: {
+  link: { label: string; href?: string };
+  pages?: WebsitePage[];
+  onNavigate?: (slug: string) => void;
+  textColor?: string;
+  onClick?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(null);
+  const slug = (link.href || '').replace(/^\//, '') || 'home';
+  const targetPage = pages?.find(p => p.slug === slug);
+  const hasPreview = !!targetPage && (targetPage.blocks?.length || 0) > 0;
+
+  const enter = () => { if (timer.current) clearTimeout(timer.current); setOpen(true); };
+  const leave = () => { timer.current = setTimeout(() => setOpen(false), 200); };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen(false);
+    if (link.href?.startsWith('/') && onNavigate) {
+      onNavigate(slug);
+    }
+  };
+
+  // Build mini-preview: show first hero title + first 2-3 block titles
+  const previewBlocks = targetPage?.blocks?.filter(b => b.type !== 'navbar' && b.type !== 'footer').slice(0, 4) || [];
+
+  return (
+    <div className="relative" onMouseEnter={enter} onMouseLeave={leave}>
+      <a
+        href={link.href}
+        onClick={handleClick}
+        className="text-sm opacity-80 hover:opacity-100 cursor-pointer whitespace-nowrap py-2 block"
+      >
+        {link.label}
+      </a>
+      {open && hasPreview && (
+        <div
+          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+          onMouseEnter={enter}
+          onMouseLeave={leave}
+        >
+          {/* Mini header */}
+          <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">{targetPage!.title}</p>
+          </div>
+          {/* Block list */}
+          <div className="py-1">
+            {previewBlocks.map((b, i) => {
+              const title = b.content?.title || b.content?.heading || b.content?.label || b.content?.companyName || '';
+              const subtitle = b.content?.subtitle || b.content?.body?.slice(0, 50) || '';
+              const icon = b.type === 'hero' ? '🏠' : b.type === 'text' ? '📝' : b.type === 'features' ? '✨' : b.type === 'gallery' ? '🖼' : b.type === 'testimonials' ? '💬' : b.type === 'faq' ? '❓' : b.type === 'contact' ? '📧' : b.type === 'cta' ? '📢' : b.type === 'pricing' ? '💰' : b.type === 'team' ? '👥' : b.type === 'timeline' ? '📅' : '📋';
+              return (
+                <div key={i} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors" onClick={handleClick}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs">{icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{title || b.type}</p>
+                      {subtitle && <p className="text-[10px] text-gray-500 truncate">{subtitle}</p>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {(targetPage!.blocks?.length || 0) > 5 && (
+              <div className="px-3 py-1 text-[10px] text-gray-400 text-center">+ ещё {(targetPage!.blocks!.length || 0) - 4} блоков</div>
+            )}
+          </div>
+          {/* Go to page link */}
+          <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            <button onClick={handleClick} className="text-xs text-blue-600 dark:text-blue-400 hover:underline w-full text-center">Перейти →</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[]) {
   const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
@@ -108,9 +188,9 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
       return wrap(
         <nav style={{ backgroundColor: c.bgColor || '#1e293b', color: c.textColor || '#fff' }} className="px-6 py-4 flex items-center justify-between">
           <div className="font-bold text-xl cursor-pointer shrink-0" onClick={(e) => { e.stopPropagation(); onNavigate?.('home'); }}>{c.logo || 'Сайт'}</div>
-          <div className="flex items-center gap-4 flex-wrap justify-end overflow-hidden max-h-20">
+          <div className="flex items-center gap-4 flex-wrap justify-end overflow-visible max-h-20">
             {(c.links || []).map((link: any, i: number) => (
-              <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm opacity-80 hover:opacity-100 cursor-pointer whitespace-nowrap">{link.label}</a>
+              <NavLinkWithPreview key={i} link={link} pages={pages} onNavigate={onNavigate} textColor={c.textColor} />
             ))}
             {c.ctaText && <button onClick={(e) => { e.stopPropagation(); handleLinkClick(e as any, c.ctaHref); }} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors whitespace-nowrap">{c.ctaText}</button>}
           </div>
@@ -717,7 +797,7 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
 
   return (
     <div className="min-h-screen bg-background" style={containerStyle}>
-      {displayBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs))}
+      {displayBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages))}
     </div>
   );
 }
