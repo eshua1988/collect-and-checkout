@@ -689,43 +689,67 @@ ${wantsDiag ? `
       }
     }
 
+    // ── SHARED: non-streaming callAI helper ──────────────────────────
+    async function callAI(prompt: string, providerList: Provider[]): Promise<string | null> {
+      for (const provider of providerList) {
+        if (!provider.key) continue;
+        try {
+          if (provider.isAnthropic) {
+            const resp = await fetch(provider.url, {
+              method: "POST",
+              headers: { "x-api-key": provider.key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+              body: JSON.stringify({ model: provider.model, max_tokens: 8000, system: prompt, messages: [{ role: "user", content: "Generate" }] }),
+            });
+            if (!resp.ok) { console.error(`callAI ${provider.name}: ${resp.status}`); continue; }
+            const data = await resp.json();
+            return data.content?.[0]?.text || null;
+          } else {
+            const resp = await fetch(provider.url, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${provider.key}`, "Content-Type": "application/json", ...(provider.extraHeaders ?? {}) },
+              body: JSON.stringify({ model: provider.model, messages: [{ role: "system", content: prompt }, { role: "user", content: "Generate" }], temperature: 0.7, max_tokens: 8000 }),
+            });
+            if (!resp.ok) { console.error(`callAI ${provider.name}: ${resp.status}`); continue; }
+            const data = await resp.json();
+            return data.choices?.[0]?.message?.content || null;
+          }
+        } catch (e) { console.error(`callAI ${provider.name} error:`, e); continue; }
+      }
+      return null;
+    }
+    const availableProviders = providers.filter(p => p.key);
+
+    // Helper: create SSE response from text
+    function makeSSE(text: string): Response {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          const chunkSize = 200;
+          for (let i = 0; i < text.length; i += chunkSize) {
+            const chunk = JSON.stringify({ choices: [{ delta: { content: text.slice(i, i + chunkSize) } }] });
+            controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+      return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    }
+
+    // Helper: extract JSON from AI response (strips markdown wrappers)
+    function extractJSON(raw: string): string {
+      let s = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+      const a = s.indexOf("["), o = s.indexOf("{");
+      if (a >= 0 && (o < 0 || a < o)) { const e = s.lastIndexOf("]"); if (e > a) s = s.slice(a, e + 1); }
+      else if (o >= 0) { const e = s.lastIndexOf("}"); if (e > o) s = s.slice(o, e + 1); }
+      return s;
+    }
+
     // ── MULTI-STEP WEBSITE GENERATION (parallel page-by-page) ─────────
     if (scrapedSiteContent === `__MULTISTEP_WEBSITE__`) {
       const msData = (req as any).__multiStepSite;
       console.log(`Multi-step website generation for ${msData.rootUrl}, ${msData.pageDataList.length} pages`);
 
-      // Helper: call any provider (non-streaming) with retries across providers
-      async function callAI(prompt: string, providerList: Provider[]): Promise<string | null> {
-        for (const provider of providerList) {
-          if (!provider.key) continue;
-          try {
-            if (provider.isAnthropic) {
-              const resp = await fetch(provider.url, {
-                method: "POST",
-                headers: { "x-api-key": provider.key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-                body: JSON.stringify({ model: provider.model, max_tokens: 8000, system: prompt, messages: [{ role: "user", content: "Generate" }] }),
-              });
-              if (!resp.ok) { console.error(`callAI ${provider.name}: ${resp.status}`); continue; }
-              const data = await resp.json();
-              return data.content?.[0]?.text || null;
-            } else {
-              const resp = await fetch(provider.url, {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${provider.key}`, "Content-Type": "application/json", ...(provider.extraHeaders ?? {}) },
-                body: JSON.stringify({ model: provider.model, messages: [{ role: "system", content: prompt }, { role: "user", content: "Generate" }], temperature: 0.7, max_tokens: 8000 }),
-              });
-              if (!resp.ok) { console.error(`callAI ${provider.name}: ${resp.status}`); continue; }
-              const data = await resp.json();
-              return data.choices?.[0]?.message?.content || null;
-            }
-          } catch (e) { console.error(`callAI ${provider.name} error:`, e); continue; }
-        }
-        return null;
-      }
-
-      // Prepare available providers (with keys)
-      const availableProviders = providers.filter(p => p.key);
-      // Shuffle for load distribution
       const shuffled = [...availableProviders].sort(() => Math.random() - 0.5);
 
       // Generate each page in parallel, each using a different sub-set of providers
@@ -810,27 +834,292 @@ ${isHome ? `2. hero: {type:"hero",id:"...",content:{title:"(из H1)",subtitle:"
         }
       });
 
-      // Stream the assembled result as SSE (simulating AI response with the action block)
-      const encoder = new TextEncoder();
+      // Stream the assembled result as SSE
       const responseText = `Создаю сайт "${msData.siteTitle}" по образцу ${msData.rootUrl}...\n\n✅ Сгенерировано ${assembledPages.length} страниц, ${totalBlocks} блоков (параллельная генерация).\n\n\`\`\`action\n${actionJson}\n\`\`\``;
+      return makeSSE(responseText);
+    }
 
-      const stream = new ReadableStream({
-        start(controller) {
-          // Split into small chunks to simulate streaming
-          const chunkSize = 200;
-          for (let i = 0; i < responseText.length; i += chunkSize) {
-            const text = responseText.slice(i, i + chunkSize);
-            const chunk = JSON.stringify({ choices: [{ delta: { content: text } }] });
-            controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+    // ── DETECT BOT/FORM CREATION INTENT ───────────────────────────────
+    const isBotCreation = !context?.botId && !context?.formId && !context?.websiteId
+      && /созда|сделай|построй|разработай|генерир|напиши|придумай/i.test(lastMsgText)
+      && /бот[аеу]?\b|telegram|телеграм/i.test(lastMsgText)
+      && lastMsgText.length > 30;
+    const isFormCreation = !context?.botId && !context?.formId && !context?.websiteId
+      && /созда|сделай|построй|разработай|генерир|напиши|придумай/i.test(lastMsgText)
+      && /форм[аеу]?\b|анкет|опрос|регистрац/i.test(lastMsgText)
+      && lastMsgText.length > 30;
+
+    // ── MULTI-STEP BOT GENERATION (plan → parallel nodes → assemble) ──
+    if (isBotCreation) {
+      console.log(`Multi-step bot generation, msg length: ${lastMsgText.length}`);
+
+      // Step 1: Plan — get bot structure (node list + edges)
+      const planPrompt = `Ты архитектор Telegram-ботов. Пользователь просит: "${lastMsgText.slice(0, 600)}"
+
+Верни ТОЛЬКО JSON (без \`\`\` и текста):
+{
+  "name": "Название бота",
+  "segments": [
+    {"id": "seg1", "label": "Описание сегмента", "nodeSpecs": [
+      {"id": "start_1", "type": "start", "briefData": "начало"},
+      {"id": "msg_1", "type": "message", "briefData": "приветствие с кнопками Меню/Помощь"}
+    ]},
+    {"id": "seg2", "label": "Описание сегмента 2", "nodeSpecs": [
+      {"id": "input_1", "type": "userInput", "briefData": "запрос имени"},
+      {"id": "cond_1", "type": "condition", "briefData": "проверка email"}
+    ]}
+  ],
+  "edges": [{"source":"start_1","target":"msg_1"},{"source":"msg_1","target":"input_1","sourceHandle":"0"}]
+}
+
+ПРАВИЛА:
+- Типы: start, message, userInput, condition, action, aiChat, delay, variable, media, randomizer, jump, translate, langDetect, userLangPref, socialShare
+- Минимум 8-12 узлов, разбитых на 2-4 сегмента по 2-4 узла
+- condition → ОБЯЗАТЕЛЬНО 2 ребра (yes/no). message+buttons → sourceHandle "0","1",...
+- edges >= nodes-1. start ОБЯЗАТЕЛЬНО связан
+- aiChat: ОБЯЗАТЕЛЕН userInput перед ним
+- Кастомный тип: {id, type:"customTypeName", briefData:"описание", isCustom:true, customDef:{nodeType,label,icon,color:"bg-green-500/10 text-green-400 border-green-500/30",description}}
+- ID формат: type_N (start_1, msg_1, input_1, cond_1, action_1...)
+Верни ТОЛЬКО JSON!`;
+
+      const shuffled = [...availableProviders].sort(() => Math.random() - 0.5);
+      const planResult = await callAI(planPrompt, shuffled);
+
+      if (planResult) {
+        try {
+          const plan = JSON.parse(extractJSON(planResult));
+          console.log(`Bot plan: ${plan.name}, ${plan.segments?.length} segments, ${plan.edges?.length} edges`);
+
+          // Step 2: Generate each segment's node data in parallel
+          const segPromises = (plan.segments || []).map((seg: any, idx: number) => {
+            const rotated = [...shuffled.slice((idx + 1) % shuffled.length), ...shuffled.slice(0, (idx + 1) % shuffled.length)];
+            const customDefs = seg.nodeSpecs?.filter((n: any) => n.isCustom).map((n: any) => n.customDef) || [];
+
+            const segPrompt = `Ты генератор данных для узлов Telegram-бота "${plan.name}". Верни ТОЛЬКО JSON массив узлов (без \`\`\`).
+
+Бот: "${plan.name}". Запрос пользователя: "${lastMsgText.slice(0, 300)}"
+
+Сгенерируй полные данные для этих узлов:
+${seg.nodeSpecs.map((n: any) => `- ${n.id} (${n.type}): ${n.briefData}`).join("\n")}
+
+Формат КАЖДОГО узла:
+{"id":"${seg.nodeSpecs[0]?.id}","type":"тип","position":{"x":0,"y":0},"data":{...полные данные...}}
+
+Типы данных:
+- start: data:{}
+- message: data:{text:"текст (Markdown)",buttons:[{id:"b1",label:"Кнопка",callbackData:"cb"}],parseMode:"Markdown"}
+- userInput: data:{text:"вопрос",inputType:"text|number|email|phone|date|choice",variableName:"var_name",choices:[]}
+- condition: data:{variable:"var",operator:"equals|notEquals|contains|greater|less|isEmpty",value:"значение"}
+- action: data:{actionType:"webhook|sendMessage|email",webhookUrl:"",message:"{{var}}"}
+- aiChat: data:{aiPrompt:"Инструкция для ИИ",aiModel:"google/gemini-3-flash-preview",aiResponseVar:"ai_response",aiTemperature:0.7}
+- delay: data:{delaySeconds:3,delayMessage:"Подождите..."}
+- variable: data:{varOperation:"set|increment|append",varName:"var",varValue:"value"}
+- media: data:{mediaType:"photo|video",mediaUrl:"url",caption:"текст"}
+- randomizer: data:{randWeights:[1,1]}
+${customDefs.length > 0 ? `- Кастомные: executionSteps обязательны! [{action:"sendMessage|setVariable|fetchUrl|condition|waitInput",…}]` : ""}
+
+Используй parseMode:"Markdown" для message. Текст на русском. Кнопки с callbackData.
+Верни ТОЛЬКО JSON массив: [{...},{...}]`;
+
+            return callAI(segPrompt, rotated).then(result => ({ segId: seg.id, result, specs: seg.nodeSpecs }));
+          });
+
+          const segResults = await Promise.all(segPromises);
+          console.log(`Bot segments generated: ${segResults.filter(r => r.result).length}/${segResults.length}`);
+
+          // Step 3: Assemble
+          const allNodes: any[] = [];
+          const newNodeTypes: any[] = [];
+          let yOffset = 0;
+
+          for (const sr of segResults) {
+            let segNodes: any[] = [];
+            if (sr.result) {
+              try {
+                segNodes = JSON.parse(extractJSON(sr.result));
+                if (!Array.isArray(segNodes)) segNodes = [];
+              } catch { segNodes = []; }
+            }
+
+            // Fallback: create minimal nodes from specs
+            if (segNodes.length === 0 && sr.specs) {
+              for (const spec of sr.specs) {
+                segNodes.push({
+                  id: spec.id, type: spec.type,
+                  position: { x: 0, y: 0 },
+                  data: spec.type === "start" ? {} :
+                    spec.type === "message" ? { text: spec.briefData || "Сообщение", parseMode: "Markdown" } :
+                    spec.type === "userInput" ? { text: spec.briefData || "Введите:", inputType: "text", variableName: `var_${spec.id}` } :
+                    spec.type === "condition" ? { variable: "user_message", operator: "contains", value: "" } :
+                    { text: spec.briefData || "" }
+                });
+              }
+            }
+
+            // Assign positions
+            for (let i = 0; i < segNodes.length; i++) {
+              segNodes[i].position = { x: (i % 2) * 300, y: yOffset + Math.floor(i / 2) * 180 };
+              // Collect custom node types
+              const spec = sr.specs?.find((s: any) => s.id === segNodes[i].id);
+              if (spec?.isCustom && spec.customDef) {
+                if (!newNodeTypes.find((t: any) => t.nodeType === spec.customDef.nodeType)) {
+                  newNodeTypes.push(spec.customDef);
+                }
+              }
+            }
+            yOffset += Math.ceil(segNodes.length / 2) * 180 + 100;
+            allNodes.push(...segNodes);
           }
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          controller.close();
-        },
-      });
 
-      return new Response(stream, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-      });
+          // Build action
+          const actionJson = JSON.stringify({
+            type: "CREATE_BOT",
+            data: {
+              name: plan.name || "Новый бот",
+              ...(newNodeTypes.length > 0 ? { newNodeTypes } : {}),
+              nodes: allNodes,
+              edges: (plan.edges || []).map((e: any, i: number) => ({
+                id: `e${i + 1}`, source: e.source, target: e.target,
+                ...(e.sourceHandle ? { sourceHandle: e.sourceHandle } : {}),
+              })),
+            }
+          });
+
+          const totalNodes = allNodes.length;
+          const totalEdges = plan.edges?.length || 0;
+          return makeSSE(`Создаю бота "${plan.name}"...\n\n✅ Сгенерировано ${totalNodes} узлов, ${totalEdges} связей (параллельная генерация, ${segResults.length} сегментов).\n\n\`\`\`action\n${actionJson}\n\`\`\``);
+        } catch (planErr) {
+          console.error("Bot plan parse error:", planErr);
+          // Fall through to normal generation
+        }
+      }
+    }
+
+    // ── MULTI-STEP FORM GENERATION (plan → parallel fields → assemble) ──
+    if (isFormCreation) {
+      console.log(`Multi-step form generation, msg length: ${lastMsgText.length}`);
+
+      const planPrompt = `Ты архитектор форм. Пользователь просит: "${lastMsgText.slice(0, 600)}"
+
+Верни ТОЛЬКО JSON (без \`\`\` и текста):
+{
+  "title": "Название формы",
+  "completionMessage": "Спасибо! Ваша заявка принята.",
+  "theme": {"primaryColor":"#2563eb","backgroundColor":"#f8fafc","textColor":"#1e293b","headerColor":"#2563eb","headerTextColor":"#ffffff","accentColor":"#3b82f6","fontFamily":"Inter","borderRadius":"12px","buttonColor":"#2563eb","buttonTextColor":"#ffffff","fieldBackground":"#ffffff","fieldBorder":"#e2e8f0","layout":"card"},
+  "fieldGroups": [
+    {"label": "Группа 1", "fieldSpecs": [
+      {"type": "text", "label": "Имя", "brief": "текстовое поле ФИО"},
+      {"type": "email", "label": "Email", "brief": "email обязательный"}
+    ]},
+    {"label": "Группа 2", "fieldSpecs": [
+      {"type": "select", "label": "Категория", "brief": "выбор из 4+ вариантов"},
+      {"type": "textarea", "label": "Комментарий", "brief": "многострочный текст"}
+    ]}
+  ]
+}
+
+ПРАВИЛА:
+- Типы: text, textarea, number, email, phone, select, radio, checkbox, image, dynamicNumber, payment
+- Минимум 6-10 полей, разбитых на 2-3 группы
+- theme с красивыми цветами, подходящими под тему формы
+- Кастомный тип: {"type":"customTypeName","label":"...","brief":"...",isCustom:true,"customDef":{"fieldType":"...","label":"...","icon":"...","description":"..."}}
+Верни ТОЛЬКО JSON!`;
+
+      const shuffled = [...availableProviders].sort(() => Math.random() - 0.5);
+      const planResult = await callAI(planPrompt, shuffled);
+
+      if (planResult) {
+        try {
+          const plan = JSON.parse(extractJSON(planResult));
+          console.log(`Form plan: ${plan.title}, ${plan.fieldGroups?.length} groups`);
+
+          // Step 2: Generate each group's field data in parallel
+          const groupPromises = (plan.fieldGroups || []).map((grp: any, idx: number) => {
+            const rotated = [...shuffled.slice((idx + 1) % shuffled.length), ...shuffled.slice(0, (idx + 1) % shuffled.length)];
+            const customDefs = grp.fieldSpecs?.filter((f: any) => f.isCustom).map((f: any) => f.customDef) || [];
+
+            const grpPrompt = `Ты генератор полей для формы "${plan.title}". Верни ТОЛЬКО JSON массив полей (без \`\`\`).
+
+Форма: "${plan.title}". Запрос: "${lastMsgText.slice(0, 300)}"
+
+Сгенерируй полные данные для этих полей:
+${grp.fieldSpecs.map((f: any) => `- ${f.type}: ${f.label} (${f.brief})`).join("\n")}
+
+Формат КАЖДОГО поля:
+{"id":"field_N","type":"тип","label":"Метка","placeholder":"Подсказка","required":true/false}
+
+Для select/radio ОБЯЗАТЕЛЬНО: "options":[{"id":"opt1","label":"Вариант 1","value":"val1"},...]
+Для payment: "paymentFields":[{"id":"p1","type":"select","label":"Тариф","options":[...],"multiplier":1}],"baseAmount":1000
+Для dynamicNumber: "dynamicFieldsCount":3
+${customDefs.length ? "Кастомные поля — добавь любые свойства по смыслу." : ""}
+
+Текст на русском. Placeholder понятные. required:true для важных полей.
+Верни ТОЛЬКО JSON массив: [{...},{...}]`;
+
+            return callAI(grpPrompt, rotated).then(result => ({ grpId: grp.label, result, specs: grp.fieldSpecs }));
+          });
+
+          const grpResults = await Promise.all(groupPromises);
+          console.log(`Form groups generated: ${grpResults.filter(r => r.result).length}/${grpResults.length}`);
+
+          // Step 3: Assemble
+          const allFields: any[] = [];
+          const newFieldTypes: any[] = [];
+          let fieldIdx = 1;
+
+          for (const gr of grpResults) {
+            let grpFields: any[] = [];
+            if (gr.result) {
+              try {
+                grpFields = JSON.parse(extractJSON(gr.result));
+                if (!Array.isArray(grpFields)) grpFields = [];
+              } catch { grpFields = []; }
+            }
+
+            // Fallback: minimal fields from specs
+            if (grpFields.length === 0 && gr.specs) {
+              for (const spec of gr.specs) {
+                grpFields.push({
+                  id: `field_${fieldIdx}`, type: spec.type, label: spec.label,
+                  placeholder: `Введите ${spec.label.toLowerCase()}`, required: true,
+                  ...(["select", "radio"].includes(spec.type) ? { options: [{ id: "opt1", label: "Вариант 1", value: "1" }, { id: "opt2", label: "Вариант 2", value: "2" }] } : {}),
+                });
+                fieldIdx++;
+              }
+            }
+
+            // Ensure unique IDs
+            for (const f of grpFields) {
+              f.id = f.id || `field_${fieldIdx}`;
+              fieldIdx++;
+              // Collect custom field types
+              const spec = gr.specs?.find((s: any) => s.label === f.label);
+              if (spec?.isCustom && spec.customDef) {
+                if (!newFieldTypes.find((t: any) => t.fieldType === spec.customDef.fieldType)) {
+                  newFieldTypes.push(spec.customDef);
+                }
+              }
+            }
+            allFields.push(...grpFields);
+          }
+
+          const actionJson = JSON.stringify({
+            type: "CREATE_FORM",
+            data: {
+              title: plan.title || "Новая форма",
+              ...(newFieldTypes.length > 0 ? { newFieldTypes } : {}),
+              theme: plan.theme || { primaryColor: "#2563eb", backgroundColor: "#f8fafc", textColor: "#1e293b" },
+              fields: allFields,
+              completionMessage: plan.completionMessage || "Спасибо! Форма отправлена.",
+            }
+          });
+
+          return makeSSE(`Создаю форму "${plan.title}"...\n\n✅ Сгенерировано ${allFields.length} полей (параллельная генерация, ${grpResults.length} групп).\n\n\`\`\`action\n${actionJson}\n\`\`\``);
+        } catch (planErr) {
+          console.error("Form plan parse error:", planErr);
+          // Fall through to normal generation
+        }
+      }
     }
 
     const baseMessages = [{ role: "system", content: systemContent + scrapedSiteContent }, ...messages];
