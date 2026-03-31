@@ -94,6 +94,8 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set(['home']));
   const [sidebarWidth, setSidebarWidth] = useState(288); // 288px = w-72
   const isResizing = useRef(false);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [dropIndicator, setDropIndicator] = useState<{ x: number; y: number } | null>(null);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -228,6 +230,62 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     }
     setEditingBlock(null);
   };
+
+  // Live position update (from drag move on canvas)
+  const updateBlockPosition = useCallback((blockId: string, pos: { x: number; y: number }) => {
+    if (hasPages && currentPage) {
+      setWebsite(prev => ({
+        ...prev,
+        pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, position: pos } : b) } : p),
+      }));
+    } else {
+      setWebsite(prev => ({ ...prev, blocks: prev.blocks.map(b => b.id === blockId ? { ...b, position: pos } : b) }));
+    }
+  }, [hasPages, currentPage]);
+
+  // Canvas drop handlers
+  const handleCanvasDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDropIndicator({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
+  }, []);
+
+  const handleCanvasDragLeave = useCallback(() => {
+    setDropIndicator(null);
+  }, []);
+
+  const handleCanvasDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDropIndicator(null);
+    const raw = e.dataTransfer.getData('application/block-type');
+    if (!raw) return;
+    try {
+      const { type, defaultContent: dc } = JSON.parse(raw);
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const newBlock: WebsiteBlock = {
+        id: `block_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        type,
+        content: { ...(dc || {}) },
+        position: { x: Math.max(0, x - 80), y: Math.max(0, y - 20) },
+      };
+      if (hasPages && currentPage) {
+        setWebsite(prev => ({
+          ...prev,
+          pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: [...p.blocks, newBlock] } : p),
+        }));
+      } else {
+        setWebsite(prev => ({ ...prev, blocks: [...prev.blocks, newBlock] }));
+      }
+      setSelectedBlockId(newBlock.id);
+      toast.success(`Блок "${type}" добавлен`);
+    } catch {}
+  }, [hasPages, currentPage]);
 
   // Live style update (from drag resize) — doesn't close editor
   const updateBlockStyles = useCallback((blockId: string, newStyles: Record<string, string>) => {
@@ -501,11 +559,8 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                       onClick={() => addBlock(type, defaultContent)}
                       draggable
                       onDragStart={(e) => {
-                        e.dataTransfer.setData('application/tool-config', JSON.stringify({
-                          category: 'website',
-                          type,
-                          label
-                        }));
+                        e.dataTransfer.setData('application/block-type', JSON.stringify({ type, defaultContent }));
+                        e.dataTransfer.setData('application/tool-config', JSON.stringify({ category: 'website', type, label }));
                         e.dataTransfer.effectAllowed = 'copy';
                       }}
                       className="flex flex-col items-center gap-1.5 p-3 rounded-xl border hover:border-primary hover:bg-primary/5 transition-all text-center group cursor-grab active:cursor-grabbing"
@@ -613,7 +668,13 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
 
         {/* Canvas */}
         <main className="flex-1 overflow-auto bg-muted/30 p-4">
-          <div className={`${viewWidths[viewMode]} transition-all duration-300 bg-background rounded-2xl shadow-xl overflow-hidden min-h-[600px] border`}>
+          <div
+            ref={canvasRef}
+            className={`${viewWidths[viewMode]} transition-all duration-300 bg-background rounded-2xl shadow-xl min-h-[600px] border relative`}
+            onDragOver={handleCanvasDragOver}
+            onDragLeave={handleCanvasDragLeave}
+            onDrop={handleCanvasDrop}
+          >
             <WebsitePreview
               blocks={activeBlocks}
               pages={hasPages ? website.pages : undefined}
@@ -625,10 +686,11 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 if (block) setEditingBlock(block);
               }}
               onBlockStyleUpdate={updateBlockStyles}
+              onBlockPositionUpdate={updateBlockPosition}
               selectedBlockId={selectedBlockId}
               globalStyles={website.globalStyles}
             />
-            {activeBlocks.length === 0 && (
+            {activeBlocks.length === 0 && !dropIndicator && (
               <div className="flex flex-col items-center justify-center py-20 text-center px-8">
                 <Globe className="w-16 h-16 text-muted-foreground/30 mb-4" />
                 <h3 className="text-xl font-bold mb-2">Создайте свой сайт</h3>
@@ -636,6 +698,15 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 <Button onClick={() => setActiveTab('templates')}>
                   <Layers className="w-4 h-4 mr-2" /> Выбрать шаблон
                 </Button>
+              </div>
+            )}
+            {/* Drop indicator */}
+            {dropIndicator && (
+              <div
+                className="absolute pointer-events-none border-2 border-dashed border-primary rounded-lg bg-primary/10 z-30 flex items-center justify-center"
+                style={{ left: Math.max(0, dropIndicator.x - 80), top: Math.max(0, dropIndicator.y - 20), width: 160, height: 40 }}
+              >
+                <span className="text-xs text-primary font-medium">+ Разместить здесь</span>
               </div>
             )}
           </div>

@@ -53,6 +53,7 @@ interface WebsitePreviewProps {
   onPageNavigate?: (slug: string) => void;
   onBlockClick?: (blockId: string) => void;
   onBlockStyleUpdate?: (blockId: string, styles: Record<string, string>) => void;
+  onBlockPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void;
   selectedBlockId?: string | null;
   globalStyles?: GlobalStyles;
 }
@@ -197,7 +198,7 @@ function NavLinkWithPreview({ link, pages, onNavigate, textColor, navBgColor }: 
   );
 }
 
-function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void) {
+function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void) {
   const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
@@ -243,6 +244,8 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   };
 
   const wrap = (node: React.ReactNode) => {
+    const hasPosition = !!(block.position && (block.position.x || block.position.y));
+
     const startDrag = (axis: 'height' | 'width' | 'both') => (e: React.MouseEvent) => {
       if (!onStyleUpdate) return;
       e.preventDefault();
@@ -275,11 +278,53 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
       document.body.style.userSelect = 'none';
     };
 
+    /** Drag block to move it on canvas */
+    const startMove = (e: React.MouseEvent) => {
+      if (!onPositionUpdate || !isSelected) return;
+      // Only move via the move handle or if block already has position
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-move-handle]')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startPosX = block.position?.x || 0;
+      const startPosY = block.position?.y || 0;
+      const el = (target.closest('[data-block-wrap]') as HTMLElement)?.parentElement?.closest('.min-h-screen, [data-canvas]') as HTMLElement;
+      const onMove = (ev: MouseEvent) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        onPositionUpdate(block.id, { x: Math.max(0, startPosX + dx), y: Math.max(0, startPosY + dy) });
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.body.style.cursor = 'move';
+      document.body.style.userSelect = 'none';
+    };
+
+    const posStyle: React.CSSProperties = hasPosition
+      ? { position: 'absolute', left: block.position!.x, top: block.position!.y, zIndex: isSelected ? 15 : 10 }
+      : {};
+
     return (
-      <div key={block.id} data-block-wrap className={wrapperClass} style={blockStyle} onClick={() => onClick?.(block.id)}>
+      <div key={block.id} data-block-wrap className={wrapperClass} style={{ ...blockStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
         {onClick && (
-          <div className={`absolute top-2 right-2 z-10 px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? 'opacity-100' : ''}`}>
-            ✏️ Редактировать
+          <div className={`absolute top-2 right-2 z-10 flex items-center gap-1 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+            {/* Move handle */}
+            {onPositionUpdate && isSelected && (
+              <div data-move-handle className="px-1.5 py-0.5 text-xs rounded bg-blue-500 text-white cursor-move select-none" title="Перетащить">
+                ✥
+              </div>
+            )}
+            <div className="px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground">
+              ✏️
+            </div>
           </div>
         )}
         {node}
@@ -304,10 +349,12 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
             <div onMouseDown={startDrag('both')} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-20 group/rc">
               <div className="absolute bottom-0.5 right-0.5 w-2 h-2 border-b-2 border-r-2 border-primary/40 group-hover/rc:border-primary transition-colors" />
             </div>
-            {/* Size indicator */}
-            {(blockStyle.minHeight || blockStyle.maxWidth) && (
+            {/* Size / position indicator */}
+            {(blockStyle.minHeight || blockStyle.maxWidth || hasPosition) && (
               <div className="absolute bottom-1 left-1 text-[9px] text-primary/60 bg-background/80 px-1 rounded z-20">
-                {blockStyle.maxWidth && `W:${blockStyle.maxWidth}`}{blockStyle.maxWidth && blockStyle.minHeight && ' | '}{blockStyle.minHeight && `H:${blockStyle.minHeight}`}
+                {hasPosition && `X:${Math.round(block.position!.x)} Y:${Math.round(block.position!.y)}`}
+                {hasPosition && (blockStyle.maxWidth || blockStyle.minHeight) && ' | '}
+                {blockStyle.maxWidth && `W:${blockStyle.maxWidth}`}{blockStyle.maxWidth && blockStyle.minHeight && ' '}{blockStyle.minHeight && `H:${blockStyle.minHeight}`}
               </div>
             )}
           </>
@@ -887,7 +934,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   }
 }
 
-export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onBlockStyleUpdate, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
+export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onBlockStyleUpdate, onBlockPositionUpdate, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
   // Determine which blocks to display: use pages if available
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
 
@@ -929,9 +976,14 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
   if (gs?.fontFamily) containerStyle.fontFamily = gs.fontFamily;
   if (gs?.maxWidth) containerStyle.maxWidth = gs.maxWidth;
 
+  // Separate flow blocks (no position) and absolutely positioned blocks
+  const flowBlocks = displayBlocks.filter(b => !b.position || (!b.position.x && !b.position.y));
+  const positionedBlocks = displayBlocks.filter(b => b.position && (b.position.x || b.position.y));
+
   return (
-    <div className="min-h-screen bg-background" style={containerStyle}>
-      {displayBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate))}
+    <div className="min-h-screen bg-background relative" style={containerStyle} data-canvas>
+      {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate))}
+      {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate))}
     </div>
   );
 }

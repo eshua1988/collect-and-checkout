@@ -47,6 +47,7 @@ export interface WebsiteBlock {
   content: Record<string, any>;
   styles?: Record<string, string>;
   extras?: WebsiteBlockExtra[];
+  position?: { x: number; y: number };
 }
 
 export interface WebsitePage {
