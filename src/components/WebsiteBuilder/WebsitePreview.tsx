@@ -52,6 +52,7 @@ interface WebsitePreviewProps {
   currentPageSlug?: string;
   onPageNavigate?: (slug: string) => void;
   onBlockClick?: (blockId: string) => void;
+  onEditBlock?: (blockId: string) => void;
   onBlockStyleUpdate?: (blockId: string, styles: Record<string, string>) => void;
   onBlockPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void;
   selectedBlockId?: string | null;
@@ -198,7 +199,7 @@ function NavLinkWithPreview({ link, pages, onNavigate, textColor, navBgColor }: 
   );
 }
 
-function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void) {
+function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void, onEdit?: (id: string) => void) {
   const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
@@ -278,23 +279,58 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
       document.body.style.userSelect = 'none';
     };
 
-    /** Drag block to move it on canvas */
+    /** Drag block to move it on canvas — via move handle or long press */
     const startMove = (e: React.MouseEvent) => {
-      if (!onPositionUpdate || !isSelected) return;
-      // Only move via the move handle or if block already has position
+      if (!onPositionUpdate) return;
       const target = e.target as HTMLElement;
-      if (!target.closest('[data-move-handle]')) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const startX = e.clientX;
-      const startY = e.clientY;
+      // Ignore if clicking on resize handles or pencil/edit
+      if (target.closest('[data-resize-handle]') || target.closest('[data-edit-btn]')) return;
+
+      const isMoveHandle = !!target.closest('[data-move-handle]');
+      if (isMoveHandle) {
+        e.preventDefault();
+        e.stopPropagation();
+        beginDragMove(e.clientX, e.clientY);
+        return;
+      }
+
+      // Long press: start drag after 300ms hold
+      let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+      let moved = false;
+      const cancelLongPress = () => {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        document.removeEventListener('mousemove', detectMove);
+        document.removeEventListener('mouseup', cancelLongPress);
+      };
+      const detectMove = () => { moved = true; cancelLongPress(); };
+      longPressTimer = setTimeout(() => {
+        if (!moved) {
+          beginDragMove(e.clientX, e.clientY);
+        }
+        cancelLongPress();
+      }, 300);
+      document.addEventListener('mousemove', detectMove, { once: true });
+      document.addEventListener('mouseup', cancelLongPress, { once: true });
+    };
+
+    const beginDragMove = (startX: number, startY: number) => {
       const startPosX = block.position?.x || 0;
       const startPosY = block.position?.y || 0;
-      const el = (target.closest('[data-block-wrap]') as HTMLElement)?.parentElement?.closest('.min-h-screen, [data-canvas]') as HTMLElement;
+      // Get the block element position relative to canvas for non-positioned blocks
+      const wrapEl = document.querySelector(`[data-block-id="${block.id}"]`) as HTMLElement;
+      const canvas = wrapEl?.closest('[data-canvas]') as HTMLElement;
+      let offsetX = startPosX;
+      let offsetY = startPosY;
+      if (!block.position && wrapEl && canvas) {
+        const wR = wrapEl.getBoundingClientRect();
+        const cR = canvas.getBoundingClientRect();
+        offsetX = wR.left - cR.left + canvas.scrollLeft;
+        offsetY = wR.top - cR.top + canvas.scrollTop;
+      }
       const onMove = (ev: MouseEvent) => {
         const dx = ev.clientX - startX;
         const dy = ev.clientY - startY;
-        onPositionUpdate(block.id, { x: Math.max(0, startPosX + dx), y: Math.max(0, startPosY + dy) });
+        onPositionUpdate!(block.id, { x: Math.max(0, offsetX + dx), y: Math.max(0, offsetY + dy) });
       };
       const onUp = () => {
         document.removeEventListener('mousemove', onMove);
@@ -313,16 +349,17 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
       : {};
 
     return (
-      <div key={block.id} data-block-wrap className={wrapperClass} style={{ ...blockStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
+      <div key={block.id} data-block-wrap data-block-id={block.id} className={wrapperClass} style={{ ...blockStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
         {onClick && (
           <div className={`absolute top-2 right-2 z-10 flex items-center gap-1 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
             {/* Move handle */}
             {onPositionUpdate && isSelected && (
-              <div data-move-handle className="px-1.5 py-0.5 text-xs rounded bg-blue-500 text-white cursor-move select-none" title="Перетащить">
+              <div data-move-handle className="px-1.5 py-0.5 text-xs rounded bg-blue-500 text-white cursor-move select-none" title="Зажмите для перетаскивания">
                 ✥
               </div>
             )}
-            <div className="px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground">
+            {/* Edit (pencil) button */}
+            <div data-edit-btn className="px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/80" onClick={(e) => { e.stopPropagation(); onEdit?.(block.id); }}>
               ✏️
             </div>
           </div>
@@ -336,17 +373,17 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         {isSelected && onStyleUpdate && (
           <>
             {/* Bottom edge */}
-            <div onMouseDown={startDrag('height')} className="absolute bottom-0 left-4 right-4 h-1.5 cursor-row-resize z-20 group/rh">
+            <div data-resize-handle onMouseDown={startDrag('height')} className="absolute bottom-0 left-4 right-4 h-1.5 cursor-row-resize z-20 group/rh">
               <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary/40 group-hover/rh:bg-primary group-hover/rh:h-1 transition-all" />
               <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-8 h-1.5 rounded-t bg-primary/60 opacity-0 group-hover/rh:opacity-100 transition-opacity" />
             </div>
             {/* Right edge */}
-            <div onMouseDown={startDrag('width')} className="absolute top-4 bottom-4 right-0 w-1.5 cursor-col-resize z-20 group/rw">
+            <div data-resize-handle onMouseDown={startDrag('width')} className="absolute top-4 bottom-4 right-0 w-1.5 cursor-col-resize z-20 group/rw">
               <div className="absolute inset-y-0 right-0 w-0.5 bg-primary/40 group-hover/rw:bg-primary group-hover/rw:w-1 transition-all" />
               <div className="absolute top-1/2 -translate-y-1/2 right-0 h-8 w-1.5 rounded-l bg-primary/60 opacity-0 group-hover/rw:opacity-100 transition-opacity" />
             </div>
             {/* Corner */}
-            <div onMouseDown={startDrag('both')} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-20 group/rc">
+            <div data-resize-handle onMouseDown={startDrag('both')} className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize z-20 group/rc">
               <div className="absolute bottom-0.5 right-0.5 w-2 h-2 border-b-2 border-r-2 border-primary/40 group-hover/rc:border-primary transition-colors" />
             </div>
             {/* Size / position indicator */}
@@ -934,7 +971,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   }
 }
 
-export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onBlockStyleUpdate, onBlockPositionUpdate, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
+export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onEditBlock, onBlockStyleUpdate, onBlockPositionUpdate, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
   // Determine which blocks to display: use pages if available
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
 
@@ -982,8 +1019,8 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
 
   return (
     <div className="min-h-screen bg-background relative" style={containerStyle} data-canvas>
-      {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate))}
-      {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate))}
+      {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock))}
+      {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock))}
     </div>
   );
 }

@@ -34,9 +34,10 @@ interface WebsiteBlockEditorProps {
   block: WebsiteBlock;
   onUpdate: (block: WebsiteBlock) => void;
   onClose: () => void;
+  inline?: boolean;
 }
 
-export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEditorProps) {
+export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: WebsiteBlockEditorProps) {
   const [content, setContent] = useState({ ...block.content });
   const [styles, setStyles] = useState({ ...(block.styles || {}) });
   const [extras, setExtras] = useState<WebsiteBlockExtra[]>(block.extras || []);
@@ -788,14 +789,13 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEdi
       spacer: 'Отступ', form: 'Форма'
     };
 
-    return (
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-background rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Редактировать: {BLOCK_LABELS[block.type] || block.type}</h3>
-          <Button size="icon" variant="ghost" onClick={onClose}><X className="w-4 h-4" /></Button>
+    const editorContent = (
+      <>
+        <div className={inline ? "flex items-center justify-between p-3 border-b" : "flex items-center justify-between p-4 border-b"}>
+          <h3 className={inline ? "font-semibold text-sm truncate" : "font-semibold"}>{BLOCK_LABELS[block.type] || block.type}</h3>
+          <Button size="icon" variant="ghost" onClick={onClose} className="shrink-0"><X className="w-4 h-4" /></Button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className={inline ? "flex-1 overflow-y-auto p-3 space-y-3" : "flex-1 overflow-y-auto p-4 space-y-4"}>
           {renderEditor()}
 
           {/* ─── Universal Styles Section (collapsible) ─── */}
@@ -908,11 +908,22 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose }: WebsiteBlockEdi
             )}
           </div>
         </div>
-        <div className="flex gap-2 p-4 border-t">
-          <Button variant="outline" onClick={onClose} className="flex-1">Отмена</Button>
-          <Button onClick={save} className="flex-1">Сохранить</Button>
+        <div className={inline ? "flex gap-2 p-3 border-t" : "flex gap-2 p-4 border-t"}>
+          <Button variant="outline" onClick={onClose} className="flex-1" size={inline ? "sm" : "default"}>Отмена</Button>
+          <Button onClick={save} className="flex-1" size={inline ? "sm" : "default"}>Сохранить</Button>
+        </div>
+      </>
+    );
+
+    if (inline) {
+      return <div className="flex flex-col h-full">{editorContent}</div>;
+    }
+
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <div className="bg-background rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+          {editorContent}
         </div>
       </div>
-    </div>
-  );
+    );
 }

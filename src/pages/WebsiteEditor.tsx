@@ -93,7 +93,9 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [currentPageSlug, setCurrentPageSlug] = useState('home');
   const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set(['home']));
   const [sidebarWidth, setSidebarWidth] = useState(288); // 288px = w-72
+  const [rightPanelWidth, setRightPanelWidth] = useState(320);
   const isResizing = useRef(false);
+  const isResizingRight = useRef(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [dropIndicator, setDropIndicator] = useState<{ x: number; y: number } | null>(null);
 
@@ -113,6 +115,23 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
   }, [sidebarWidth]);
+
+  const startResizeRight = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingRight.current = true;
+    const startX = e.clientX;
+    const startW = rightPanelWidth;
+    const onMove = (ev: MouseEvent) => {
+      if (!isResizingRight.current) return;
+      const newW = Math.min(600, Math.max(250, startW - (ev.clientX - startX)));
+      setRightPanelWidth(newW);
+    };
+    const onUp = () => { isResizingRight.current = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor = ''; document.body.style.userSelect = ''; };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [rightPanelWidth]);
 
   // Sync website state when AI updates it externally (REPLACE_WEBSITE, ADD_WEBSITE_BLOCKS, etc.)
   useEffect(() => {
@@ -229,6 +248,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
       setWebsite(prev => ({ ...prev, blocks: prev.blocks.map(b => b.id === updated.id ? updated : b) }));
     }
     setEditingBlock(null);
+    setSelectedBlockId(null);
   };
 
   // Live position update (from drag move on canvas)
@@ -682,6 +702,9 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
               onPageNavigate={(slug) => { setCurrentPageSlug(slug); setSelectedBlockId(null); }}
               onBlockClick={(id) => {
                 setSelectedBlockId(id);
+              }}
+              onEditBlock={(id) => {
+                setSelectedBlockId(id);
                 const block = activeBlocks.find(b => b.id === id);
                 if (block) setEditingBlock(block);
               }}
@@ -711,16 +734,29 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             )}
           </div>
         </main>
-      </div>
 
-      {/* Block Editor Modal */}
-      {editingBlock && (
-        <WebsiteBlockEditor
-          block={editingBlock}
-          onUpdate={updateBlock}
-          onClose={() => setEditingBlock(null)}
-        />
-      )}
+        {/* Right Panel — Block Editor */}
+        {editingBlock && (
+          <>
+            <div
+              onMouseDown={startResizeRight}
+              className="w-1.5 hover:w-2 bg-transparent hover:bg-primary/20 active:bg-primary/40 cursor-col-resize shrink-0 transition-all relative group"
+              title="Перетащите для изменения ширины"
+            >
+              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-border group-hover:bg-primary/40 transition-colors" />
+            </div>
+            <aside style={{ width: rightPanelWidth }} className="border-l bg-card flex flex-col shrink-0 overflow-hidden">
+              <WebsiteBlockEditor
+                key={editingBlock.id}
+                block={editingBlock}
+                onUpdate={updateBlock}
+                onClose={() => { setEditingBlock(null); }}
+                inline
+              />
+            </aside>
+          </>
+        )}
+      </div>
 
       {/* Full Preview Modal */}
       {showPreviewFull && (
