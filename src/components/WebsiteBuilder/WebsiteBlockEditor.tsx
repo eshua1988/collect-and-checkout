@@ -41,6 +41,7 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
   const [content, setContent] = useState({ ...block.content });
   const [styles, setStyles] = useState({ ...(block.styles || {}) });
   const [extras, setExtras] = useState<WebsiteBlockExtra[]>(block.extras || []);
+  const [showSize, setShowSize] = useState(false);
   const [showStyles, setShowStyles] = useState(false);
   const [showExtras, setShowExtras] = useState((block.extras || []).length > 0);
   const [showAddExtra, setShowAddExtra] = useState(false);
@@ -798,14 +799,32 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
         <div className={inline ? "flex-1 overflow-y-auto p-3 space-y-3" : "flex-1 overflow-y-auto p-4 space-y-4"}>
           {renderEditor()}
 
-          {/* ─── Universal Styles Section (collapsible) ─── */}
+          {/* ─── Size Section (collapsible) ─── */}
+          <div className="border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setShowSize(!showSize)}
+              className="w-full flex items-center gap-2 p-3 text-left text-sm font-medium bg-muted/30 hover:bg-muted/50 transition-colors"
+            >
+              {showSize ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              📐 Размер
+            </button>
+            {showSize && (
+              <div className="p-3 space-y-3 border-t">
+                <div><Label className="text-xs">Отступы (padding)</Label><Input value={styles.padding || ''} onChange={e => setStyle('padding', e.target.value)} placeholder="16px 24px" className="mt-1 text-xs" /></div>
+                <div><Label className="text-xs">Минимальная высота</Label><Input value={styles.minHeight || ''} onChange={e => setStyle('minHeight', e.target.value)} placeholder="200px" className="mt-1 text-xs" /></div>
+                <div><Label className="text-xs">Макс. ширина</Label><Input value={styles.maxWidth || ''} onChange={e => setStyle('maxWidth', e.target.value)} placeholder="1200px" className="mt-1 text-xs" /></div>
+              </div>
+            )}
+          </div>
+
+          {/* ─── Styles Section (collapsible) ─── */}
           <div className="border rounded-lg overflow-hidden">
             <button
               onClick={() => setShowStyles(!showStyles)}
               className="w-full flex items-center gap-2 p-3 text-left text-sm font-medium bg-muted/30 hover:bg-muted/50 transition-colors"
             >
               {showStyles ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-              🎨 Размер и стили
+              🎨 Стили
             </button>
             {showStyles && (
               <div className="p-3 space-y-3 border-t">
@@ -813,9 +832,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
                   <div><Label className="text-xs">Фон</Label><Input type="color" value={styles.bgColor || styles.backgroundColor || '#ffffff'} onChange={e => setStyle('bgColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
                   <div><Label className="text-xs">Текст</Label><Input type="color" value={styles.textColor || styles.color || '#1e293b'} onChange={e => setStyle('textColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
                 </div>
-                <div><Label className="text-xs">Отступы (padding)</Label><Input value={styles.padding || ''} onChange={e => setStyle('padding', e.target.value)} placeholder="16px 24px" className="mt-1 text-xs" /></div>
-                <div><Label className="text-xs">Минимальная высота</Label><Input value={styles.minHeight || ''} onChange={e => setStyle('minHeight', e.target.value)} placeholder="200px" className="mt-1 text-xs" /></div>
-                <div><Label className="text-xs">Макс. ширина</Label><Input value={styles.maxWidth || ''} onChange={e => setStyle('maxWidth', e.target.value)} placeholder="1200px" className="mt-1 text-xs" /></div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs">Скругление</Label><Input value={styles.borderRadius || ''} onChange={e => setStyle('borderRadius', e.target.value)} placeholder="8px" className="mt-1 text-xs" /></div>
                   <div><Label className="text-xs">Тень</Label>
