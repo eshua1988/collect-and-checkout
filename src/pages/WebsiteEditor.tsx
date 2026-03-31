@@ -93,11 +93,11 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [currentPageSlug, setCurrentPageSlug] = useState('home');
   const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set(['home']));
   const [sidebarWidth, setSidebarWidth] = useState(288); // 288px = w-72
-  const [rightPanelWidth, setRightPanelWidth] = useState(320);
   const isResizing = useRef(false);
-  const isResizingRight = useRef(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [dropIndicator, setDropIndicator] = useState<{ x: number; y: number } | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (key: string) => setCollapsedSections(prev => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; });
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -115,23 +115,6 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
   }, [sidebarWidth]);
-
-  const startResizeRight = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizingRight.current = true;
-    const startX = e.clientX;
-    const startW = rightPanelWidth;
-    const onMove = (ev: MouseEvent) => {
-      if (!isResizingRight.current) return;
-      const newW = Math.min(600, Math.max(250, startW - (ev.clientX - startX)));
-      setRightPanelWidth(newW);
-    };
-    const onUp = () => { isResizingRight.current = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor = ''; document.body.style.userSelect = ''; };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [rightPanelWidth]);
 
   // Sync website state when AI updates it externally (REPLACE_WEBSITE, ADD_WEBSITE_BLOCKS, etc.)
   useEffect(() => {
@@ -426,6 +409,17 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel */}
         <aside style={{ width: sidebarWidth }} className="border-r bg-card flex flex-col shrink-0 overflow-hidden relative">
+          {/* Block Editor inline — replaces tabs when editing */}
+          {editingBlock ? (
+            <WebsiteBlockEditor
+              key={editingBlock.id}
+              block={editingBlock}
+              onUpdate={updateBlock}
+              onClose={() => setEditingBlock(null)}
+              inline
+            />
+          ) : (
+          <>
           {/* Tabs */}
           <div className="flex border-b">
             {([['blocks', 'Блоки'], ['templates', 'Шаблоны'], ['settings', 'Настройки']] as const).map(([tab, label]) => (
@@ -442,14 +436,18 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
           <div className="flex-1 overflow-y-auto">
             {/* BLOCKS TAB */}
             {activeTab === 'blocks' && (
-              <div className="p-3">
+              <div className="p-3 space-y-2">
                 {/* Page tabs for multi-page sites */}
                 {hasPages && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium text-muted-foreground">Страницы ({website.pages!.length})</p>
-                      <button onClick={addPage} className="text-xs text-primary hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Добавить</button>
-                    </div>
+                  <div>
+                    <button onClick={() => toggleSection('pages')} className="w-full flex items-center justify-between py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        {collapsedSections.has('pages') ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+                        <span className="text-xs font-medium text-muted-foreground">Страницы ({website.pages!.length})</span>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); addPage(); }} className="text-xs text-primary hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Добавить</button>
+                    </button>
+                    {!collapsedSections.has('pages') && (
                     <div className="space-y-0.5">
                       {website.pages!.map(page => {
                         const isExpanded = expandedPages.has(page.slug);
@@ -532,13 +530,18 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 )}
 
                 {/* Single-page block list (no pages) */}
                 {!hasPages && activeBlocks.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Блоки ({activeBlocks.length})</p>
+                  <div>
+                    <button onClick={() => toggleSection('blocklist')} className="w-full flex items-center gap-1.5 py-1.5">
+                      {collapsedSections.has('blocklist') ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+                      <span className="text-xs font-medium text-muted-foreground">Блоки ({activeBlocks.length})</span>
+                    </button>
+                    {!collapsedSections.has('blocklist') && (
                     <div className="space-y-0.5">
                       {activeBlocks.map((block, idx) => {
                         const palette = fullBlockPalette.find(p => p.type === block.type);
@@ -568,10 +571,19 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 )}
 
-                <p className="text-xs text-muted-foreground mb-3">Нажмите на блок, чтобы добавить его на страницу{hasPages ? ` «${currentPage?.title}»` : ''}</p>
+                {/* Block palette — collapsible */}
+                <div>
+                  <button onClick={() => toggleSection('palette')} className="w-full flex items-center gap-1.5 py-1.5">
+                    {collapsedSections.has('palette') ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+                    <span className="text-xs font-medium text-muted-foreground">Добавить блок</span>
+                  </button>
+                  {!collapsedSections.has('palette') && (
+                  <>
+                <p className="text-xs text-muted-foreground mb-2">Нажмите или перетащите на канвас{hasPages ? ` «${currentPage?.title}»` : ''}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {fullBlockPalette.map(({ type, label, icon, defaultContent }) => (
                     <button
@@ -591,6 +603,9 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                       <span className="text-xs font-medium leading-tight">{label}</span>
                     </button>
                   ))}
+                </div>
+                  </>
+                  )}
                 </div>
               </div>
             )}
@@ -631,42 +646,72 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
 
             {/* SETTINGS TAB */}
             {activeTab === 'settings' && (
-              <div className="p-3 space-y-4">
-                <div>
-                  <Label className="text-xs">Название сайта</Label>
-                  <Input value={website.name} onChange={e => setWebsite(prev => ({ ...prev, name: e.target.value }))} className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Описание</Label>
-                  <Input value={website.description || ''} onChange={e => setWebsite(prev => ({ ...prev, description: e.target.value }))} className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">SEO Заголовок</Label>
-                  <Input value={website.seoTitle || ''} onChange={e => setWebsite(prev => ({ ...prev, seoTitle: e.target.value }))} className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">SEO Описание</Label>
-                  <Input value={website.seoDescription || ''} onChange={e => setWebsite(prev => ({ ...prev, seoDescription: e.target.value }))} className="mt-1" />
-                </div>
-                <div className="pt-3 border-t">
-                  <Label className="text-xs font-semibold">Статус публикации</Label>
-                  <div className={`mt-2 flex items-center gap-2 p-3 rounded-xl ${website.published ? 'bg-green-50 border border-green-200' : 'bg-muted border border-border'}`}>
-                    <div className={`w-2 h-2 rounded-full ${website.published ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                    <span className="text-sm">{website.published ? 'Опубликован' : 'Черновик'}</span>
-                  </div>
-                  {website.published && (
-                    <div className="mt-2">
-                      <Label className="text-xs">Ссылка на сайт</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Input value={`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`} readOnly className="text-xs" />
-                        <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('Скопировано!'); }}>
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => window.open(`${import.meta.env.BASE_URL}site/${website.id}`, '_blank')}>
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      </div>
+              <div className="p-3 space-y-2">
+                {/* Basic Settings — collapsible */}
+                <div className="border rounded-lg overflow-hidden">
+                  <button onClick={() => toggleSection('set-basic')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                    {collapsedSections.has('set-basic') ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    📝 Основные
+                  </button>
+                  {!collapsedSections.has('set-basic') && (
+                  <div className="p-3 space-y-3 border-t">
+                    <div>
+                      <Label className="text-xs">Название сайта</Label>
+                      <Input value={website.name} onChange={e => setWebsite(prev => ({ ...prev, name: e.target.value }))} className="mt-1" />
                     </div>
+                    <div>
+                      <Label className="text-xs">Описание</Label>
+                      <Input value={website.description || ''} onChange={e => setWebsite(prev => ({ ...prev, description: e.target.value }))} className="mt-1" />
+                    </div>
+                  </div>
+                  )}
+                </div>
+                {/* SEO — collapsible */}
+                <div className="border rounded-lg overflow-hidden">
+                  <button onClick={() => toggleSection('set-seo')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                    {collapsedSections.has('set-seo') ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    🔍 SEO
+                  </button>
+                  {!collapsedSections.has('set-seo') && (
+                  <div className="p-3 space-y-3 border-t">
+                    <div>
+                      <Label className="text-xs">SEO Заголовок</Label>
+                      <Input value={website.seoTitle || ''} onChange={e => setWebsite(prev => ({ ...prev, seoTitle: e.target.value }))} className="mt-1" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">SEO Описание</Label>
+                      <Input value={website.seoDescription || ''} onChange={e => setWebsite(prev => ({ ...prev, seoDescription: e.target.value }))} className="mt-1" />
+                    </div>
+                  </div>
+                  )}
+                </div>
+                {/* Publish status — collapsible */}
+                <div className="border rounded-lg overflow-hidden">
+                  <button onClick={() => toggleSection('set-publish')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                    {collapsedSections.has('set-publish') ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    🌐 Публикация
+                  </button>
+                  {!collapsedSections.has('set-publish') && (
+                  <div className="p-3 space-y-3 border-t">
+                    <div className={`flex items-center gap-2 p-3 rounded-xl ${website.published ? 'bg-green-50 border border-green-200' : 'bg-muted border border-border'}`}>
+                      <div className={`w-2 h-2 rounded-full ${website.published ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                      <span className="text-sm">{website.published ? 'Опубликован' : 'Черновик'}</span>
+                    </div>
+                    {website.published && (
+                      <div>
+                        <Label className="text-xs">Ссылка на сайт</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input value={`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`} readOnly className="text-xs" />
+                          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('Скопировано!'); }}>
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => window.open(`${import.meta.env.BASE_URL}site/${website.id}`, '_blank')}>
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   )}
                 </div>
                 <Button variant="outline" className="w-full" onClick={handleSave}>
@@ -675,6 +720,8 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
               </div>
             )}
           </div>
+          </>
+          )}
         </aside>
 
         {/* Resize Handle */}
@@ -734,28 +781,6 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             )}
           </div>
         </main>
-
-        {/* Right Panel — Block Editor */}
-        {editingBlock && (
-          <>
-            <div
-              onMouseDown={startResizeRight}
-              className="w-1.5 hover:w-2 bg-transparent hover:bg-primary/20 active:bg-primary/40 cursor-col-resize shrink-0 transition-all relative group"
-              title="Перетащите для изменения ширины"
-            >
-              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-border group-hover:bg-primary/40 transition-colors" />
-            </div>
-            <aside style={{ width: rightPanelWidth }} className="border-l bg-card flex flex-col shrink-0 overflow-hidden">
-              <WebsiteBlockEditor
-                key={editingBlock.id}
-                block={editingBlock}
-                onUpdate={updateBlock}
-                onClose={() => { setEditingBlock(null); }}
-                inline
-              />
-            </aside>
-          </>
-        )}
       </div>
 
       {/* Full Preview Modal */}
