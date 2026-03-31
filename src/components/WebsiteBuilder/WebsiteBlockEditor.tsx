@@ -65,20 +65,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
             <div><Label>Подзаголовок</Label><Textarea value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} rows={2} /></div>
             <div><Label>Текст кнопки</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
             <div><Label>Ссылка кнопки</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>Фон</Label><Input type="color" value={content.bgColor || '#1e293b'} onChange={e => set('bgColor', e.target.value)} className="h-10 cursor-pointer" /></div>
-              <div><Label>Текст</Label><Input type="color" value={content.textColor || '#ffffff'} onChange={e => set('textColor', e.target.value)} className="h-10 cursor-pointer" /></div>
-            </div>
-            <div>
-              <Label>Выравнивание</Label>
-              <div className="flex gap-2 mt-1">
-                {['left', 'center', 'right'].map(a => (
-                  <Button key={a} size="sm" variant={content.align === a ? 'default' : 'outline'} onClick={() => set('align', a)}>
-                    {a === 'left' ? '← Лево' : a === 'center' ? '↔ Центр' : '→ Право'}
-                  </Button>
-                ))}
-              </div>
-            </div>
           </div>
         );
 
@@ -87,10 +73,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           <div className="space-y-3">
             <div><Label>Логотип / Название</Label><Input value={content.logo || ''} onChange={e => set('logo', e.target.value)} /></div>
             <div><Label>Текст кнопки CTA</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>Фон</Label><Input type="color" value={content.bgColor || '#1e293b'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
-              <div><Label>Текст</Label><Input type="color" value={content.textColor || '#ffffff'} onChange={e => set('textColor', e.target.value)} className="h-10" /></div>
-            </div>
             <div>
               <Label>Ссылки меню</Label>
               {(content.links || []).map((link: any, i: number) => (
@@ -204,15 +186,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           <div className="space-y-3">
             <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
             <div><Label>Текст</Label><Textarea value={content.body || ''} onChange={e => set('body', e.target.value)} rows={6} /></div>
-            <div><Label>Выравнивание текста</Label>
-              <div className="flex gap-2 mt-1">
-                {['left', 'center', 'right'].map(a => (
-                  <Button key={a} size="sm" variant={content.align === a ? 'default' : 'outline'} onClick={() => set('align', a)}>
-                    {a === 'left' ? 'Лево' : a === 'center' ? 'Центр' : 'Право'}
-                  </Button>
-                ))}
-              </div>
-            </div>
           </div>
         );
 
@@ -387,16 +360,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           <div className="space-y-3">
             <div><Label>Текст кнопки</Label><Input value={content.text || ''} onChange={e => set('text', e.target.value)} /></div>
             <div><Label>Ссылка</Label><Input value={content.href || ''} onChange={e => set('href', e.target.value)} /></div>
-            <div><Label>Цвет кнопки</Label><Input type="color" value={content.bgColor || '#4f46e5'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
-            <div><Label>Выравнивание</Label>
-              <div className="flex gap-2 mt-1">
-                {['left', 'center', 'right'].map(a => (
-                  <Button key={a} size="sm" variant={content.align === a ? 'default' : 'outline'} onClick={() => set('align', a)}>
-                    {a === 'left' ? 'Лево' : a === 'center' ? 'Центр' : 'Право'}
-                  </Button>
-                ))}
-              </div>
-            </div>
           </div>
         );
 
@@ -427,10 +390,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
         return (
           <div className="space-y-3">
             <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>Фон</Label><Input type="color" value={content.bgColor || '#4f46e5'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
-              <div><Label>Текст</Label><Input type="color" value={content.textColor || '#ffffff'} onChange={e => set('textColor', e.target.value)} className="h-10" /></div>
-            </div>
             {(content.items || []).map((item: any, i: number) => (
               <div key={i} className="flex gap-2">
                 <Input placeholder="Значение" value={item.value} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], value: e.target.value }; set('items', items); }} className="w-28" />
@@ -470,10 +429,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
             <div><Label>Подзаголовок</Label><Textarea value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} rows={2} /></div>
             <div><Label>Текст кнопки</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
             <div><Label>Ссылка кнопки</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>Фон</Label><Input type="color" value={content.bgColor || '#7c3aed'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
-              <div><Label>Текст</Label><Input type="color" value={content.textColor || '#ffffff'} onChange={e => set('textColor', e.target.value)} className="h-10" /></div>
-            </div>
           </div>
         );
 
@@ -517,7 +472,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
             <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
             <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
             <div><Label>Текст кнопки</Label><Input value={content.buttonText || ''} onChange={e => set('buttonText', e.target.value)} /></div>
-            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#f8fafc'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
           </div>
         );
 
@@ -525,10 +479,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
         return (
           <div className="space-y-3">
             <div><Label>Текст баннера</Label><Input value={content.text || ''} onChange={e => set('text', e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>Фон</Label><Input type="color" value={content.bgColor || '#ef4444'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
-              <div><Label>Текст</Label><Input type="color" value={content.textColor || '#ffffff'} onChange={e => set('textColor', e.target.value)} className="h-10" /></div>
-            </div>
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={content.closable || false} onChange={e => set('closable', e.target.checked)} />
               <Label className="mb-0">Можно закрыть</Label>
@@ -611,10 +561,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           <div className="space-y-3">
             <div><Label>Текст</Label><Input value={content.text || ''} onChange={e => set('text', e.target.value)} /></div>
             <div><Label>Скорость (секунды)</Label><Input type="number" min={5} max={120} value={content.speed || 30} onChange={e => set('speed', parseInt(e.target.value) || 30)} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>Фон</Label><Input type="color" value={content.bgColor || '#fbbf24'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
-              <div><Label>Текст</Label><Input type="color" value={content.textColor || '#1e293b'} onChange={e => set('textColor', e.target.value)} className="h-10" /></div>
-            </div>
           </div>
         );
 
@@ -623,7 +569,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           <div className="space-y-3">
             <div><Label>Цитата</Label><Textarea value={content.text || ''} onChange={e => set('text', e.target.value)} rows={4} /></div>
             <div><Label>Автор</Label><Input value={content.author || ''} onChange={e => set('author', e.target.value)} /></div>
-            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#f1f5f9'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
           </div>
         );
 
@@ -664,7 +609,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           <div className="space-y-3">
             <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
             <div><Label>Текст кнопки</Label><Input value={content.buttonText || ''} onChange={e => set('buttonText', e.target.value)} /></div>
-            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#f8fafc'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
             <div><Label>Поля формы</Label></div>
             {(content.fields || []).map((field: any, i: number) => (
               <div key={i} className="flex gap-2">
@@ -707,19 +651,6 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
             <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
               <span className="text-sm">🧩</span>
               <p className="text-xs text-muted-foreground">Кастомный блок <strong>{block.type}</strong> — все свойства доступны для редактирования</p>
-            </div>
-
-            {/* ─── Styles section ─── */}
-            <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Стили блока</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div><Label className="text-xs">Фон</Label><Input type="color" value={styles.bgColor || styles.backgroundColor || '#ffffff'} onChange={e => setStyle('bgColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
-                <div><Label className="text-xs">Текст</Label><Input type="color" value={styles.textColor || styles.color || '#1e293b'} onChange={e => setStyle('textColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
-              </div>
-              <div><Label className="text-xs">Отступы (padding)</Label><Input value={styles.padding || '16px 24px'} onChange={e => setStyle('padding', e.target.value)} placeholder="16px 24px" className="mt-1 text-xs" /></div>
-              {styles.borderRadius !== undefined && (
-                <div><Label className="text-xs">Скругление (borderRadius)</Label><Input value={styles.borderRadius || ''} onChange={e => setStyle('borderRadius', e.target.value)} className="mt-1 text-xs" /></div>
-              )}
             </div>
 
             {/* ─── Content properties ─── */}
@@ -829,9 +760,21 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
             {showStyles && (
               <div className="p-3 space-y-3 border-t">
                 <div className="grid grid-cols-2 gap-2">
-                  <div><Label className="text-xs">Фон</Label><Input type="color" value={styles.bgColor || styles.backgroundColor || '#ffffff'} onChange={e => setStyle('bgColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
-                  <div><Label className="text-xs">Текст</Label><Input type="color" value={styles.textColor || styles.color || '#1e293b'} onChange={e => setStyle('textColor', e.target.value)} className="h-9 mt-1 cursor-pointer" /></div>
+                  <div><Label className="text-xs">Фон</Label><Input type="color" value={content.bgColor || styles.bgColor || styles.backgroundColor || '#ffffff'} onChange={e => { set('bgColor', e.target.value); setStyle('bgColor', e.target.value); }} className="h-9 mt-1 cursor-pointer" /></div>
+                  <div><Label className="text-xs">Текст</Label><Input type="color" value={content.textColor || styles.textColor || styles.color || '#1e293b'} onChange={e => { set('textColor', e.target.value); setStyle('textColor', e.target.value); }} className="h-9 mt-1 cursor-pointer" /></div>
                 </div>
+                {(content.align !== undefined || ['hero', 'text', 'button', 'cta', 'newsletter', 'quote'].includes(block.type)) && (
+                  <div>
+                    <Label className="text-xs">Выравнивание</Label>
+                    <div className="flex gap-1 mt-1">
+                      {['left', 'center', 'right'].map(a => (
+                        <Button key={a} size="sm" variant={content.align === a ? 'default' : 'outline'} onClick={() => set('align', a)} className="flex-1 h-7 text-xs">
+                          {a === 'left' ? '← Лево' : a === 'center' ? '↔ Центр' : '→ Право'}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs">Скругление</Label><Input value={styles.borderRadius || ''} onChange={e => setStyle('borderRadius', e.target.value)} placeholder="8px" className="mt-1 text-xs" /></div>
                   <div><Label className="text-xs">Тень</Label>
