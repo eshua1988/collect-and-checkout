@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+﻿import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppWebsite, WebsiteBlock, WebsiteBlockType, WebsitePage } from '@/types/website';
 import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
@@ -22,40 +22,40 @@ import {
 } from 'lucide-react';
 
 const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactNode; defaultContent: Record<string, any> }[] = [
-  { type: 'navbar', label: 'Навигация', icon: <Layout className="w-4 h-4" />, defaultContent: { logo: 'Мой Сайт', links: [{ label: 'О нас', href: '#about' }, { label: 'Контакты', href: '#contact' }], bgColor: '#1e293b', textColor: '#ffffff' } },
-  { type: 'hero', label: 'Герой-секция', icon: <Star className="w-4 h-4" />, defaultContent: { title: 'Заголовок страницы', subtitle: 'Краткое описание вашего продукта или услуги', ctaText: 'Начать', bgColor: '#1e293b', textColor: '#ffffff', align: 'center' } },
-  { type: 'text', label: 'Текст', icon: <Type className="w-4 h-4" />, defaultContent: { title: 'Заголовок раздела', body: 'Опишите здесь ваш контент...', align: 'left' } },
-  { type: 'image', label: 'Изображение', icon: <Image className="w-4 h-4" />, defaultContent: { src: '', caption: '' } },
-  { type: 'gallery', label: 'Галерея', icon: <Layers className="w-4 h-4" />, defaultContent: { title: 'Галерея', images: [] } },
-  { type: 'video', label: 'Видео', icon: <Video className="w-4 h-4" />, defaultContent: { url: '', title: '' } },
-  { type: 'features', label: 'Преимущества', icon: <Star className="w-4 h-4" />, defaultContent: { title: 'Наши преимущества', items: [{ icon: '⭐', title: 'Преимущество 1', desc: 'Описание' }] } },
-  { type: 'pricing', label: 'Тарифы', icon: <DollarSign className="w-4 h-4" />, defaultContent: { title: 'Тарифы', plans: [{ name: 'Базовый', price: '0₽', features: ['Функция 1'] }] } },
-  { type: 'testimonials', label: 'Отзывы', icon: <MessageSquare className="w-4 h-4" />, defaultContent: { title: 'Отзывы клиентов', items: [{ name: 'Иван И.', text: 'Отличный продукт!', rating: 5 }] } },
-  { type: 'team', label: 'Команда', icon: <Users className="w-4 h-4" />, defaultContent: { title: 'Наша команда', members: [{ name: 'Имя Фамилия', role: 'Должность', avatar: '👤' }] } },
-  { type: 'faq', label: 'FAQ', icon: <HelpCircle className="w-4 h-4" />, defaultContent: { title: 'Часто задаваемые вопросы', items: [{ q: 'Вопрос?', a: 'Ответ' }] } },
-  { type: 'countdown', label: 'Таймер', icon: <Timer className="w-4 h-4" />, defaultContent: { title: 'До события осталось', targetDate: new Date(Date.now() + 7 * 86400000).toISOString() } },
-  { type: 'contact', label: 'Контакты', icon: <Phone className="w-4 h-4" />, defaultContent: { title: 'Свяжитесь с нами', email: '', phone: '' } },
-  { type: 'button', label: 'Кнопка', icon: <AlignLeft className="w-4 h-4" />, defaultContent: { text: 'Нажмите здесь', href: '#', bgColor: '#4f46e5', align: 'center' } },
-  { type: 'divider', label: 'Разделитель', icon: <Minus className="w-4 h-4" />, defaultContent: {} },
-  { type: 'html', label: 'HTML код', icon: <Code2 className="w-4 h-4" />, defaultContent: { code: '<p>Вставьте HTML код</p>' } },
-  { type: 'footer', label: 'Футер', icon: <AlignLeft className="w-4 h-4" />, defaultContent: { companyName: 'Моя Компания', copyright: `© ${new Date().getFullYear()} Все права защищены.`, links: [] } },
-  { type: 'stats', label: 'Статистика', icon: <BarChart3 className="w-4 h-4" />, defaultContent: { title: 'Наши достижения', items: [{ value: '500+', label: 'Клиентов' }, { value: '10', label: 'Лет опыта' }, { value: '99%', label: 'Довольных' }], bgColor: '#4f46e5', textColor: '#ffffff' } },
-  { type: 'logos', label: 'Партнёры', icon: <Award className="w-4 h-4" />, defaultContent: { title: 'Нам доверяют', items: [{ name: 'Компания 1', logo: '' }, { name: 'Компания 2', logo: '' }], grayscale: true } },
-  { type: 'cta', label: 'Призыв (CTA)', icon: <Megaphone className="w-4 h-4" />, defaultContent: { title: 'Готовы начать?', subtitle: 'Присоединяйтесь к тысячам довольных клиентов', ctaText: 'Начать сейчас', ctaHref: '#', bgColor: '#7c3aed', textColor: '#ffffff' } },
-  { type: 'timeline', label: 'Хронология', icon: <GitBranch className="w-4 h-4" />, defaultContent: { title: 'Как мы работаем', items: [{ title: 'Шаг 1', desc: 'Заявка', icon: '1️⃣' }, { title: 'Шаг 2', desc: 'Обсуждение', icon: '2️⃣' }, { title: 'Шаг 3', desc: 'Результат', icon: '3️⃣' }] } },
-  { type: 'social', label: 'Соцсети', icon: <Share2 className="w-4 h-4" />, defaultContent: { title: 'Мы в соцсетях', links: [{ platform: 'Telegram', url: '', icon: '✈️' }, { platform: 'VK', url: '', icon: '💙' }, { platform: 'YouTube', url: '', icon: '🎬' }] } },
-  { type: 'newsletter', label: 'Рассылка', icon: <Mail className="w-4 h-4" />, defaultContent: { title: 'Подпишитесь на рассылку', subtitle: 'Будьте в курсе новостей и акций', buttonText: 'Подписаться', bgColor: '#f8fafc' } },
-  { type: 'banner', label: 'Баннер', icon: <Bell className="w-4 h-4" />, defaultContent: { text: '🔥 Специальное предложение! Скидка 20% до конца месяца', bgColor: '#ef4444', textColor: '#ffffff', closable: true } },
-  { type: 'tabs', label: 'Вкладки', icon: <PanelTop className="w-4 h-4" />, defaultContent: { tabs: [{ title: 'Вкладка 1', content: 'Содержимое первой вкладки' }, { title: 'Вкладка 2', content: 'Содержимое второй вкладки' }] } },
-  { type: 'accordion', label: 'Аккордеон', icon: <ChevronsRight className="w-4 h-4" />, defaultContent: { title: 'Подробнее', items: [{ title: 'Раздел 1', content: 'Содержимое раздела 1' }, { title: 'Раздел 2', content: 'Содержимое раздела 2' }] } },
-  { type: 'progress', label: 'Прогресс', icon: <ListChecks className="w-4 h-4" />, defaultContent: { title: 'Наши навыки', items: [{ label: 'Дизайн', value: 90, color: '#4f46e5' }, { label: 'Разработка', value: 85, color: '#7c3aed' }, { label: 'Маркетинг', value: 70, color: '#06b6d4' }] } },
-  { type: 'comparison', label: 'Сравнение', icon: <Table2 className="w-4 h-4" />, defaultContent: { title: 'Сравнение тарифов', columns: ['Бесплатный', 'Про'], rows: [{ feature: 'Пользователи', values: ['1', 'Безлимит'] }, { feature: 'Хранилище', values: ['1 ГБ', '100 ГБ'] }] } },
-  { type: 'marquee', label: 'Бегущая строка', icon: <MoveHorizontal className="w-4 h-4" />, defaultContent: { text: '⚡ Добро пожаловать! • Специальные предложения • Новинки каталога • Бесплатная доставка ⚡', speed: 30, bgColor: '#fbbf24', textColor: '#1e293b' } },
-  { type: 'quote', label: 'Цитата', icon: <Quote className="w-4 h-4" />, defaultContent: { text: 'Лучший способ предсказать будущее — создать его.', author: 'Питер Друкер', bgColor: '#f1f5f9' } },
-  { type: 'map', label: 'Карта', icon: <MapPin className="w-4 h-4" />, defaultContent: { address: 'Москва, Россия', embedUrl: '', height: '400px' } },
-  { type: 'columns', label: 'Колонки', icon: <Columns3 className="w-4 h-4" />, defaultContent: { columns: [{ title: 'Колонка 1', text: 'Содержимое первой колонки' }, { title: 'Колонка 2', text: 'Содержимое второй колонки' }] } },
-  { type: 'spacer', label: 'Отступ', icon: <ArrowUpDown className="w-4 h-4" />, defaultContent: { height: '60px' } },
-  { type: 'form', label: 'Форма', icon: <ClipboardList className="w-4 h-4" />, defaultContent: { title: 'Оставьте заявку', fields: [{ label: 'Имя', type: 'text' }, { label: 'Email', type: 'email' }, { label: 'Сообщение', type: 'textarea' }], buttonText: 'Отправить', bgColor: '#f8fafc' } },
+  { type: 'navbar', label: 'ĐťĐ°Đ˛Đ¸ĐłĐ°Ń†Đ¸ŃŹ', icon: <Layout className="w-4 h-4" />, defaultContent: { logo: 'ĐśĐľĐą ĐˇĐ°ĐąŃ‚', links: [{ label: 'Đž Đ˝Đ°Ń', href: '#about' }, { label: 'ĐšĐľĐ˝Ń‚Đ°ĐşŃ‚Ń‹', href: '#contact' }], bgColor: '#1e293b', textColor: '#ffffff' } },
+  { type: 'hero', label: 'Đ“ĐµŃ€ĐľĐą-ŃĐµĐşŃ†Đ¸ŃŹ', icon: <Star className="w-4 h-4" />, defaultContent: { title: 'Đ—Đ°ĐłĐľĐ»ĐľĐ˛ĐľĐş ŃŃ‚Ń€Đ°Đ˝Đ¸Ń†Ń‹', subtitle: 'ĐšŃ€Đ°Ń‚ĐşĐľĐµ ĐľĐżĐ¸ŃĐ°Đ˝Đ¸Đµ Đ˛Đ°ŃĐµĐłĐľ ĐżŃ€ĐľĐ´ŃĐşŃ‚Đ° Đ¸Đ»Đ¸ ŃŃĐ»ŃĐłĐ¸', ctaText: 'ĐťĐ°Ń‡Đ°Ń‚ŃŚ', bgColor: '#1e293b', textColor: '#ffffff', align: 'center' } },
+  { type: 'text', label: 'Đ˘ĐµĐşŃŃ‚', icon: <Type className="w-4 h-4" />, defaultContent: { title: 'Đ—Đ°ĐłĐľĐ»ĐľĐ˛ĐľĐş Ń€Đ°Đ·Đ´ĐµĐ»Đ°', body: 'ĐžĐżĐ¸ŃĐ¸Ń‚Đµ Đ·Đ´ĐµŃŃŚ Đ˛Đ°Ń ĐşĐľĐ˝Ń‚ĐµĐ˝Ń‚...', align: 'left' } },
+  { type: 'image', label: 'ĐĐ·ĐľĐ±Ń€Đ°Đ¶ĐµĐ˝Đ¸Đµ', icon: <Image className="w-4 h-4" />, defaultContent: { src: '', caption: '' } },
+  { type: 'gallery', label: 'Đ“Đ°Đ»ĐµŃ€ĐµŃŹ', icon: <Layers className="w-4 h-4" />, defaultContent: { title: 'Đ“Đ°Đ»ĐµŃ€ĐµŃŹ', images: [] } },
+  { type: 'video', label: 'Đ’Đ¸Đ´ĐµĐľ', icon: <Video className="w-4 h-4" />, defaultContent: { url: '', title: '' } },
+  { type: 'features', label: 'ĐźŃ€ĐµĐ¸ĐĽŃŃ‰ĐµŃŃ‚Đ˛Đ°', icon: <Star className="w-4 h-4" />, defaultContent: { title: 'ĐťĐ°ŃĐ¸ ĐżŃ€ĐµĐ¸ĐĽŃŃ‰ĐµŃŃ‚Đ˛Đ°', items: [{ icon: 'â­', title: 'ĐźŃ€ĐµĐ¸ĐĽŃŃ‰ĐµŃŃ‚Đ˛Đľ 1', desc: 'ĐžĐżĐ¸ŃĐ°Đ˝Đ¸Đµ' }] } },
+  { type: 'pricing', label: 'Đ˘Đ°Ń€Đ¸Ń„Ń‹', icon: <DollarSign className="w-4 h-4" />, defaultContent: { title: 'Đ˘Đ°Ń€Đ¸Ń„Ń‹', plans: [{ name: 'Đ‘Đ°Đ·ĐľĐ˛Ń‹Đą', price: '0â‚˝', features: ['Đ¤ŃĐ˝ĐşŃ†Đ¸ŃŹ 1'] }] } },
+  { type: 'testimonials', label: 'ĐžŃ‚Đ·Ń‹Đ˛Ń‹', icon: <MessageSquare className="w-4 h-4" />, defaultContent: { title: 'ĐžŃ‚Đ·Ń‹Đ˛Ń‹ ĐşĐ»Đ¸ĐµĐ˝Ń‚ĐľĐ˛', items: [{ name: 'ĐĐ˛Đ°Đ˝ Đ.', text: 'ĐžŃ‚Đ»Đ¸Ń‡Đ˝Ń‹Đą ĐżŃ€ĐľĐ´ŃĐşŃ‚!', rating: 5 }] } },
+  { type: 'team', label: 'ĐšĐľĐĽĐ°Đ˝Đ´Đ°', icon: <Users className="w-4 h-4" />, defaultContent: { title: 'ĐťĐ°ŃĐ° ĐşĐľĐĽĐ°Đ˝Đ´Đ°', members: [{ name: 'ĐĐĽŃŹ Đ¤Đ°ĐĽĐ¸Đ»Đ¸ŃŹ', role: 'Đ”ĐľĐ»Đ¶Đ˝ĐľŃŃ‚ŃŚ', avatar: 'đź‘¤' }] } },
+  { type: 'faq', label: 'FAQ', icon: <HelpCircle className="w-4 h-4" />, defaultContent: { title: 'Đ§Đ°ŃŃ‚Đľ Đ·Đ°Đ´Đ°Đ˛Đ°ĐµĐĽŃ‹Đµ Đ˛ĐľĐżŃ€ĐľŃŃ‹', items: [{ q: 'Đ’ĐľĐżŃ€ĐľŃ?', a: 'ĐžŃ‚Đ˛ĐµŃ‚' }] } },
+  { type: 'countdown', label: 'Đ˘Đ°ĐąĐĽĐµŃ€', icon: <Timer className="w-4 h-4" />, defaultContent: { title: 'Đ”Đľ ŃĐľĐ±Ń‹Ń‚Đ¸ŃŹ ĐľŃŃ‚Đ°Đ»ĐľŃŃŚ', targetDate: new Date(Date.now() + 7 * 86400000).toISOString() } },
+  { type: 'contact', label: 'ĐšĐľĐ˝Ń‚Đ°ĐşŃ‚Ń‹', icon: <Phone className="w-4 h-4" />, defaultContent: { title: 'ĐˇĐ˛ŃŹĐ¶Đ¸Ń‚ĐµŃŃŚ Ń Đ˝Đ°ĐĽĐ¸', email: '', phone: '' } },
+  { type: 'button', label: 'ĐšĐ˝ĐľĐżĐşĐ°', icon: <AlignLeft className="w-4 h-4" />, defaultContent: { text: 'ĐťĐ°Đ¶ĐĽĐ¸Ń‚Đµ Đ·Đ´ĐµŃŃŚ', href: '#', bgColor: '#4f46e5', align: 'center' } },
+  { type: 'divider', label: 'Đ Đ°Đ·Đ´ĐµĐ»Đ¸Ń‚ĐµĐ»ŃŚ', icon: <Minus className="w-4 h-4" />, defaultContent: {} },
+  { type: 'html', label: 'HTML ĐşĐľĐ´', icon: <Code2 className="w-4 h-4" />, defaultContent: { code: '<p>Đ’ŃŃ‚Đ°Đ˛ŃŚŃ‚Đµ HTML ĐşĐľĐ´</p>' } },
+  { type: 'footer', label: 'Đ¤ŃŃ‚ĐµŃ€', icon: <AlignLeft className="w-4 h-4" />, defaultContent: { companyName: 'ĐśĐľŃŹ ĐšĐľĐĽĐżĐ°Đ˝Đ¸ŃŹ', copyright: `Â© ${new Date().getFullYear()} Đ’ŃĐµ ĐżŃ€Đ°Đ˛Đ° Đ·Đ°Ń‰Đ¸Ń‰ĐµĐ˝Ń‹.`, links: [] } },
+  { type: 'stats', label: 'ĐˇŃ‚Đ°Ń‚Đ¸ŃŃ‚Đ¸ĐşĐ°', icon: <BarChart3 className="w-4 h-4" />, defaultContent: { title: 'ĐťĐ°ŃĐ¸ Đ´ĐľŃŃ‚Đ¸Đ¶ĐµĐ˝Đ¸ŃŹ', items: [{ value: '500+', label: 'ĐšĐ»Đ¸ĐµĐ˝Ń‚ĐľĐ˛' }, { value: '10', label: 'Đ›ĐµŃ‚ ĐľĐżŃ‹Ń‚Đ°' }, { value: '99%', label: 'Đ”ĐľĐ˛ĐľĐ»ŃŚĐ˝Ń‹Ń…' }], bgColor: '#4f46e5', textColor: '#ffffff' } },
+  { type: 'logos', label: 'ĐźĐ°Ń€Ń‚Đ˝Ń‘Ń€Ń‹', icon: <Award className="w-4 h-4" />, defaultContent: { title: 'ĐťĐ°ĐĽ Đ´ĐľĐ˛ĐµŃ€ŃŹŃŽŃ‚', items: [{ name: 'ĐšĐľĐĽĐżĐ°Đ˝Đ¸ŃŹ 1', logo: '' }, { name: 'ĐšĐľĐĽĐżĐ°Đ˝Đ¸ŃŹ 2', logo: '' }], grayscale: true } },
+  { type: 'cta', label: 'ĐźŃ€Đ¸Đ·Ń‹Đ˛ (CTA)', icon: <Megaphone className="w-4 h-4" />, defaultContent: { title: 'Đ“ĐľŃ‚ĐľĐ˛Ń‹ Đ˝Đ°Ń‡Đ°Ń‚ŃŚ?', subtitle: 'ĐźŃ€Đ¸ŃĐľĐµĐ´Đ¸Đ˝ŃŹĐąŃ‚ĐµŃŃŚ Đş Ń‚Ń‹ŃŃŹŃ‡Đ°ĐĽ Đ´ĐľĐ˛ĐľĐ»ŃŚĐ˝Ń‹Ń… ĐşĐ»Đ¸ĐµĐ˝Ń‚ĐľĐ˛', ctaText: 'ĐťĐ°Ń‡Đ°Ń‚ŃŚ ŃĐµĐąŃ‡Đ°Ń', ctaHref: '#', bgColor: '#7c3aed', textColor: '#ffffff' } },
+  { type: 'timeline', label: 'ĐĄŃ€ĐľĐ˝ĐľĐ»ĐľĐłĐ¸ŃŹ', icon: <GitBranch className="w-4 h-4" />, defaultContent: { title: 'ĐšĐ°Đş ĐĽŃ‹ Ń€Đ°Đ±ĐľŃ‚Đ°ĐµĐĽ', items: [{ title: 'Đ¨Đ°Đł 1', desc: 'Đ—Đ°ŃŹĐ˛ĐşĐ°', icon: '1ď¸ŹâŁ' }, { title: 'Đ¨Đ°Đł 2', desc: 'ĐžĐ±ŃŃĐ¶Đ´ĐµĐ˝Đ¸Đµ', icon: '2ď¸ŹâŁ' }, { title: 'Đ¨Đ°Đł 3', desc: 'Đ ĐµĐ·ŃĐ»ŃŚŃ‚Đ°Ń‚', icon: '3ď¸ŹâŁ' }] } },
+  { type: 'social', label: 'ĐˇĐľŃ†ŃĐµŃ‚Đ¸', icon: <Share2 className="w-4 h-4" />, defaultContent: { title: 'ĐśŃ‹ Đ˛ ŃĐľŃ†ŃĐµŃ‚ŃŹŃ…', links: [{ platform: 'Telegram', url: '', icon: 'âśď¸Ź' }, { platform: 'VK', url: '', icon: 'đź’™' }, { platform: 'YouTube', url: '', icon: 'đźŽ¬' }] } },
+  { type: 'newsletter', label: 'Đ Đ°ŃŃŃ‹Đ»ĐşĐ°', icon: <Mail className="w-4 h-4" />, defaultContent: { title: 'ĐźĐľĐ´ĐżĐ¸ŃĐ¸Ń‚ĐµŃŃŚ Đ˝Đ° Ń€Đ°ŃŃŃ‹Đ»ĐşŃ', subtitle: 'Đ‘ŃĐ´ŃŚŃ‚Đµ Đ˛ ĐşŃŃ€ŃĐµ Đ˝ĐľĐ˛ĐľŃŃ‚ĐµĐą Đ¸ Đ°ĐşŃ†Đ¸Đą', buttonText: 'ĐźĐľĐ´ĐżĐ¸ŃĐ°Ń‚ŃŚŃŃŹ', bgColor: '#f8fafc' } },
+  { type: 'banner', label: 'Đ‘Đ°Đ˝Đ˝ĐµŃ€', icon: <Bell className="w-4 h-4" />, defaultContent: { text: 'đź”Ą ĐˇĐżĐµŃ†Đ¸Đ°Đ»ŃŚĐ˝ĐľĐµ ĐżŃ€ĐµĐ´Đ»ĐľĐ¶ĐµĐ˝Đ¸Đµ! ĐˇĐşĐ¸Đ´ĐşĐ° 20% Đ´Đľ ĐşĐľĐ˝Ń†Đ° ĐĽĐµŃŃŹŃ†Đ°', bgColor: '#ef4444', textColor: '#ffffff', closable: true } },
+  { type: 'tabs', label: 'Đ’ĐşĐ»Đ°Đ´ĐşĐ¸', icon: <PanelTop className="w-4 h-4" />, defaultContent: { tabs: [{ title: 'Đ’ĐşĐ»Đ°Đ´ĐşĐ° 1', content: 'ĐˇĐľĐ´ĐµŃ€Đ¶Đ¸ĐĽĐľĐµ ĐżĐµŃ€Đ˛ĐľĐą Đ˛ĐşĐ»Đ°Đ´ĐşĐ¸' }, { title: 'Đ’ĐşĐ»Đ°Đ´ĐşĐ° 2', content: 'ĐˇĐľĐ´ĐµŃ€Đ¶Đ¸ĐĽĐľĐµ Đ˛Ń‚ĐľŃ€ĐľĐą Đ˛ĐşĐ»Đ°Đ´ĐşĐ¸' }] } },
+  { type: 'accordion', label: 'ĐĐşĐşĐľŃ€Đ´ĐµĐľĐ˝', icon: <ChevronsRight className="w-4 h-4" />, defaultContent: { title: 'ĐźĐľĐ´Ń€ĐľĐ±Đ˝ĐµĐµ', items: [{ title: 'Đ Đ°Đ·Đ´ĐµĐ» 1', content: 'ĐˇĐľĐ´ĐµŃ€Đ¶Đ¸ĐĽĐľĐµ Ń€Đ°Đ·Đ´ĐµĐ»Đ° 1' }, { title: 'Đ Đ°Đ·Đ´ĐµĐ» 2', content: 'ĐˇĐľĐ´ĐµŃ€Đ¶Đ¸ĐĽĐľĐµ Ń€Đ°Đ·Đ´ĐµĐ»Đ° 2' }] } },
+  { type: 'progress', label: 'ĐźŃ€ĐľĐłŃ€ĐµŃŃ', icon: <ListChecks className="w-4 h-4" />, defaultContent: { title: 'ĐťĐ°ŃĐ¸ Đ˝Đ°Đ˛Ń‹ĐşĐ¸', items: [{ label: 'Đ”Đ¸Đ·Đ°ĐąĐ˝', value: 90, color: '#4f46e5' }, { label: 'Đ Đ°Đ·Ń€Đ°Đ±ĐľŃ‚ĐşĐ°', value: 85, color: '#7c3aed' }, { label: 'ĐśĐ°Ń€ĐşĐµŃ‚Đ¸Đ˝Đł', value: 70, color: '#06b6d4' }] } },
+  { type: 'comparison', label: 'ĐˇŃ€Đ°Đ˛Đ˝ĐµĐ˝Đ¸Đµ', icon: <Table2 className="w-4 h-4" />, defaultContent: { title: 'ĐˇŃ€Đ°Đ˛Đ˝ĐµĐ˝Đ¸Đµ Ń‚Đ°Ń€Đ¸Ń„ĐľĐ˛', columns: ['Đ‘ĐµŃĐżĐ»Đ°Ń‚Đ˝Ń‹Đą', 'ĐźŃ€Đľ'], rows: [{ feature: 'ĐźĐľĐ»ŃŚĐ·ĐľĐ˛Đ°Ń‚ĐµĐ»Đ¸', values: ['1', 'Đ‘ĐµĐ·Đ»Đ¸ĐĽĐ¸Ń‚'] }, { feature: 'ĐĄŃ€Đ°Đ˝Đ¸Đ»Đ¸Ń‰Đµ', values: ['1 Đ“Đ‘', '100 Đ“Đ‘'] }] } },
+  { type: 'marquee', label: 'Đ‘ĐµĐłŃŃ‰Đ°ŃŹ ŃŃ‚Ń€ĐľĐşĐ°', icon: <MoveHorizontal className="w-4 h-4" />, defaultContent: { text: 'âšˇ Đ”ĐľĐ±Ń€Đľ ĐżĐľĐ¶Đ°Đ»ĐľĐ˛Đ°Ń‚ŃŚ! â€˘ ĐˇĐżĐµŃ†Đ¸Đ°Đ»ŃŚĐ˝Ń‹Đµ ĐżŃ€ĐµĐ´Đ»ĐľĐ¶ĐµĐ˝Đ¸ŃŹ â€˘ ĐťĐľĐ˛Đ¸Đ˝ĐşĐ¸ ĐşĐ°Ń‚Đ°Đ»ĐľĐłĐ° â€˘ Đ‘ĐµŃĐżĐ»Đ°Ń‚Đ˝Đ°ŃŹ Đ´ĐľŃŃ‚Đ°Đ˛ĐşĐ° âšˇ', speed: 30, bgColor: '#fbbf24', textColor: '#1e293b' } },
+  { type: 'quote', label: 'Đ¦Đ¸Ń‚Đ°Ń‚Đ°', icon: <Quote className="w-4 h-4" />, defaultContent: { text: 'Đ›ŃŃ‡ŃĐ¸Đą ŃĐżĐľŃĐľĐ± ĐżŃ€ĐµĐ´ŃĐşĐ°Đ·Đ°Ń‚ŃŚ Đ±ŃĐ´ŃŃ‰ĐµĐµ â€” ŃĐľĐ·Đ´Đ°Ń‚ŃŚ ĐµĐłĐľ.', author: 'ĐźĐ¸Ń‚ĐµŃ€ Đ”Ń€ŃĐşĐµŃ€', bgColor: '#f1f5f9' } },
+  { type: 'map', label: 'ĐšĐ°Ń€Ń‚Đ°', icon: <MapPin className="w-4 h-4" />, defaultContent: { address: 'ĐśĐľŃĐşĐ˛Đ°, Đ ĐľŃŃĐ¸ŃŹ', embedUrl: '', height: '400px' } },
+  { type: 'columns', label: 'ĐšĐľĐ»ĐľĐ˝ĐşĐ¸', icon: <Columns3 className="w-4 h-4" />, defaultContent: { columns: [{ title: 'ĐšĐľĐ»ĐľĐ˝ĐşĐ° 1', text: 'ĐˇĐľĐ´ĐµŃ€Đ¶Đ¸ĐĽĐľĐµ ĐżĐµŃ€Đ˛ĐľĐą ĐşĐľĐ»ĐľĐ˝ĐşĐ¸' }, { title: 'ĐšĐľĐ»ĐľĐ˝ĐşĐ° 2', text: 'ĐˇĐľĐ´ĐµŃ€Đ¶Đ¸ĐĽĐľĐµ Đ˛Ń‚ĐľŃ€ĐľĐą ĐşĐľĐ»ĐľĐ˝ĐşĐ¸' }] } },
+  { type: 'spacer', label: 'ĐžŃ‚ŃŃ‚ŃĐż', icon: <ArrowUpDown className="w-4 h-4" />, defaultContent: { height: '60px' } },
+  { type: 'form', label: 'Đ¤ĐľŃ€ĐĽĐ°', icon: <ClipboardList className="w-4 h-4" />, defaultContent: { title: 'ĐžŃŃ‚Đ°Đ˛ŃŚŃ‚Đµ Đ·Đ°ŃŹĐ˛ĐşŃ', fields: [{ label: 'ĐĐĽŃŹ', type: 'text' }, { label: 'Email', type: 'email' }, { label: 'ĐˇĐľĐľĐ±Ń‰ĐµĐ˝Đ¸Đµ', type: 'textarea' }], buttonText: 'ĐžŃ‚ĐżŃ€Đ°Đ˛Đ¸Ń‚ŃŚ', bgColor: '#f8fafc' } },
 ];
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';
@@ -76,7 +76,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     }
     return {
       id: `site_${Date.now()}`,
-      name: 'Новый сайт',
+      name: 'ĐťĐľĐ˛Ń‹Đą ŃĐ°ĐąŃ‚',
       published: false,
       blocks: [],
       createdAt: Date.now(),
@@ -91,13 +91,17 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   const [templateCategory, setTemplateCategory] = useState<TemplateCategory>('all');
   const [showPreviewFull, setShowPreviewFull] = useState(false);
   const [currentPageSlug, setCurrentPageSlug] = useState('home');
-  const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set(['home']));
+  const [expandedPages, setExpandedPages] = useState<Set<string>>(() => {
+    try { const s = sessionStorage.getItem('ws_expandedPages'); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
+  });
   const [sidebarWidth, setSidebarWidth] = useState(288); // 288px = w-72
   const isResizing = useRef(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [dropIndicator, setDropIndicator] = useState<{ x: number; y: number } | null>(null);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
-  const toggleSection = (key: string) => setCollapsedSections(prev => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; });
+  const [openSections, setOpenSections] = useState<Set<string>>(() => {
+    try { const s = sessionStorage.getItem('ws_openSections'); return s ? new Set(JSON.parse(s)) : new Set(); } catch { return new Set(); }
+  });
+  const toggleSection = (key: string) => setOpenSections(prev => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); sessionStorage.setItem('ws_openSections', JSON.stringify([...n])); return n; });
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -145,7 +149,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     ...Object.entries(customBlocks).map(([type, meta]) => ({
       type: type as WebsiteBlockType,
       label: meta.label,
-      icon: <span className="text-sm">{meta.icon || '🧩'}</span>,
+      icon: <span className="text-sm">{meta.icon || 'đź§©'}</span>,
       defaultContent: meta.defaultContent || {},
     })),
   ];
@@ -157,7 +161,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
 
   const handleSave = () => {
     saveWebsite(website);
-    toast.success('Сайт сохранён!');
+    toast.success('ĐˇĐ°ĐąŃ‚ ŃĐľŃ…Ń€Đ°Đ˝Ń‘Đ˝!');
   };
 
   const handlePublish = () => {
@@ -167,9 +171,9 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     if (updated.published) {
       const url = `${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`;
       navigator.clipboard.writeText(url).catch(() => {});
-      toast.success('Сайт опубликован! Ссылка скопирована.');
+      toast.success('ĐˇĐ°ĐąŃ‚ ĐľĐżŃĐ±Đ»Đ¸ĐşĐľĐ˛Đ°Đ˝! ĐˇŃŃ‹Đ»ĐşĐ° ŃĐşĐľĐżĐ¸Ń€ĐľĐ˛Đ°Đ˝Đ°.');
     } else {
-      toast.info('Сайт снят с публикации');
+      toast.info('ĐˇĐ°ĐąŃ‚ ŃĐ˝ŃŹŃ‚ Ń ĐżŃĐ±Đ»Đ¸ĐşĐ°Ń†Đ¸Đ¸');
     }
   };
 
@@ -188,7 +192,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
       setWebsite(prev => ({ ...prev, blocks: [...prev.blocks, newBlock] }));
     }
     setSelectedBlockId(newBlock.id);
-    toast.success(`Блок "${type}" добавлен`);
+    toast.success(`Đ‘Đ»ĐľĐş "${type}" Đ´ĐľĐ±Đ°Đ˛Đ»ĐµĐ˝`);
   };
 
   const deleteBlock = (id: string) => {
@@ -286,11 +290,11 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
         setWebsite(prev => ({ ...prev, blocks: [...prev.blocks, newBlock] }));
       }
       setSelectedBlockId(newBlock.id);
-      toast.success(`Блок "${type}" добавлен`);
+      toast.success(`Đ‘Đ»ĐľĐş "${type}" Đ´ĐľĐ±Đ°Đ˛Đ»ĐµĐ˝`);
     } catch {}
   }, [hasPages, currentPage]);
 
-  // Live style update (from drag resize) — doesn't close editor
+  // Live style update (from drag resize) â€” doesn't close editor
   const updateBlockStyles = useCallback((blockId: string, newStyles: Record<string, string>) => {
     if (hasPages && currentPage) {
       setWebsite(prev => ({
@@ -307,7 +311,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     const newPage: WebsitePage = {
       id: `pg_${Date.now()}`,
       slug,
-      title: 'Новая страница',
+      title: 'ĐťĐľĐ˛Đ°ŃŹ ŃŃ‚Ń€Đ°Đ˝Đ¸Ń†Đ°',
       blocks: [],
     };
     setWebsite(prev => ({
@@ -315,19 +319,19 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
       pages: [...(prev.pages || []), newPage],
     }));
     setCurrentPageSlug(slug);
-    toast.success('Страница добавлена');
+    toast.success('ĐˇŃ‚Ń€Đ°Đ˝Đ¸Ń†Đ° Đ´ĐľĐ±Đ°Đ˛Đ»ĐµĐ˝Đ°');
   };
 
   const deletePage = (slug: string) => {
     if (!hasPages) return;
     const remaining = website.pages!.filter(p => p.slug !== slug);
     if (remaining.length === 0) {
-      toast.error('Нельзя удалить последнюю страницу');
+      toast.error('ĐťĐµĐ»ŃŚĐ·ŃŹ ŃĐ´Đ°Đ»Đ¸Ń‚ŃŚ ĐżĐľŃĐ»ĐµĐ´Đ˝ŃŽŃŽ ŃŃ‚Ń€Đ°Đ˝Đ¸Ń†Ń');
       return;
     }
     setWebsite(prev => ({ ...prev, pages: remaining }));
     if (currentPageSlug === slug) setCurrentPageSlug(remaining[0].slug);
-    toast.success('Страница удалена');
+    toast.success('ĐˇŃ‚Ń€Đ°Đ˝Đ¸Ń†Đ° ŃĐ´Đ°Đ»ĐµĐ˝Đ°');
   };
 
   const renamePage = (slug: string, newTitle: string) => {
@@ -343,10 +347,10 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     const newBlocks = tpl.blocks.map(b => ({ ...b, id: `block_${Date.now()}_${Math.random().toString(36).slice(2)}` })) as WebsiteBlock[];
     if (mode === 'replace') {
       setWebsite(prev => ({ ...prev, name: tpl.name, blocks: newBlocks }));
-      toast.success(`Шаблон "${tpl.name}" загружен`);
+      toast.success(`Đ¨Đ°Đ±Đ»ĐľĐ˝ "${tpl.name}" Đ·Đ°ĐłŃ€ŃĐ¶ĐµĐ˝`);
     } else {
       setWebsite(prev => ({ ...prev, blocks: [...prev.blocks, ...newBlocks] }));
-      toast.success(`Блоки шаблона "${tpl.name}" добавлены`);
+      toast.success(`Đ‘Đ»ĐľĐşĐ¸ ŃĐ°Đ±Đ»ĐľĐ˝Đ° "${tpl.name}" Đ´ĐľĐ±Đ°Đ˛Đ»ĐµĐ˝Ń‹`);
     }
   };
 
@@ -389,17 +393,17 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowPreviewFull(true)}>
-            <Eye className="w-4 h-4 mr-1" /> Просмотр
+            <Eye className="w-4 h-4 mr-1" /> ĐźŃ€ĐľŃĐĽĐľŃ‚Ń€
           </Button>
           <Button variant="outline" size="sm" onClick={handleSave}>
-            <Save className="w-4 h-4 mr-1" /> Сохранить
+            <Save className="w-4 h-4 mr-1" /> ĐˇĐľŃ…Ń€Đ°Đ˝Đ¸Ń‚ŃŚ
           </Button>
           <Button size="sm" onClick={handlePublish} variant={website.published ? 'secondary' : 'default'}>
             <Link className="w-4 h-4 mr-1" />
-            {website.published ? 'Снять' : 'Опубликовать'}
+            {website.published ? 'ĐˇĐ˝ŃŹŃ‚ŃŚ' : 'ĐžĐżŃĐ±Đ»Đ¸ĐşĐľĐ˛Đ°Ń‚ŃŚ'}
           </Button>
           {website.published && (
-            <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('Ссылка скопирована!'); }}>
+            <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('ĐˇŃŃ‹Đ»ĐşĐ° ŃĐşĐľĐżĐ¸Ń€ĐľĐ˛Đ°Đ˝Đ°!'); }}>
               <Copy className="w-4 h-4" />
             </Button>
           )}
@@ -411,7 +415,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
         <aside style={{ width: sidebarWidth }} className="border-r bg-card flex flex-col shrink-0 overflow-hidden relative">
           {/* Tabs */}
           <div className="flex border-b">
-            {([['blocks', 'Блоки'], ['templates', 'Шаблоны'], ['settings', 'Настройки']] as const).map(([tab, label]) => (
+            {([['blocks', 'Đ‘Đ»ĐľĐşĐ¸'], ['templates', 'Đ¨Đ°Đ±Đ»ĐľĐ˝Ń‹'], ['settings', 'ĐťĐ°ŃŃ‚Ń€ĐľĐąĐşĐ¸']] as const).map(([tab, label]) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -431,12 +435,12 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                   <div>
                     <button onClick={() => toggleSection('pages')} className="w-full flex items-center justify-between py-1.5">
                       <div className="flex items-center gap-1.5">
-                        {collapsedSections.has('pages') ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
-                        <span className="text-xs font-medium text-muted-foreground">Страницы ({website.pages!.length})</span>
+                        {openSections.has('pages') ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                        <span className="text-xs font-medium text-muted-foreground">ĐˇŃ‚Ń€Đ°Đ˝Đ¸Ń†Ń‹ ({website.pages!.length})</span>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); addPage(); }} className="text-xs text-primary hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Добавить</button>
+                      <button onClick={(e) => { e.stopPropagation(); addPage(); }} className="text-xs text-primary hover:underline flex items-center gap-1"><Plus className="w-3 h-3" /> Đ”ĐľĐ±Đ°Đ˛Đ¸Ń‚ŃŚ</button>
                     </button>
-                    {!collapsedSections.has('pages') && (
+                    {openSections.has('pages') && (
                     <div className="space-y-0.5">
                       {website.pages!.map(page => {
                         const isExpanded = expandedPages.has(page.slug);
@@ -459,6 +463,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                                   setExpandedPages(prev => {
                                     const next = new Set(prev);
                                     if (next.has(page.slug)) next.delete(page.slug); else next.add(page.slug);
+                                    sessionStorage.setItem('ws_expandedPages', JSON.stringify([...next]));
                                     return next;
                                   });
                                 }}
@@ -513,7 +518,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                               </div>
                             )}
                             {isExpanded && pageBlocks.length === 0 && (
-                              <p className="ml-6 text-[10px] text-muted-foreground py-1">Пусто — добавьте блоки ниже</p>
+                              <p className="ml-6 text-[10px] text-muted-foreground py-1">ĐźŃŃŃ‚Đľ â€” Đ´ĐľĐ±Đ°Đ˛ŃŚŃ‚Đµ Đ±Đ»ĐľĐşĐ¸ Đ˝Đ¸Đ¶Đµ</p>
                             )}
                           </div>
                         );
@@ -527,10 +532,10 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 {!hasPages && activeBlocks.length > 0 && (
                   <div>
                     <button onClick={() => toggleSection('blocklist')} className="w-full flex items-center gap-1.5 py-1.5">
-                      {collapsedSections.has('blocklist') ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
-                      <span className="text-xs font-medium text-muted-foreground">Блоки ({activeBlocks.length})</span>
+                      {openSections.has('blocklist') ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                      <span className="text-xs font-medium text-muted-foreground">Đ‘Đ»ĐľĐşĐ¸ ({activeBlocks.length})</span>
                     </button>
-                    {!collapsedSections.has('blocklist') && (
+                    {openSections.has('blocklist') && (
                     <div className="space-y-0.5">
                       {activeBlocks.map((block, idx) => {
                         const palette = fullBlockPalette.find(p => p.type === block.type);
@@ -564,15 +569,15 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                   </div>
                 )}
 
-                {/* Block palette — collapsible */}
+                {/* Block palette â€” collapsible */}
                 <div>
                   <button onClick={() => toggleSection('palette')} className="w-full flex items-center gap-1.5 py-1.5">
-                    {collapsedSections.has('palette') ? <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
-                    <span className="text-xs font-medium text-muted-foreground">Добавить блок</span>
+                    {openSections.has('palette') ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                    <span className="text-xs font-medium text-muted-foreground">Đ”ĐľĐ±Đ°Đ˛Đ¸Ń‚ŃŚ Đ±Đ»ĐľĐş</span>
                   </button>
-                  {!collapsedSections.has('palette') && (
+                  {openSections.has('palette') && (
                   <>
-                <p className="text-xs text-muted-foreground mb-2">Нажмите или перетащите на канвас{hasPages ? ` «${currentPage?.title}»` : ''}</p>
+                <p className="text-xs text-muted-foreground mb-2">ĐťĐ°Đ¶ĐĽĐ¸Ń‚Đµ Đ¸Đ»Đ¸ ĐżĐµŃ€ĐµŃ‚Đ°Ń‰Đ¸Ń‚Đµ Đ˝Đ° ĐşĐ°Đ˝Đ˛Đ°Ń{hasPages ? ` Â«${currentPage?.title}Â»` : ''}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {fullBlockPalette.map(({ type, label, icon, defaultContent }) => (
                     <button
@@ -619,16 +624,16 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                       onClick={() => toggleSection(`tpl-${tpl.id}`)}
                       className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
-                      {collapsedSections.has(`tpl-${tpl.id}`) ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      {openSections.has(`tpl-${tpl.id}`) ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                       <span className="text-lg">{tpl.preview}</span>
                       <span className="flex-1 truncate">{tpl.name}</span>
                     </button>
-                    {!collapsedSections.has(`tpl-${tpl.id}`) && (
+                    {openSections.has(`tpl-${tpl.id}`) && (
                       <div className="p-3 border-t space-y-2">
                         <p className="text-xs text-muted-foreground">{tpl.description}</p>
                         <div className="flex gap-1.5">
-                          <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => loadTemplate(tpl.id, 'replace')}>Загрузить</Button>
-                          <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => loadTemplate(tpl.id, 'append')}>Добавить</Button>
+                          <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => loadTemplate(tpl.id, 'replace')}>Đ—Đ°ĐłŃ€ŃĐ·Đ¸Ń‚ŃŚ</Button>
+                          <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => loadTemplate(tpl.id, 'append')}>Đ”ĐľĐ±Đ°Đ˛Đ¸Ń‚ŃŚ</Button>
                         </div>
                       </div>
                     )}
@@ -640,7 +645,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             {/* SETTINGS TAB */}
             {activeTab === 'settings' && (
               <div className="p-3 space-y-2">
-                {/* Block Editor — shown when editing a block */}
+                {/* Block Editor â€” shown when editing a block */}
                 {editingBlock && (
                   <div className="border rounded-lg overflow-hidden">
                     <WebsiteBlockEditor
@@ -652,62 +657,62 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                     />
                   </div>
                 )}
-                {/* Basic Settings — collapsible */}
+                {/* Basic Settings â€” collapsible */}
                 <div className="border rounded-lg overflow-hidden">
                   <button onClick={() => toggleSection('set-basic')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
-                    {collapsedSections.has('set-basic') ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    📝 Основные
+                    {openSections.has('set-basic') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    đź“ť ĐžŃĐ˝ĐľĐ˛Đ˝Ń‹Đµ
                   </button>
-                  {!collapsedSections.has('set-basic') && (
+                  {openSections.has('set-basic') && (
                   <div className="p-3 space-y-3 border-t">
                     <div>
-                      <Label className="text-xs">Название сайта</Label>
+                      <Label className="text-xs">ĐťĐ°Đ·Đ˛Đ°Đ˝Đ¸Đµ ŃĐ°ĐąŃ‚Đ°</Label>
                       <Input value={website.name} onChange={e => setWebsite(prev => ({ ...prev, name: e.target.value }))} className="mt-1" />
                     </div>
                     <div>
-                      <Label className="text-xs">Описание</Label>
+                      <Label className="text-xs">ĐžĐżĐ¸ŃĐ°Đ˝Đ¸Đµ</Label>
                       <Input value={website.description || ''} onChange={e => setWebsite(prev => ({ ...prev, description: e.target.value }))} className="mt-1" />
                     </div>
                   </div>
                   )}
                 </div>
-                {/* SEO — collapsible */}
+                {/* SEO â€” collapsible */}
                 <div className="border rounded-lg overflow-hidden">
                   <button onClick={() => toggleSection('set-seo')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
-                    {collapsedSections.has('set-seo') ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    🔍 SEO
+                    {openSections.has('set-seo') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    đź”Ť SEO
                   </button>
-                  {!collapsedSections.has('set-seo') && (
+                  {openSections.has('set-seo') && (
                   <div className="p-3 space-y-3 border-t">
                     <div>
-                      <Label className="text-xs">SEO Заголовок</Label>
+                      <Label className="text-xs">SEO Đ—Đ°ĐłĐľĐ»ĐľĐ˛ĐľĐş</Label>
                       <Input value={website.seoTitle || ''} onChange={e => setWebsite(prev => ({ ...prev, seoTitle: e.target.value }))} className="mt-1" />
                     </div>
                     <div>
-                      <Label className="text-xs">SEO Описание</Label>
+                      <Label className="text-xs">SEO ĐžĐżĐ¸ŃĐ°Đ˝Đ¸Đµ</Label>
                       <Input value={website.seoDescription || ''} onChange={e => setWebsite(prev => ({ ...prev, seoDescription: e.target.value }))} className="mt-1" />
                     </div>
                   </div>
                   )}
                 </div>
-                {/* Publish status — collapsible */}
+                {/* Publish status â€” collapsible */}
                 <div className="border rounded-lg overflow-hidden">
                   <button onClick={() => toggleSection('set-publish')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
-                    {collapsedSections.has('set-publish') ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    🌐 Публикация
+                    {openSections.has('set-publish') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    đźŚ ĐźŃĐ±Đ»Đ¸ĐşĐ°Ń†Đ¸ŃŹ
                   </button>
-                  {!collapsedSections.has('set-publish') && (
+                  {openSections.has('set-publish') && (
                   <div className="p-3 space-y-3 border-t">
                     <div className={`flex items-center gap-2 p-3 rounded-xl ${website.published ? 'bg-green-50 border border-green-200' : 'bg-muted border border-border'}`}>
                       <div className={`w-2 h-2 rounded-full ${website.published ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                      <span className="text-sm">{website.published ? 'Опубликован' : 'Черновик'}</span>
+                      <span className="text-sm">{website.published ? 'ĐžĐżŃĐ±Đ»Đ¸ĐşĐľĐ˛Đ°Đ˝' : 'Đ§ĐµŃ€Đ˝ĐľĐ˛Đ¸Đş'}</span>
                     </div>
                     {website.published && (
                       <div>
-                        <Label className="text-xs">Ссылка на сайт</Label>
+                        <Label className="text-xs">ĐˇŃŃ‹Đ»ĐşĐ° Đ˝Đ° ŃĐ°ĐąŃ‚</Label>
                         <div className="flex gap-2 mt-1">
                           <Input value={`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`} readOnly className="text-xs" />
-                          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('Скопировано!'); }}>
+                          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('ĐˇĐşĐľĐżĐ¸Ń€ĐľĐ˛Đ°Đ˝Đľ!'); }}>
                             <Copy className="w-4 h-4" />
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => window.open(`${import.meta.env.BASE_URL}site/${website.id}`, '_blank')}>
@@ -720,7 +725,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                   )}
                 </div>
                 <Button variant="outline" className="w-full" onClick={handleSave}>
-                  <Save className="w-4 h-4 mr-2" /> Сохранить настройки
+                  <Save className="w-4 h-4 mr-2" /> ĐˇĐľŃ…Ń€Đ°Đ˝Đ¸Ń‚ŃŚ Đ˝Đ°ŃŃ‚Ń€ĐľĐąĐşĐ¸
                 </Button>
               </div>
             )}
@@ -731,7 +736,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
         <div
           onMouseDown={startResize}
           className="w-1.5 hover:w-2 bg-transparent hover:bg-primary/20 active:bg-primary/40 cursor-col-resize shrink-0 transition-all relative group"
-          title="Перетащите для изменения ширины"
+          title="ĐźĐµŃ€ĐµŃ‚Đ°Ń‰Đ¸Ń‚Đµ Đ´Đ»ŃŹ Đ¸Đ·ĐĽĐµĐ˝ĐµĐ˝Đ¸ŃŹ ŃĐ¸Ń€Đ¸Đ˝Ń‹"
         >
           <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-border group-hover:bg-primary/40 transition-colors" />
         </div>
@@ -766,10 +771,10 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             {activeBlocks.length === 0 && !dropIndicator && (
               <div className="flex flex-col items-center justify-center py-20 text-center px-8">
                 <Globe className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                <h3 className="text-xl font-bold mb-2">Создайте свой сайт</h3>
-                <p className="text-muted-foreground mb-6">Добавляйте блоки из панели слева или выберите готовый шаблон</p>
+                <h3 className="text-xl font-bold mb-2">ĐˇĐľĐ·Đ´Đ°ĐąŃ‚Đµ ŃĐ˛ĐľĐą ŃĐ°ĐąŃ‚</h3>
+                <p className="text-muted-foreground mb-6">Đ”ĐľĐ±Đ°Đ˛Đ»ŃŹĐąŃ‚Đµ Đ±Đ»ĐľĐşĐ¸ Đ¸Đ· ĐżĐ°Đ˝ĐµĐ»Đ¸ ŃĐ»ĐµĐ˛Đ° Đ¸Đ»Đ¸ Đ˛Ń‹Đ±ĐµŃ€Đ¸Ń‚Đµ ĐłĐľŃ‚ĐľĐ˛Ń‹Đą ŃĐ°Đ±Đ»ĐľĐ˝</p>
                 <Button onClick={() => setActiveTab('templates')}>
-                  <Layers className="w-4 h-4 mr-2" /> Выбрать шаблон
+                  <Layers className="w-4 h-4 mr-2" /> Đ’Ń‹Đ±Ń€Đ°Ń‚ŃŚ ŃĐ°Đ±Đ»ĐľĐ˝
                 </Button>
               </div>
             )}
@@ -779,7 +784,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 className="absolute pointer-events-none border-2 border-dashed border-primary rounded-lg bg-primary/10 z-30 flex items-center justify-center"
                 style={{ left: Math.max(0, dropIndicator.x - 80), top: Math.max(0, dropIndicator.y - 20), width: 160, height: 40 }}
               >
-                <span className="text-xs text-primary font-medium">+ Разместить здесь</span>
+                <span className="text-xs text-primary font-medium">+ Đ Đ°Đ·ĐĽĐµŃŃ‚Đ¸Ń‚ŃŚ Đ·Đ´ĐµŃŃŚ</span>
               </div>
             )}
           </div>
@@ -790,8 +795,8 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
       {showPreviewFull && (
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
           <div className="flex items-center justify-between px-4 h-14 border-b bg-card">
-            <span className="font-semibold">Предпросмотр: {website.name}</span>
-            <Button variant="ghost" onClick={() => setShowPreviewFull(false)}>✕ Закрыть</Button>
+            <span className="font-semibold">ĐźŃ€ĐµĐ´ĐżŃ€ĐľŃĐĽĐľŃ‚Ń€: {website.name}</span>
+            <Button variant="ghost" onClick={() => setShowPreviewFull(false)}>âś• Đ—Đ°ĐşŃ€Ń‹Ń‚ŃŚ</Button>
           </div>
           <div className="flex-1 overflow-auto">
             <WebsitePreview blocks={activeBlocks} pages={hasPages ? website.pages : undefined} currentPageSlug={currentPageSlug} onPageNavigate={setCurrentPageSlug} globalStyles={website.globalStyles} />
@@ -801,3 +806,4 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     </div>
   );
 }
+
