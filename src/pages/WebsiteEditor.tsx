@@ -409,17 +409,6 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel */}
         <aside style={{ width: sidebarWidth }} className="border-r bg-card flex flex-col shrink-0 overflow-hidden relative">
-          {/* Block Editor inline — replaces tabs when editing */}
-          {editingBlock ? (
-            <WebsiteBlockEditor
-              key={editingBlock.id}
-              block={editingBlock}
-              onUpdate={updateBlock}
-              onClose={() => setEditingBlock(null)}
-              inline
-            />
-          ) : (
-          <>
           {/* Tabs */}
           <div className="flex border-b">
             {([['blocks', 'Блоки'], ['templates', 'Шаблоны'], ['settings', 'Настройки']] as const).map(([tab, label]) => (
@@ -511,7 +500,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                                         <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'down'); }} disabled={idx === pageBlocks.length - 1} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-20">
                                           <ChevronDown className="w-2.5 h-2.5" />
                                         </button>
-                                        <button onClick={e => { e.stopPropagation(); setEditingBlock(block); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
+                                        <button onClick={e => { e.stopPropagation(); setEditingBlock(block); setActiveTab('settings'); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
                                           <AlignLeft className="w-2.5 h-2.5" />
                                         </button>
                                         <button onClick={e => { e.stopPropagation(); deleteBlock(block.id); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
@@ -560,7 +549,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                               <button onClick={e => { e.stopPropagation(); moveBlock(block.id, 'down'); }} disabled={idx === activeBlocks.length - 1} className="p-0.5 rounded hover:bg-muted-foreground/20 disabled:opacity-30">
                                 <ChevronDown className="w-3 h-3" />
                               </button>
-                              <button onClick={e => { e.stopPropagation(); setEditingBlock(block); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
+                              <button onClick={e => { e.stopPropagation(); setEditingBlock(block); setActiveTab('settings'); }} className="p-0.5 rounded hover:bg-primary/20 text-primary">
                                 <AlignLeft className="w-3 h-3" />
                               </button>
                               <button onClick={e => { e.stopPropagation(); deleteBlock(block.id); }} className="p-0.5 rounded hover:bg-destructive/20 text-destructive">
@@ -612,8 +601,8 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
 
             {/* TEMPLATES TAB */}
             {activeTab === 'templates' && (
-              <div className="p-3">
-                <div className="flex flex-wrap gap-1 mb-3">
+              <div className="p-3 space-y-2">
+                <div className="flex flex-wrap gap-1 mb-1">
                   {TEMPLATE_CATEGORIES.map(cat => (
                     <button
                       key={cat.id}
@@ -624,29 +613,45 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                     </button>
                   ))}
                 </div>
-                <div className="space-y-2">
-                  {filteredTemplates.map(tpl => (
-                    <div key={tpl.id} className="border rounded-xl p-3 hover:border-primary/40 transition-colors">
-                      <div className="flex items-start gap-3 mb-2">
-                        <span className="text-3xl">{tpl.preview}</span>
-                        <div>
-                          <div className="font-medium text-sm">{tpl.name}</div>
-                          <div className="text-xs text-muted-foreground">{tpl.description}</div>
+                {filteredTemplates.map(tpl => (
+                  <div key={tpl.id} className="border rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleSection(`tpl-${tpl.id}`)}
+                      className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      {collapsedSections.has(`tpl-${tpl.id}`) ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      <span className="text-lg">{tpl.preview}</span>
+                      <span className="flex-1 truncate">{tpl.name}</span>
+                    </button>
+                    {!collapsedSections.has(`tpl-${tpl.id}`) && (
+                      <div className="p-3 border-t space-y-2">
+                        <p className="text-xs text-muted-foreground">{tpl.description}</p>
+                        <div className="flex gap-1.5">
+                          <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => loadTemplate(tpl.id, 'replace')}>Загрузить</Button>
+                          <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => loadTemplate(tpl.id, 'append')}>Добавить</Button>
                         </div>
                       </div>
-                      <div className="flex gap-1.5">
-                        <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => loadTemplate(tpl.id, 'replace')}>Загрузить</Button>
-                        <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => loadTemplate(tpl.id, 'append')}>Добавить</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
             {/* SETTINGS TAB */}
             {activeTab === 'settings' && (
               <div className="p-3 space-y-2">
+                {/* Block Editor — shown when editing a block */}
+                {editingBlock && (
+                  <div className="border rounded-lg overflow-hidden">
+                    <WebsiteBlockEditor
+                      key={editingBlock.id}
+                      block={editingBlock}
+                      onUpdate={updateBlock}
+                      onClose={() => setEditingBlock(null)}
+                      inline
+                    />
+                  </div>
+                )}
                 {/* Basic Settings — collapsible */}
                 <div className="border rounded-lg overflow-hidden">
                   <button onClick={() => toggleSection('set-basic')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -720,8 +725,6 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
               </div>
             )}
           </div>
-          </>
-          )}
         </aside>
 
         {/* Resize Handle */}
@@ -753,7 +756,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
               onEditBlock={(id) => {
                 setSelectedBlockId(id);
                 const block = activeBlocks.find(b => b.id === id);
-                if (block) setEditingBlock(block);
+                if (block) { setEditingBlock(block); setActiveTab('settings'); }
               }}
               onBlockStyleUpdate={updateBlockStyles}
               onBlockPositionUpdate={updateBlockPosition}
