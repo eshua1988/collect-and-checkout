@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { X, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Plus, Trash2, ChevronDown, ChevronRight, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 const EXTRA_TYPES: { type: WebsiteBlockExtra['type']; label: string; icon: string }[] = [
   { type: 'button', label: 'Кнопка', icon: '🔘' },
@@ -767,9 +767,9 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
                   <div>
                     <Label className="text-xs">Выравнивание</Label>
                     <div className="flex gap-1 mt-1">
-                      {['left', 'center', 'right'].map(a => (
-                        <Button key={a} size="sm" variant={content.align === a ? 'default' : 'outline'} onClick={() => set('align', a)} className="flex-1 h-7 text-xs">
-                          {a === 'left' ? '← Лево' : a === 'center' ? '↔ Центр' : '→ Право'}
+                      {([['left', AlignLeft], ['center', AlignCenter], ['right', AlignRight]] as const).map(([a, Icon]) => (
+                        <Button key={a} size="icon" variant={content.align === a ? 'default' : 'outline'} onClick={() => set('align', a)} className="h-8 w-8">
+                          <Icon className="w-4 h-4" />
                         </Button>
                       ))}
                     </div>
