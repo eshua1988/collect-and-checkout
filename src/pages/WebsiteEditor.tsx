@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useEffect } from 'react';
 import {
   ArrowLeft, Plus, Trash2, Eye, Save, Copy, Link, GripVertical,
-  Globe, Layout, Type, Image, Video, AlignLeft, Star, DollarSign,
+  Globe, Layout, Type, Image, Video, AlignLeft, AlignCenter, AlignRight, Star, DollarSign,
   MessageSquare, Phone, Timer, Users, HelpCircle, Code2, Minus,
   ChevronUp, ChevronDown, ChevronRight, Layers, ExternalLink, Smartphone, Monitor, Tablet,
   FileText, BarChart3, Award, Megaphone, GitBranch, Share2, Mail,
@@ -657,76 +657,200 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                     />
                   </div>
                 )}
-                {/* Basic Settings — collapsible */}
+
+                {/* ─── Размер / Стили / Встроенные — always visible, work on selected block ─── */}
+                {(() => {
+                  const selBlock = editingBlock || activeBlocks.find(b => b.id === selectedBlockId);
+                  const blockStyles = selBlock?.styles || {};
+                  const blockContent = selBlock?.content || {};
+                  const blockExtras = selBlock?.extras || [];
+                  const updateSelBlock = (updates: Partial<WebsiteBlock>) => {
+                    if (!selBlock) return;
+                    const updated = { ...selBlock, ...updates };
+                    if (hasPages && currentPage) {
+                      setWebsite(prev => ({
+                        ...prev,
+                        pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: p.blocks.map(b => b.id === selBlock.id ? updated : b) } : p),
+                      }));
+                    } else {
+                      setWebsite(prev => ({ ...prev, blocks: prev.blocks.map(b => b.id === selBlock.id ? updated : b) }));
+                    }
+                    if (editingBlock?.id === selBlock.id) setEditingBlock(updated);
+                  };
+                  const setBlockStyle = (key: string, value: string) => updateSelBlock({ styles: { ...blockStyles, [key]: value } });
+                  const setBlockContent = (key: string, value: any) => updateSelBlock({ content: { ...blockContent, [key]: value } });
+
+                  return (
+                    <>
+                      {/* Размер */}
+                      <div className="border rounded-lg overflow-hidden">
+                        <button onClick={() => toggleSection('set-size')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                          {openSections.has('set-size') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                          📐 Размер
+                        </button>
+                        {openSections.has('set-size') && (
+                          <div className="p-3 space-y-3 border-t">
+                            {selBlock ? (<>
+                              <p className="text-[10px] text-muted-foreground">Блок: {selBlock.type}</p>
+                              <div><Label className="text-xs">Отступы (padding)</Label><Input value={blockStyles.padding || ''} onChange={e => setBlockStyle('padding', e.target.value)} placeholder="16px 24px" className="mt-1 text-xs" /></div>
+                              <div><Label className="text-xs">Мин. высота</Label><Input value={blockStyles.minHeight || ''} onChange={e => setBlockStyle('minHeight', e.target.value)} placeholder="200px" className="mt-1 text-xs" /></div>
+                              <div><Label className="text-xs">Макс. ширина</Label><Input value={blockStyles.maxWidth || ''} onChange={e => setBlockStyle('maxWidth', e.target.value)} placeholder="1200px" className="mt-1 text-xs" /></div>
+                            </>) : (
+                              <p className="text-xs text-muted-foreground text-center py-2">Выберите блок</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Стили */}
+                      <div className="border rounded-lg overflow-hidden">
+                        <button onClick={() => toggleSection('set-styles')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                          {openSections.has('set-styles') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                          🎨 Стили
+                        </button>
+                        {openSections.has('set-styles') && (
+                          <div className="p-3 space-y-3 border-t">
+                            {selBlock ? (<>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div><Label className="text-xs">Фон</Label><Input type="color" value={blockContent.bgColor || blockStyles.bgColor || blockStyles.backgroundColor || '#ffffff'} onChange={e => { setBlockContent('bgColor', e.target.value); setBlockStyle('bgColor', e.target.value); }} className="h-9 mt-1 cursor-pointer" /></div>
+                                <div><Label className="text-xs">Текст</Label><Input type="color" value={blockContent.textColor || blockStyles.textColor || blockStyles.color || '#1e293b'} onChange={e => { setBlockContent('textColor', e.target.value); setBlockStyle('textColor', e.target.value); }} className="h-9 mt-1 cursor-pointer" /></div>
+                              </div>
+                              {(blockContent.align !== undefined || ['hero', 'text', 'button', 'cta', 'newsletter', 'quote'].includes(selBlock.type)) && (
+                                <div>
+                                  <Label className="text-xs">Выравнивание</Label>
+                                  <div className="flex gap-1 mt-1">
+                                    {([['left', 'AlignLeft'], ['center', 'AlignCenter'], ['right', 'AlignRight']] as const).map(([a]) => (
+                                      <Button key={a} size="icon" variant={blockContent.align === a ? 'default' : 'outline'} onClick={() => setBlockContent('align', a)} className="h-8 w-8">
+                                        {a === 'left' ? <AlignLeft className="w-4 h-4" /> : a === 'center' ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div><Label className="text-xs">Скругление</Label><Input value={blockStyles.borderRadius || ''} onChange={e => setBlockStyle('borderRadius', e.target.value)} placeholder="8px" className="mt-1 text-xs" /></div>
+                                <div><Label className="text-xs">Тень</Label>
+                                  <select value={blockStyles.boxShadow || ''} onChange={e => setBlockStyle('boxShadow', e.target.value)} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
+                                    <option value="">Нет</option>
+                                    <option value="0 1px 3px rgba(0,0,0,0.1)">Лёгкая</option>
+                                    <option value="0 4px 12px rgba(0,0,0,0.15)">Средняя</option>
+                                    <option value="0 10px 30px rgba(0,0,0,0.2)">Большая</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div><Label className="text-xs">Рамка</Label><Input value={blockStyles.border || ''} onChange={e => setBlockStyle('border', e.target.value)} placeholder="1px solid #e2e8f0" className="mt-1 text-xs" /></div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div><Label className="text-xs">Размер шрифта</Label><Input value={blockStyles.fontSize || ''} onChange={e => setBlockStyle('fontSize', e.target.value)} placeholder="16px" className="mt-1 text-xs" /></div>
+                                <div><Label className="text-xs">Прозрачность</Label><Input type="range" min="0" max="1" step="0.05" value={blockStyles.opacity || '1'} onChange={e => setBlockStyle('opacity', e.target.value)} className="mt-2" /></div>
+                              </div>
+                            </>) : (
+                              <p className="text-xs text-muted-foreground text-center py-2">Выберите блок</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Встроенные элементы */}
+                      <div className="border rounded-lg overflow-hidden">
+                        <button onClick={() => toggleSection('set-extras')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                          {openSections.has('set-extras') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                          ✨ Встроенные элементы ({selBlock ? blockExtras.length : 0})
+                        </button>
+                        {openSections.has('set-extras') && (
+                          <div className="p-3 space-y-2 border-t">
+                            {selBlock ? (
+                              <p className="text-xs text-muted-foreground text-center py-2">Редактируйте через карандаш (✏️) на блоке</p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground text-center py-2">Выберите блок</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
+
+                {/* ─── Проект ─── */}
                 <div className="border rounded-lg overflow-hidden">
-                  <button onClick={() => toggleSection('set-basic')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
-                    {openSections.has('set-basic') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                    📝 Основные
+                  <button onClick={() => toggleSection('set-project')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                    {openSections.has('set-project') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    📁 Проект
                   </button>
-                  {openSections.has('set-basic') && (
-                  <div className="p-3 space-y-3 border-t">
-                    <div>
-                      <Label className="text-xs">Название сайта</Label>
-                      <Input value={website.name} onChange={e => setWebsite(prev => ({ ...prev, name: e.target.value }))} className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Описание</Label>
-                      <Input value={website.description || ''} onChange={e => setWebsite(prev => ({ ...prev, description: e.target.value }))} className="mt-1" />
-                    </div>
-                  </div>
-                  )}
-                </div>
-                {/* SEO — collapsible */}
-                <div className="border rounded-lg overflow-hidden">
-                  <button onClick={() => toggleSection('set-seo')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
-                    {openSections.has('set-seo') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                    🔍 SEO
-                  </button>
-                  {openSections.has('set-seo') && (
-                  <div className="p-3 space-y-3 border-t">
-                    <div>
-                      <Label className="text-xs">SEO Заголовок</Label>
-                      <Input value={website.seoTitle || ''} onChange={e => setWebsite(prev => ({ ...prev, seoTitle: e.target.value }))} className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">SEO Описание</Label>
-                      <Input value={website.seoDescription || ''} onChange={e => setWebsite(prev => ({ ...prev, seoDescription: e.target.value }))} className="mt-1" />
-                    </div>
-                  </div>
-                  )}
-                </div>
-                {/* Publish status — collapsible */}
-                <div className="border rounded-lg overflow-hidden">
-                  <button onClick={() => toggleSection('set-publish')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
-                    {openSections.has('set-publish') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                    🌐 Публикация
-                  </button>
-                  {openSections.has('set-publish') && (
-                  <div className="p-3 space-y-3 border-t">
-                    <div className={`flex items-center gap-2 p-3 rounded-xl ${website.published ? 'bg-green-50 border border-green-200' : 'bg-muted border border-border'}`}>
-                      <div className={`w-2 h-2 rounded-full ${website.published ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                      <span className="text-sm">{website.published ? 'Опубликован' : 'Черновик'}</span>
-                    </div>
-                    {website.published && (
-                      <div>
-                        <Label className="text-xs">Ссылка на сайт</Label>
-                        <div className="flex gap-2 mt-1">
-                          <Input value={`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`} readOnly className="text-xs" />
-                          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('Скопировано!'); }}>
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => window.open(`${import.meta.env.BASE_URL}site/${website.id}`, '_blank')}>
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
+                  {openSections.has('set-project') && (
+                  <div className="p-3 space-y-2 border-t">
+                    {/* Основные */}
+                    <div className="border rounded-lg overflow-hidden">
+                      <button onClick={() => toggleSection('set-basic')} className="w-full flex items-center gap-2 p-2 text-left text-[11px] font-medium hover:bg-muted/50 transition-colors">
+                        {openSections.has('set-basic') ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        📝 Основные
+                      </button>
+                      {openSections.has('set-basic') && (
+                      <div className="p-3 space-y-3 border-t">
+                        <div>
+                          <Label className="text-xs">Название сайта</Label>
+                          <Input value={website.name} onChange={e => setWebsite(prev => ({ ...prev, name: e.target.value }))} className="mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Описание</Label>
+                          <Input value={website.description || ''} onChange={e => setWebsite(prev => ({ ...prev, description: e.target.value }))} className="mt-1" />
                         </div>
                       </div>
-                    )}
+                      )}
+                    </div>
+                    {/* SEO */}
+                    <div className="border rounded-lg overflow-hidden">
+                      <button onClick={() => toggleSection('set-seo')} className="w-full flex items-center gap-2 p-2 text-left text-[11px] font-medium hover:bg-muted/50 transition-colors">
+                        {openSections.has('set-seo') ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        🔍 SEO
+                      </button>
+                      {openSections.has('set-seo') && (
+                      <div className="p-3 space-y-3 border-t">
+                        <div>
+                          <Label className="text-xs">SEO Заголовок</Label>
+                          <Input value={website.seoTitle || ''} onChange={e => setWebsite(prev => ({ ...prev, seoTitle: e.target.value }))} className="mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">SEO Описание</Label>
+                          <Input value={website.seoDescription || ''} onChange={e => setWebsite(prev => ({ ...prev, seoDescription: e.target.value }))} className="mt-1" />
+                        </div>
+                      </div>
+                      )}
+                    </div>
+                    {/* Публикация */}
+                    <div className="border rounded-lg overflow-hidden">
+                      <button onClick={() => toggleSection('set-publish')} className="w-full flex items-center gap-2 p-2 text-left text-[11px] font-medium hover:bg-muted/50 transition-colors">
+                        {openSections.has('set-publish') ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        🌐 Публикация
+                      </button>
+                      {openSections.has('set-publish') && (
+                      <div className="p-3 space-y-3 border-t">
+                        <div className={`flex items-center gap-2 p-3 rounded-xl ${website.published ? 'bg-green-50 border border-green-200' : 'bg-muted border border-border'}`}>
+                          <div className={`w-2 h-2 rounded-full ${website.published ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                          <span className="text-sm">{website.published ? 'Опубликован' : 'Черновик'}</span>
+                        </div>
+                        {website.published && (
+                          <div>
+                            <Label className="text-xs">Ссылка на сайт</Label>
+                            <div className="flex gap-2 mt-1">
+                              <Input value={`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`} readOnly className="text-xs" />
+                              <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL}site/${website.id}`); toast.success('Скопировано!'); }}>
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => window.open(`${import.meta.env.BASE_URL}site/${website.id}`, '_blank')}>
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      )}
+                    </div>
+                    <Button variant="outline" className="w-full" onClick={handleSave}>
+                      <Save className="w-4 h-4 mr-2" /> Сохранить настройки
+                    </Button>
                   </div>
                   )}
                 </div>
-                <Button variant="outline" className="w-full" onClick={handleSave}>
-                  <Save className="w-4 h-4 mr-2" /> Сохранить настройки
-                </Button>
               </div>
             )}
           </div>
