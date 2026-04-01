@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppWebsite, WebsiteBlock, WebsiteBlockType, WebsitePage } from '@/types/website';
 import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
 import { WebsitePreview } from '@/components/WebsiteBuilder/WebsitePreview';
-import { WebsiteBlockEditor } from '@/components/WebsiteBuilder/WebsiteBlockEditor';
+import { WebsiteBlockEditor, EXTRA_TYPES, newExtra } from '@/components/WebsiteBuilder/WebsiteBlockEditor';
 import { WEBSITE_TEMPLATES, TEMPLATE_CATEGORIES, TemplateCategory } from '@/components/WebsiteBuilder/WebsiteTemplates';
 import { getCustomBlockTypes } from '@/components/AIAssistant/useAIAssistant';
 import { Button } from '@/components/ui/button';
@@ -758,9 +758,63 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                         </button>
                         {openSections.has('set-extras') && (
                           <div className="p-3 space-y-2 border-t">
-                            {selBlock ? (
-                              <p className="text-xs text-muted-foreground text-center py-2">Редактируйте через карандаш (✏️) на блоке</p>
-                            ) : (
+                            {selBlock ? (<>
+                              {blockExtras.length === 0 && (
+                                <p className="text-xs text-muted-foreground text-center py-2">Нет элементов. Добавьте кнопку, поиск, значок и др.</p>
+                              )}
+                              {blockExtras.map((extra, ei) => (
+                                <div key={ei} className="border rounded-lg p-2 space-y-1.5 bg-muted/20">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm">{EXTRA_TYPES.find(t => t.type === extra.type)?.icon || '📦'}</span>
+                                    <span className="text-xs font-medium flex-1">{EXTRA_TYPES.find(t => t.type === extra.type)?.label || extra.type}</span>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
+                                      if (ei > 0) { const arr = [...blockExtras]; [arr[ei - 1], arr[ei]] = [arr[ei], arr[ei - 1]]; updateSelBlock({ extras: arr }); }
+                                    }}>↑</Button>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
+                                      if (ei < blockExtras.length - 1) { const arr = [...blockExtras]; [arr[ei], arr[ei + 1]] = [arr[ei + 1], arr[ei]]; updateSelBlock({ extras: arr }); }
+                                    }}>↓</Button>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => updateSelBlock({ extras: blockExtras.filter((_, j) => j !== ei) })}>
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                  {Object.entries(extra.content || {}).map(([k, v]) => (
+                                    <div key={k} className="flex gap-2 items-center">
+                                      <span className="text-[10px] text-muted-foreground w-16 shrink-0">{k}</span>
+                                      {typeof v === 'boolean' ? (
+                                        <input type="checkbox" checked={v} onChange={e => {
+                                          const arr = [...blockExtras]; arr[ei] = { ...arr[ei], content: { ...arr[ei].content, [k]: e.target.checked } }; updateSelBlock({ extras: arr });
+                                        }} />
+                                      ) : typeof v === 'string' && k.toLowerCase().includes('color') ? (
+                                        <Input type="color" value={v || '#000000'} className="h-6 w-16" onChange={e => {
+                                          const arr = [...blockExtras]; arr[ei] = { ...arr[ei], content: { ...arr[ei].content, [k]: e.target.value } }; updateSelBlock({ extras: arr });
+                                        }} />
+                                      ) : typeof v === 'string' || typeof v === 'number' ? (
+                                        <Input value={String(v)} className="h-6 text-[11px]" onChange={e => {
+                                          const arr = [...blockExtras]; arr[ei] = { ...arr[ei], content: { ...arr[ei].content, [k]: typeof v === 'number' ? Number(e.target.value) : e.target.value } }; updateSelBlock({ extras: arr });
+                                        }} />
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                              {openSections.has('set-extras-add') ? (
+                                <div className="grid grid-cols-4 gap-1 p-2 border rounded-lg bg-background">
+                                  {EXTRA_TYPES.map(et => (
+                                    <button key={et.type} className="flex flex-col items-center gap-1 p-2 rounded hover:bg-muted transition-colors text-center" onClick={() => {
+                                      updateSelBlock({ extras: [...blockExtras, newExtra(et.type)] });
+                                      toggleSection('set-extras-add');
+                                    }}>
+                                      <span className="text-lg">{et.icon}</span>
+                                      <span className="text-[10px]">{et.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <Button size="sm" variant="outline" className="w-full" onClick={() => toggleSection('set-extras-add')}>
+                                  <Plus className="w-3 h-3 mr-1" /> Добавить элемент
+                                </Button>
+                              )}
+                            </>) : (
                               <p className="text-xs text-muted-foreground text-center py-2">Выберите блок</p>
                             )}
                           </div>
