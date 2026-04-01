@@ -825,6 +825,39 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                   );
                 })()}
 
+                {/* ─── Страница ─── */}
+                <div className="border rounded-lg overflow-hidden">
+                  <button onClick={() => toggleSection('set-page')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                    {openSections.has('set-page') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    📄 Страница
+                  </button>
+                  {openSections.has('set-page') && (
+                    <div className="p-3 space-y-3 border-t">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><Label className="text-xs">Фон страницы</Label><Input type="color" value={website.globalStyles?.backgroundColor || '#ffffff'} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, backgroundColor: e.target.value } }))} className="h-9 mt-1 cursor-pointer" /></div>
+                        <div><Label className="text-xs">Цвет текста</Label><Input type="color" value={website.globalStyles?.textColor || '#1e293b'} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, textColor: e.target.value } }))} className="h-9 mt-1 cursor-pointer" /></div>
+                      </div>
+                      <div><Label className="text-xs">Шрифт</Label>
+                        <select value={website.globalStyles?.fontFamily || ''} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, fontFamily: e.target.value } }))} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
+                          <option value="">По умолчанию</option>
+                          <option value="Inter, sans-serif">Inter</option>
+                          <option value="'Roboto', sans-serif">Roboto</option>
+                          <option value="'Open Sans', sans-serif">Open Sans</option>
+                          <option value="'Montserrat', sans-serif">Montserrat</option>
+                          <option value="'Playfair Display', serif">Playfair Display</option>
+                          <option value="'Merriweather', serif">Merriweather</option>
+                          <option value="'Fira Code', monospace">Fira Code</option>
+                          <option value="Georgia, serif">Georgia</option>
+                          <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                        </select>
+                      </div>
+                      <div><Label className="text-xs">Мин. высота страницы</Label><Input value={website.globalStyles?.minHeight || '600px'} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, minHeight: e.target.value } }))} onBlur={e => { const t = e.target.value.trim(); if (t && /^\d+(\.\d+)?$/.test(t)) setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, minHeight: t + 'px' } })); }} placeholder="600px" className="mt-1 text-xs" /></div>
+                      <div><Label className="text-xs">Макс. ширина контента</Label><Input value={website.globalStyles?.maxWidth || ''} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, maxWidth: e.target.value } }))} onBlur={e => { const t = e.target.value.trim(); if (t && /^\d+(\.\d+)?$/.test(t)) setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, maxWidth: t + 'px' } })); }} placeholder="1200px" className="mt-1 text-xs" /></div>
+                      <div><Label className="text-xs">Скругление (глобальное)</Label><Input value={website.globalStyles?.borderRadius || ''} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, borderRadius: e.target.value } }))} onBlur={e => { const t = e.target.value.trim(); if (t && /^\d+(\.\d+)?$/.test(t)) setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, borderRadius: t + 'px' } })); }} placeholder="8px" className="mt-1 text-xs" /></div>
+                    </div>
+                  )}
+                </div>
+
                 {/* ─── Проект ─── */}
                 <div className="border rounded-lg overflow-hidden">
                   <button onClick={() => toggleSection('set-project')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -924,7 +957,8 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
         <main className="flex-1 overflow-auto bg-muted/30 p-4">
           <div
             ref={canvasRef}
-            className={`${viewWidths[viewMode]} transition-all duration-300 bg-background rounded-2xl shadow-xl min-h-[600px] border relative`}
+            className={`${viewWidths[viewMode]} transition-all duration-300 bg-background rounded-2xl shadow-xl border relative`}
+            style={{ minHeight: website.globalStyles?.minHeight || '600px' }}
             onDragOver={handleCanvasDragOver}
             onDragLeave={handleCanvasDragLeave}
             onDrop={handleCanvasDrop}
@@ -966,6 +1000,28 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 <span className="text-xs text-primary font-medium">+ Разместить здесь</span>
               </div>
             )}
+            {/* Page height resize handle */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-2 cursor-row-resize z-20 group/ph flex items-end justify-center"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const startY = e.clientY;
+                const el = canvasRef.current;
+                if (!el) return;
+                const startH = el.offsetHeight;
+                const onMove = (ev: MouseEvent) => {
+                  const newH = Math.max(200, startH + (ev.clientY - startY));
+                  setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, minHeight: newH + 'px' } }));
+                };
+                const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor = ''; document.body.style.userSelect = ''; };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+                document.body.style.cursor = 'row-resize';
+                document.body.style.userSelect = 'none';
+              }}
+            >
+              <div className="w-16 h-1 rounded-full bg-border group-hover/ph:bg-primary/60 transition-colors mb-0.5" />
+            </div>
           </div>
         </main>
       </div>

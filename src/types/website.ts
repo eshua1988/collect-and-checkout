@@ -75,6 +75,7 @@ export interface AppWebsite {
     textColor?: string;
     borderRadius?: string;
     maxWidth?: string;
+    minHeight?: string;
   };
   seoTitle?: string;
   seoDescription?: string;
