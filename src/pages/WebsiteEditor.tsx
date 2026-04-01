@@ -664,6 +664,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                   const blockStyles = selBlock?.styles || {};
                   const blockContent = selBlock?.content || {};
                   const blockExtras = selBlock?.extras || [];
+                  const normPx = (v: string) => { const t = v.trim(); if (!t) return t; return t.split(/\s+/).map(s => /^\d+(\.\d+)?$/.test(s) ? s + 'px' : s).join(' '); };
                   const updateSelBlock = (updates: Partial<WebsiteBlock>) => {
                     if (!selBlock) return;
                     const updated = { ...selBlock, ...updates };
@@ -692,9 +693,9 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                           <div className="p-3 space-y-3 border-t">
                             {selBlock ? (<>
                               <p className="text-[10px] text-muted-foreground">Блок: {selBlock.type}</p>
-                              <div><Label className="text-xs">Отступы (padding)</Label><Input value={blockStyles.padding || ''} onChange={e => setBlockStyle('padding', e.target.value)} placeholder="16px 24px" className="mt-1 text-xs" /></div>
-                              <div><Label className="text-xs">Мин. высота</Label><Input value={blockStyles.minHeight || ''} onChange={e => setBlockStyle('minHeight', e.target.value)} placeholder="200px" className="mt-1 text-xs" /></div>
-                              <div><Label className="text-xs">Макс. ширина</Label><Input value={blockStyles.maxWidth || ''} onChange={e => setBlockStyle('maxWidth', e.target.value)} placeholder="1200px" className="mt-1 text-xs" /></div>
+                              <div><Label className="text-xs">Отступы (padding)</Label><Input value={blockStyles.padding || ''} onChange={e => setBlockStyle('padding', e.target.value)} onBlur={e => { const n = normPx(e.target.value); if (n !== e.target.value) setBlockStyle('padding', n); }} placeholder="16px 24px" className="mt-1 text-xs" /></div>
+                              <div><Label className="text-xs">Мин. высота</Label><Input value={blockStyles.minHeight || ''} onChange={e => setBlockStyle('minHeight', e.target.value)} onBlur={e => { const n = normPx(e.target.value); if (n !== e.target.value) setBlockStyle('minHeight', n); }} placeholder="200px" className="mt-1 text-xs" /></div>
+                              <div><Label className="text-xs">Макс. ширина</Label><Input value={blockStyles.maxWidth || ''} onChange={e => setBlockStyle('maxWidth', e.target.value)} onBlur={e => { const n = normPx(e.target.value); if (n !== e.target.value) setBlockStyle('maxWidth', n); }} placeholder="1200px" className="mt-1 text-xs" /></div>
                             </>) : (
                               <p className="text-xs text-muted-foreground text-center py-2">Выберите блок</p>
                             )}
@@ -712,8 +713,8 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                           <div className="p-3 space-y-3 border-t">
                             {selBlock ? (<>
                               <div className="grid grid-cols-2 gap-2">
-                                <div><Label className="text-xs">Фон</Label><Input type="color" value={blockContent.bgColor || blockStyles.bgColor || blockStyles.backgroundColor || '#ffffff'} onChange={e => { setBlockContent('bgColor', e.target.value); setBlockStyle('bgColor', e.target.value); }} className="h-9 mt-1 cursor-pointer" /></div>
-                                <div><Label className="text-xs">Текст</Label><Input type="color" value={blockContent.textColor || blockStyles.textColor || blockStyles.color || '#1e293b'} onChange={e => { setBlockContent('textColor', e.target.value); setBlockStyle('textColor', e.target.value); }} className="h-9 mt-1 cursor-pointer" /></div>
+                                <div><Label className="text-xs">Фон</Label><Input type="color" value={blockContent.bgColor || blockStyles.bgColor || blockStyles.backgroundColor || '#ffffff'} onChange={e => updateSelBlock({ content: { ...blockContent, bgColor: e.target.value }, styles: { ...blockStyles, bgColor: e.target.value } })} className="h-9 mt-1 cursor-pointer" /></div>
+                                <div><Label className="text-xs">Текст</Label><Input type="color" value={blockContent.textColor || blockStyles.textColor || blockStyles.color || '#1e293b'} onChange={e => updateSelBlock({ content: { ...blockContent, textColor: e.target.value }, styles: { ...blockStyles, textColor: e.target.value } })} className="h-9 mt-1 cursor-pointer" /></div>
                               </div>
                               {(blockContent.align !== undefined || ['hero', 'text', 'button', 'cta', 'newsletter', 'quote'].includes(selBlock.type)) && (
                                 <div>
@@ -728,7 +729,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                                 </div>
                               )}
                               <div className="grid grid-cols-2 gap-2">
-                                <div><Label className="text-xs">Скругление</Label><Input value={blockStyles.borderRadius || ''} onChange={e => setBlockStyle('borderRadius', e.target.value)} placeholder="8px" className="mt-1 text-xs" /></div>
+                                <div><Label className="text-xs">Скругление</Label><Input value={blockStyles.borderRadius || ''} onChange={e => setBlockStyle('borderRadius', e.target.value)} onBlur={e => { const n = normPx(e.target.value); if (n !== e.target.value) setBlockStyle('borderRadius', n); }} placeholder="8px" className="mt-1 text-xs" /></div>
                                 <div><Label className="text-xs">Тень</Label>
                                   <select value={blockStyles.boxShadow || ''} onChange={e => setBlockStyle('boxShadow', e.target.value)} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
                                     <option value="">Нет</option>
@@ -740,7 +741,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                               </div>
                               <div><Label className="text-xs">Рамка</Label><Input value={blockStyles.border || ''} onChange={e => setBlockStyle('border', e.target.value)} placeholder="1px solid #e2e8f0" className="mt-1 text-xs" /></div>
                               <div className="grid grid-cols-2 gap-2">
-                                <div><Label className="text-xs">Размер шрифта</Label><Input value={blockStyles.fontSize || ''} onChange={e => setBlockStyle('fontSize', e.target.value)} placeholder="16px" className="mt-1 text-xs" /></div>
+                                <div><Label className="text-xs">Размер шрифта</Label><Input value={blockStyles.fontSize || ''} onChange={e => setBlockStyle('fontSize', e.target.value)} onBlur={e => { const n = normPx(e.target.value); if (n !== e.target.value) setBlockStyle('fontSize', n); }} placeholder="16px" className="mt-1 text-xs" /></div>
                                 <div><Label className="text-xs">Прозрачность</Label><Input type="range" min="0" max="1" step="0.05" value={blockStyles.opacity || '1'} onChange={e => setBlockStyle('opacity', e.target.value)} className="mt-2" /></div>
                               </div>
                             </>) : (

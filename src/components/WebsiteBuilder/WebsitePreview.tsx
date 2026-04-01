@@ -348,8 +348,16 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
       ? { position: 'absolute', left: block.position!.x, top: block.position!.y, zIndex: isSelected ? 15 : 10 }
       : {};
 
+    // Split: sizing on wrapper, visual styles on inner content wrapper
+    const { maxWidth, minHeight, margin, ...visualStyle } = blockStyle;
+    const sizeStyle: React.CSSProperties = {};
+    if (maxWidth) sizeStyle.maxWidth = maxWidth;
+    if (minHeight) sizeStyle.minHeight = minHeight;
+    if (margin) sizeStyle.margin = margin;
+    if (visualStyle.borderRadius && !visualStyle.overflow) visualStyle.overflow = 'hidden';
+
     return (
-      <div key={block.id} data-block-wrap data-block-id={block.id} className={wrapperClass} style={{ ...blockStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
+      <div key={block.id} data-block-wrap data-block-id={block.id} className={wrapperClass} style={{ ...sizeStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
         {onClick && (
           <div className={`absolute top-2 right-2 z-10 flex items-center gap-1 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
             {/* Move handle */}
@@ -364,11 +372,13 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
             </div>
           </div>
         )}
-        {node}
-        {/* Render extras at bottom of any block (except navbar which renders inline) */}
-        {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
-          <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
-        )}
+        <div style={visualStyle}>
+          {node}
+          {/* Render extras at bottom of any block (except navbar which renders inline) */}
+          {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
+            <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
+          )}
+        </div>
         {/* Resize handles — only when block is selected and editable */}
         {isSelected && onStyleUpdate && (
           <>
@@ -387,11 +397,11 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
               <div className="absolute bottom-0.5 right-0.5 w-2 h-2 border-b-2 border-r-2 border-primary/40 group-hover/rc:border-primary transition-colors" />
             </div>
             {/* Size / position indicator */}
-            {(blockStyle.minHeight || blockStyle.maxWidth || hasPosition) && (
+            {(minHeight || maxWidth || hasPosition) && (
               <div className="absolute bottom-1 left-1 text-[9px] text-primary/60 bg-background/80 px-1 rounded z-20">
                 {hasPosition && `X:${Math.round(block.position!.x)} Y:${Math.round(block.position!.y)}`}
-                {hasPosition && (blockStyle.maxWidth || blockStyle.minHeight) && ' | '}
-                {blockStyle.maxWidth && `W:${blockStyle.maxWidth}`}{blockStyle.maxWidth && blockStyle.minHeight && ' '}{blockStyle.minHeight && `H:${blockStyle.minHeight}`}
+                {hasPosition && (maxWidth || minHeight) && ' | '}
+                {maxWidth && `W:${maxWidth}`}{maxWidth && minHeight && ' '}{minHeight && `H:${minHeight}`}
               </div>
             )}
           </>
