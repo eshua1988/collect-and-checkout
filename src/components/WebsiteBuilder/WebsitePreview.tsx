@@ -1037,7 +1037,7 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
   const positionedBlocks = displayBlocks.filter(b => b.position && (b.position.x || b.position.y));
 
   return (
-    <div className="relative" style={containerStyle} data-canvas>
+    <div className="relative min-h-full" style={containerStyle} data-canvas>
       {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock))}
       {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock))}
     </div>
