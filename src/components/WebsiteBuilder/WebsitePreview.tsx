@@ -220,7 +220,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   if (bs.boxShadow) blockStyle.boxShadow = bs.boxShadow;
   if (bs.border) blockStyle.border = bs.border;
   if (bs.opacity) blockStyle.opacity = bs.opacity;
-  if (bs.backgroundImage) blockStyle.backgroundImage = bs.backgroundImage;
+  if (bs.backgroundImage) { blockStyle.backgroundImage = bs.backgroundImage; blockStyle.backgroundRepeat = 'no-repeat'; }
   if (bs.backgroundSize) blockStyle.backgroundSize = bs.backgroundSize;
   if (bs.backgroundPosition) blockStyle.backgroundPosition = bs.backgroundPosition;
   if (bs.maxWidth) blockStyle.maxWidth = bs.maxWidth;
@@ -382,7 +382,19 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           </div>
         )}
         <div style={visualStyle}>
+          {/* Overlay image — top position */}
+          {c.overlayImage && c.overlayPosition === 'top' && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}>
+              <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
+            </div>
+          )}
           {node}
+          {/* Overlay image — bottom/left/right/center */}
+          {c.overlayImage && c.overlayPosition !== 'top' && (
+            <div style={{ display: 'flex', justifyContent: c.overlayPosition === 'left' ? 'flex-start' : c.overlayPosition === 'right' ? 'flex-end' : 'center', padding: '8px 16px' }}>
+              <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
+            </div>
+          )}
           {/* Render extras at bottom of any block (except navbar which renders inline) */}
           {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
             <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>

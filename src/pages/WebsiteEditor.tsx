@@ -744,6 +744,55 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                                 <div><Label className="text-xs">Размер шрифта</Label><Input value={blockStyles.fontSize || ''} onChange={e => setBlockStyle('fontSize', e.target.value)} onBlur={e => { const n = normPx(e.target.value); if (n !== e.target.value) setBlockStyle('fontSize', n); }} placeholder="16px" className="mt-1 text-xs" /></div>
                                 <div><Label className="text-xs">Прозрачность</Label><Input type="range" min="0" max="1" step="0.05" value={blockStyles.opacity || '1'} onChange={e => setBlockStyle('opacity', e.target.value)} className="mt-2" /></div>
                               </div>
+                              {/* Фоновое изображение */}
+                              <div>
+                                <Label className="text-xs">🖼️ Фоновое изображение</Label>
+                                {blockStyles.backgroundImage ? (
+                                  <div className="mt-1 space-y-1">
+                                    <div className="relative w-full h-20 rounded border overflow-hidden">
+                                      <img src={blockStyles.backgroundImage.replace(/^url\(['"]?|['"]?\)$/g, '')} className="w-full h-full object-cover" />
+                                      <button onClick={() => { const s = { ...blockStyles }; delete s.backgroundImage; delete s.backgroundSize; delete s.backgroundPosition; updateSelBlock({ styles: s }); }} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs hover:bg-destructive/80">×</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-1">
+                                      <select value={blockStyles.backgroundSize || 'cover'} onChange={e => setBlockStyle('backgroundSize', e.target.value)} className="h-7 text-[10px] rounded border bg-background px-1"><option value="cover">Cover</option><option value="contain">Contain</option><option value="auto">Auto</option></select>
+                                      <select value={blockStyles.backgroundPosition || 'center'} onChange={e => setBlockStyle('backgroundPosition', e.target.value)} className="h-7 text-[10px] rounded border bg-background px-1"><option value="center">Center</option><option value="top">Top</option><option value="bottom">Bottom</option><option value="left">Left</option><option value="right">Right</option></select>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="mt-1 flex gap-1">
+                                    <Input value={''} onChange={e => { if (e.target.value) setBlockStyle('backgroundImage', `url(${e.target.value})`); }} placeholder="URL..." className="text-xs h-8 flex-1" />
+                                    <label className="h-8 px-2 flex items-center gap-1 text-xs rounded border bg-muted/50 hover:bg-muted cursor-pointer shrink-0">
+                                      📁
+                                      <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => { setBlockStyle('backgroundImage', `url(${ev.target?.result})`); setBlockStyle('backgroundSize', 'cover'); setBlockStyle('backgroundPosition', 'center'); }; r.readAsDataURL(f); } e.target.value = ''; }} />
+                                    </label>
+                                  </div>
+                                )}
+                              </div>
+                              {/* Картинка поверх блока */}
+                              <div>
+                                <Label className="text-xs">📷 Картинка в блоке</Label>
+                                {blockContent.overlayImage ? (
+                                  <div className="mt-1 space-y-1">
+                                    <div className="relative w-full h-20 rounded border overflow-hidden">
+                                      <img src={blockContent.overlayImage} className="w-full h-full object-contain" />
+                                      <button onClick={() => setBlockContent('overlayImage', '')} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs hover:bg-destructive/80">×</button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1">
+                                      <select value={blockContent.overlayPosition || 'bottom'} onChange={e => setBlockContent('overlayPosition', e.target.value)} className="h-7 text-[10px] rounded border bg-background px-1"><option value="top">Сверху</option><option value="bottom">Снизу</option><option value="left">Слева</option><option value="right">Справа</option><option value="center">Центр</option></select>
+                                      <Input value={blockContent.overlayMaxWidth || '100%'} onChange={e => setBlockContent('overlayMaxWidth', e.target.value)} className="h-7 text-[10px]" placeholder="100%" />
+                                      <Input value={blockContent.overlayBorderRadius || ''} onChange={e => setBlockContent('overlayBorderRadius', e.target.value)} className="h-7 text-[10px]" placeholder="8px" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="mt-1 flex gap-1">
+                                    <Input value={''} onChange={e => { if (e.target.value) setBlockContent('overlayImage', e.target.value); }} placeholder="URL..." className="text-xs h-8 flex-1" />
+                                    <label className="h-8 px-2 flex items-center gap-1 text-xs rounded border bg-muted/50 hover:bg-muted cursor-pointer shrink-0">
+                                      📁
+                                      <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => setBlockContent('overlayImage', ev.target?.result as string); r.readAsDataURL(f); } e.target.value = ''; }} />
+                                    </label>
+                                  </div>
+                                )}
+                              </div>
                             </>) : (
                               <p className="text-xs text-muted-foreground text-center py-2">Выберите блок</p>
                             )}

@@ -187,7 +187,17 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
       case 'image':
         return (
           <div className="space-y-3">
-            <div><Label>URL изображения</Label><Input value={content.src || ''} onChange={e => set('src', e.target.value)} placeholder="https://..." /></div>
+            <div>
+              <Label>Изображение</Label>
+              <div className="flex gap-1 mt-1">
+                <Input value={content.src || ''} onChange={e => set('src', e.target.value)} placeholder="URL..." className="flex-1" />
+                <label className="h-9 px-3 flex items-center gap-1 text-sm rounded border bg-muted/50 hover:bg-muted cursor-pointer shrink-0">
+                  📁 Файл
+                  <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => set('src', ev.target?.result as string); r.readAsDataURL(f); } e.target.value = ''; }} />
+                </label>
+              </div>
+              {content.src && <img src={content.src} className="mt-2 w-full h-24 object-contain rounded border" />}
+            </div>
             <div><Label>Подпись</Label><Input value={content.caption || ''} onChange={e => set('caption', e.target.value)} /></div>
             <div><Label>Ссылка при клике</Label><Input value={content.href || ''} onChange={e => set('href', e.target.value)} /></div>
           </div>
