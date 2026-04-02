@@ -1027,7 +1027,6 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
 
   // Global container styles
   const containerStyle: React.CSSProperties = {};
-  if (gs?.backgroundColor) containerStyle.backgroundColor = gs.backgroundColor;
   if (gs?.textColor) containerStyle.color = gs.textColor;
   if (gs?.fontFamily) containerStyle.fontFamily = gs.fontFamily;
   if (gs?.maxWidth) containerStyle.maxWidth = gs.maxWidth;
