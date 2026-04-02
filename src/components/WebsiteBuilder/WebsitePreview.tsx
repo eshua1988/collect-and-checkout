@@ -1,4 +1,5 @@
 import { WebsiteBlock, WebsitePage, WebsiteBlockExtra, AppWebsite } from '@/types/website';
+import { Trash2 } from 'lucide-react';
 import { useEffect, useState, useRef, useCallback } from 'react';
 
 /** Render embedded extras inline */
@@ -55,6 +56,7 @@ interface WebsitePreviewProps {
   onEditBlock?: (blockId: string) => void;
   onBlockStyleUpdate?: (blockId: string, styles: Record<string, string>) => void;
   onBlockPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void;
+  onDeleteBlock?: (blockId: string) => void;
   selectedBlockId?: string | null;
   globalStyles?: GlobalStyles;
 }
@@ -199,7 +201,7 @@ function NavLinkWithPreview({ link, pages, onNavigate, textColor, navBgColor }: 
   );
 }
 
-function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void, onEdit?: (id: string) => void) {
+function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void, onEdit?: (id: string) => void, onDelete?: (id: string) => void) {
   const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
@@ -371,6 +373,12 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
             <div data-edit-btn className="px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/80" onClick={(e) => { e.stopPropagation(); onEdit?.(block.id); }}>
               ✏️
             </div>
+            {/* Delete button */}
+            {onDelete && (
+              <div data-edit-btn className="px-1.5 py-0.5 text-xs rounded bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/80" onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </div>
+            )}
           </div>
         )}
         <div style={visualStyle}>
@@ -982,7 +990,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   }
 }
 
-export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onEditBlock, onBlockStyleUpdate, onBlockPositionUpdate, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
+export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onEditBlock, onBlockStyleUpdate, onBlockPositionUpdate, onDeleteBlock, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
   // Determine which blocks to display: use pages if available
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
 
@@ -1030,8 +1038,8 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
 
   return (
     <div className="relative" style={containerStyle} data-canvas>
-      {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock))}
-      {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock))}
+      {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock))}
+      {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock))}
     </div>
   );
 }

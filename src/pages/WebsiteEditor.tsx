@@ -978,6 +978,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
               }}
               onBlockStyleUpdate={updateBlockStyles}
               onBlockPositionUpdate={updateBlockPosition}
+              onDeleteBlock={deleteBlock}
               selectedBlockId={selectedBlockId}
               globalStyles={website.globalStyles}
             />
