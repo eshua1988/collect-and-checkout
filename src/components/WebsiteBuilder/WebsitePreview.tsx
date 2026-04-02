@@ -207,6 +207,8 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
 
   // Merge block.styles into a CSSProperties object
   const blockStyle: React.CSSProperties = {};
+  if (bs.bgColor || bs.backgroundColor) blockStyle.backgroundColor = bs.bgColor || bs.backgroundColor;
+  if (bs.textColor || bs.color) blockStyle.color = bs.textColor || bs.color;
   if (bs.borderRadius) blockStyle.borderRadius = bs.borderRadius;
   if (bs.padding) blockStyle.padding = bs.padding;
   if (bs.margin) blockStyle.margin = bs.margin;
