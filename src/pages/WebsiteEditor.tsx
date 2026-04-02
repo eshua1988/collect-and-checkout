@@ -1005,7 +1005,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
         <main className="flex-1 overflow-auto bg-muted/30 p-4">
           <div
             ref={canvasRef}
-            className={`${viewWidths[viewMode]} transition-[max-width] duration-300 rounded-2xl shadow-xl border relative overflow-hidden`}
+            className={`${viewWidths[viewMode]} transition-[max-width] duration-300 rounded-2xl shadow-xl border relative`}
             style={{ backgroundColor: website.globalStyles?.backgroundColor || 'var(--background)' }}
             onDragOver={handleCanvasDragOver}
             onDragLeave={handleCanvasDragLeave}
