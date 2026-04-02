@@ -851,7 +851,6 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                           <option value="'Comic Sans MS', cursive">Comic Sans</option>
                         </select>
                       </div>
-                      <div><Label className="text-xs">Мин. высота страницы</Label><Input value={website.globalStyles?.minHeight || '600px'} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, minHeight: e.target.value } }))} onBlur={e => { const t = e.target.value.trim(); if (t && /^\d+(\.\d+)?$/.test(t)) setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, minHeight: t + 'px' } })); }} placeholder="600px" className="mt-1 text-xs" /></div>
                       <div><Label className="text-xs">Макс. ширина контента</Label><Input value={website.globalStyles?.maxWidth || ''} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, maxWidth: e.target.value } }))} onBlur={e => { const t = e.target.value.trim(); if (t && /^\d+(\.\d+)?$/.test(t)) setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, maxWidth: t + 'px' } })); }} placeholder="1200px" className="mt-1 text-xs" /></div>
                       <div><Label className="text-xs">Скругление (глобальное)</Label><Input value={website.globalStyles?.borderRadius || ''} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, borderRadius: e.target.value } }))} onBlur={e => { const t = e.target.value.trim(); if (t && /^\d+(\.\d+)?$/.test(t)) setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, borderRadius: t + 'px' } })); }} placeholder="8px" className="mt-1 text-xs" /></div>
                     </div>
@@ -957,8 +956,8 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
         <main className="flex-1 overflow-auto bg-muted/30 p-4">
           <div
             ref={canvasRef}
-            className={`${viewWidths[viewMode]} transition-all duration-300 rounded-2xl shadow-xl border relative overflow-hidden`}
-            style={{ minHeight: website.globalStyles?.minHeight || '600px', backgroundColor: website.globalStyles?.backgroundColor || 'var(--background)' }}
+            className={`${viewWidths[viewMode]} transition-all duration-300 rounded-2xl shadow-xl border relative`}
+            style={{ backgroundColor: website.globalStyles?.backgroundColor || 'var(--background)' }}
             onDragOver={handleCanvasDragOver}
             onDragLeave={handleCanvasDragLeave}
             onDrop={handleCanvasDrop}
@@ -1001,28 +1000,6 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 <span className="text-xs text-primary font-medium">+ Разместить здесь</span>
               </div>
             )}
-            {/* Page height resize handle */}
-            <div
-              className="absolute bottom-0 left-0 right-0 h-2 cursor-row-resize z-20 group/ph flex items-end justify-center"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                const startY = e.clientY;
-                const el = canvasRef.current;
-                if (!el) return;
-                const startH = el.offsetHeight;
-                const onMove = (ev: MouseEvent) => {
-                  const newH = Math.max(200, startH + (ev.clientY - startY));
-                  setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, minHeight: newH + 'px' } }));
-                };
-                const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor = ''; document.body.style.userSelect = ''; };
-                document.addEventListener('mousemove', onMove);
-                document.addEventListener('mouseup', onUp);
-                document.body.style.cursor = 'row-resize';
-                document.body.style.userSelect = 'none';
-              }}
-            >
-              <div className="w-16 h-1 rounded-full bg-border group-hover/ph:bg-primary/60 transition-colors mb-0.5" />
-            </div>
           </div>
         </main>
       </div>
