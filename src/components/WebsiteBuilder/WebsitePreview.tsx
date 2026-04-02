@@ -203,7 +203,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
-  const wrapperClass = `relative group cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2' : 'hover:ring-2 hover:ring-primary/40 hover:ring-offset-1'}`;
+  const wrapperClass = `relative group cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary ring-inset' : 'hover:ring-2 hover:ring-primary/40 hover:ring-inset'}`;
 
   // Merge block.styles into a CSSProperties object
   const blockStyle: React.CSSProperties = {};
