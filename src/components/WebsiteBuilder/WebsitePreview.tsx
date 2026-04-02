@@ -354,7 +354,6 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     if (maxWidth) sizeStyle.maxWidth = maxWidth;
     if (minHeight) sizeStyle.minHeight = minHeight;
     if (margin) sizeStyle.margin = margin;
-    if (visualStyle.borderRadius && !visualStyle.overflow) visualStyle.overflow = 'hidden';
 
     return (
       <div key={block.id} data-block-wrap data-block-id={block.id} className={wrapperClass} style={{ ...sizeStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
