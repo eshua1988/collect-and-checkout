@@ -1003,7 +1003,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
 }
 
 export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onEditBlock, onBlockStyleUpdate, onBlockPositionUpdate, onDeleteBlock, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
-  // Determine which blocks to display: use pages if available
+  // Determine which blocks to display: always use the blocks prop (already filtered by parent)
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
 
   // Sync with external currentPageSlug prop
@@ -1011,14 +1011,8 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
     if (currentPageSlug) setActiveSlug(currentPageSlug);
   }, [currentPageSlug]);
 
-  let displayBlocks = blocks;
-  let hasPages = false;
-
-  if (pages && pages.length > 0) {
-    hasPages = true;
-    const activePage = pages.find(p => p.slug === activeSlug) || pages[0];
-    displayBlocks = activePage?.blocks || [];
-  }
+  const hasPages = !!(pages && pages.length > 0);
+  const displayBlocks = blocks;
 
   const handleNavigate = (slug: string) => {
     if (hasPages) {
