@@ -3,6 +3,56 @@ import { Trash2, Type } from 'lucide-react';
 import { useEffect, useState, useRef, useCallback } from 'react';
 
 /** Inline rich text editor with floating format toolbar */
+const EDITOR_FONT_SIZES = [
+  { label: '10', value: '10px' }, { label: '12', value: '12px' }, { label: '14', value: '14px' },
+  { label: '16', value: '16px' }, { label: '18', value: '18px' }, { label: '20', value: '20px' },
+  { label: '24', value: '24px' }, { label: '28', value: '28px' }, { label: '32', value: '32px' },
+  { label: '36', value: '36px' }, { label: '48', value: '48px' }, { label: '64', value: '64px' },
+  { label: '72', value: '72px' }, { label: '96', value: '96px' },
+];
+
+const EDITOR_FONTS = [
+  { label: 'По умолчанию', value: 'inherit' },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Georgia', value: 'Georgia, serif' },
+  { label: 'Times New Roman', value: "'Times New Roman', serif" },
+  { label: 'Courier New', value: "'Courier New', monospace" },
+  { label: 'Verdana', value: 'Verdana, sans-serif' },
+  { label: 'Trebuchet MS', value: "'Trebuchet MS', sans-serif" },
+  { label: 'Inter', value: 'Inter, sans-serif' },
+  { label: 'Roboto', value: 'Roboto, sans-serif' },
+  { label: 'Poppins', value: 'Poppins, sans-serif' },
+  { label: 'Montserrat', value: 'Montserrat, sans-serif' },
+  { label: 'Open Sans', value: "'Open Sans', sans-serif" },
+  { label: 'Lato', value: 'Lato, sans-serif' },
+  { label: 'Oswald', value: 'Oswald, sans-serif' },
+  { label: 'Playfair Display', value: "'Playfair Display', serif" },
+  { label: 'Raleway', value: 'Raleway, sans-serif' },
+  { label: 'Nunito', value: 'Nunito, sans-serif' },
+  { label: 'Comic Sans', value: "'Comic Sans MS', cursive" },
+];
+
+const EDITOR_COLOR_PALETTE = [
+  // Blacks & Whites
+  '#000000','#111827','#1f2937','#374151','#4b5563','#6b7280',
+  '#9ca3af','#d1d5db','#e5e7eb','#f3f4f6','#f9fafb','#ffffff',
+  // Reds & Pinks
+  '#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171',
+  '#fca5a5','#fecaca','#ec4899','#f43f5e','#fb7185','#fda4af',
+  // Oranges & Yellows
+  '#7c2d12','#c2410c','#ea580c','#f97316','#fb923c','#fdba74',
+  '#78350f','#b45309','#d97706','#f59e0b','#fbbf24','#fde68a',
+  // Greens
+  '#14532d','#15803d','#16a34a','#22c55e','#4ade80','#86efac',
+  '#bbf7d0','#134e4a','#0f766e','#14b8a6','#2dd4bf','#99f6e4',
+  // Blues & Cyans
+  '#1e3a5f','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd',
+  '#0e7490','#0891b2','#06b6d4','#67e8f9','#a5f3fc','#cffafe',
+  // Purples & Indigos
+  '#3730a3','#4338ca','#4f46e5','#6366f1','#818cf8','#a5b4fc',
+  '#6d28d9','#7c3aed','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe',
+];
+
 function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: string; initialHtml: string; onSave: (html: string) => void; onClose: () => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -35,7 +85,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
     const rect = range.getBoundingClientRect();
     const editorRect = editorRef.current.closest('[data-block-wrap]')?.getBoundingClientRect();
     if (editorRect) {
-      setToolbarPos({ x: rect.left - editorRect.left + rect.width / 2, y: rect.top - editorRect.top - 52 });
+      setToolbarPos({ x: rect.left - editorRect.left + rect.width / 2, y: rect.top - editorRect.top - 8 });
     }
     setShowToolbar(true);
   }, [saveRange]);
@@ -53,7 +103,35 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
 
   const applyColor = (color: string) => {
     setCurrentColor(color);
-    cmd('foreColor', color);
+    restoreRange();
+    document.execCommand('foreColor', false, color);
+    editorRef.current?.focus();
+  };
+
+  const applyFontSize = (px: string) => {
+    restoreRange();
+    document.execCommand('styleWithCSS', false, 'true');
+    document.execCommand('fontSize', false, '7');
+    if (editorRef.current) {
+      editorRef.current.querySelectorAll('font[size="7"]').forEach(el => {
+        const span = document.createElement('span');
+        span.style.fontSize = px;
+        span.innerHTML = (el as HTMLElement).innerHTML;
+        el.parentNode?.replaceChild(span, el);
+      });
+    }
+    document.execCommand('styleWithCSS', false, 'false');
+    editorRef.current?.focus();
+  };
+
+  const applyFont = (family: string) => {
+    restoreRange();
+    if (family === 'inherit') {
+      document.execCommand('removeFormat', false, undefined);
+    } else {
+      document.execCommand('fontName', false, family);
+    }
+    editorRef.current?.focus();
   };
 
   const handleSave = () => {
@@ -66,7 +144,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
       title={title}
       onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
       onClick={e => { e.preventDefault(); e.stopPropagation(); onClick(); }}
-      className={`h-7 min-w-[28px] px-1 rounded hover:bg-muted text-xs flex items-center justify-center ${className}`}
+      className={`h-7 min-w-[26px] px-1 rounded hover:bg-muted text-xs flex items-center justify-center ${className}`}
     >{children}</button>
   );
 
@@ -75,66 +153,92 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
       {showToolbar && (
         <div
           ref={toolbarRef}
-          className="absolute z-50 flex flex-wrap items-center gap-0.5 bg-popover border rounded-xl shadow-xl px-2 py-1.5 max-w-[420px]"
+          className="absolute z-50 bg-popover border rounded-xl shadow-2xl p-2 w-[420px]"
           style={{ left: toolbarPos.x, top: Math.max(4, toolbarPos.y), transform: 'translateX(-50%)' }}
           onClick={e => e.stopPropagation()}
           onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
         >
-          {/* Heading / paragraph */}
-          <TB onClick={() => cmd('formatBlock', 'h1')} title="H1" className="font-extrabold">H1</TB>
-          <TB onClick={() => cmd('formatBlock', 'h2')} title="H2" className="font-bold">H2</TB>
-          <TB onClick={() => cmd('formatBlock', 'h3')} title="H3" className="font-semibold">H3</TB>
-          <TB onClick={() => cmd('formatBlock', 'p')} title="Параграф">¶</TB>
-          <div className="w-px h-5 bg-border mx-0.5" />
-          {/* Font size */}
-          <select
-            title="Размер шрифта"
-            onMouseDown={e => e.stopPropagation()}
-            onChange={e => { restoreRange(); document.execCommand('fontSize', false, e.target.value); editorRef.current?.focus(); }}
-            className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer"
-          >
-            <option value="">Размер</option>
-            <option value="1">Tiny</option>
-            <option value="2">Мелкий</option>
-            <option value="3">Обычный</option>
-            <option value="4">Крупный</option>
-            <option value="5">Большой</option>
-            <option value="6">Очень большой</option>
-            <option value="7">Огромный</option>
-          </select>
-          <div className="w-px h-5 bg-border mx-0.5" />
-          {/* Format */}
-          <TB onClick={() => cmd('bold')} title="Жирный" className="font-bold">B</TB>
-          <TB onClick={() => cmd('italic')} title="Курсив" className="italic">I</TB>
-          <TB onClick={() => cmd('underline')} title="Подчёркнутый" className="underline">U</TB>
-          <TB onClick={() => cmd('strikeThrough')} title="Зачёркнутый" className="line-through">S</TB>
-          <div className="w-px h-5 bg-border mx-0.5" />
-          {/* Align */}
-          <TB onClick={() => cmd('justifyLeft')} title="По левому краю">⬅</TB>
-          <TB onClick={() => cmd('justifyCenter')} title="По центру">↔</TB>
-          <TB onClick={() => cmd('justifyRight')} title="По правому краю">➡</TB>
-          <div className="w-px h-5 bg-border mx-0.5" />
-          {/* Color picker + presets */}
-          <input
-            type="color"
-            value={currentColor}
-            title="Цвет текста"
-            onMouseDown={e => { e.stopPropagation(); saveRange(); }}
-            onChange={e => applyColor(e.target.value)}
-            className="w-7 h-7 rounded cursor-pointer border p-0.5 shrink-0"
-          />
-          {['#ef4444','#f97316','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#ec4899','#ffffff','#1e293b'].map(col => (
-            <button
-              key={col}
-              title={col}
-              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
-              onClick={e => { e.preventDefault(); e.stopPropagation(); applyColor(col); }}
-              className="w-5 h-5 rounded-full border border-gray-300 shrink-0 hover:scale-110 transition-transform"
-              style={{ backgroundColor: col }}
-            />
-          ))}
-          <div className="w-px h-5 bg-border mx-0.5" />
-          <TB onClick={() => cmd('removeFormat')} title="Убрать форматирование" className="text-muted-foreground">✕</TB>
+          {/* ── Row 1: Headings · Font family · Font size · Format · Align ── */}
+          <div className="flex flex-wrap items-center gap-0.5">
+            <TB onClick={() => cmd('formatBlock', 'h1')} title="H1" className="font-extrabold text-[11px]">H1</TB>
+            <TB onClick={() => cmd('formatBlock', 'h2')} title="H2" className="font-bold text-[11px]">H2</TB>
+            <TB onClick={() => cmd('formatBlock', 'h3')} title="H3" className="font-semibold text-[11px]">H3</TB>
+            <TB onClick={() => cmd('formatBlock', 'p')} title="Параграф" className="text-[11px]">¶</TB>
+            <div className="w-px h-5 bg-border mx-0.5" />
+
+            {/* Font family */}
+            <select
+              title="Шрифт"
+              onMouseDown={e => e.stopPropagation()}
+              onChange={e => { applyFont(e.target.value); }}
+              defaultValue=""
+              className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer max-w-[110px]"
+            >
+              <option value="" disabled>Шрифт</option>
+              {EDITOR_FONTS.map(f => (
+                <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
+              ))}
+            </select>
+
+            {/* Font size (numeric px) */}
+            <select
+              title="Размер"
+              onMouseDown={e => e.stopPropagation()}
+              onChange={e => { applyFontSize(e.target.value); }}
+              defaultValue=""
+              className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer w-16"
+            >
+              <option value="" disabled>Размер</option>
+              {EDITOR_FONT_SIZES.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+            <div className="w-px h-5 bg-border mx-0.5" />
+
+            {/* Format */}
+            <TB onClick={() => cmd('bold')} title="Жирный" className="font-bold">B</TB>
+            <TB onClick={() => cmd('italic')} title="Курсив" className="italic">I</TB>
+            <TB onClick={() => cmd('underline')} title="Подчёркнутый" className="underline">U</TB>
+            <TB onClick={() => cmd('strikeThrough')} title="Зачёркнутый" className="line-through">S</TB>
+            <div className="w-px h-5 bg-border mx-0.5" />
+
+            {/* Align */}
+            <TB onClick={() => cmd('justifyLeft')} title="По левому краю">⬅</TB>
+            <TB onClick={() => cmd('justifyCenter')} title="По центру">↔</TB>
+            <TB onClick={() => cmd('justifyRight')} title="По правому краю">➡</TB>
+            <div className="w-px h-5 bg-border mx-0.5" />
+
+            <TB onClick={() => cmd('removeFormat')} title="Убрать форматирование" className="text-muted-foreground text-[11px]">✕</TB>
+          </div>
+
+          {/* ── Row 2: Rich colour palette ── */}
+          <div className="border-t border-border/50 mt-1.5 pt-1.5 flex items-start gap-1.5">
+            {/* Custom colour picker */}
+            <div className="flex flex-col items-center gap-1 shrink-0">
+              <input
+                type="color"
+                value={currentColor}
+                title="Произвольный цвет"
+                onMouseDown={e => { e.stopPropagation(); saveRange(); }}
+                onChange={e => applyColor(e.target.value)}
+                className="w-8 h-8 rounded cursor-pointer border-2 border-border p-0.5 shrink-0"
+              />
+              <span className="text-[9px] text-muted-foreground leading-none">HEX</span>
+            </div>
+            {/* Colour grid */}
+            <div className="grid gap-0.5" style={{ gridTemplateColumns: 'repeat(12, 20px)' }}>
+              {EDITOR_COLOR_PALETTE.map(col => (
+                <button
+                  key={col}
+                  title={col}
+                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); applyColor(col); }}
+                  className="w-5 h-5 rounded-sm border border-black/10 hover:scale-125 hover:z-10 transition-transform relative shrink-0"
+                  style={{ backgroundColor: col, outline: currentColor === col ? '2px solid #3b82f6' : 'none', outlineOffset: '1px' }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       )}
       <div
