@@ -1451,8 +1451,8 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         </section>
       );
 
-    case 'video':
-      const getEmbedUrl = (url: string) => {
+    case 'video': {
+      const getVideoEmbedUrl = (url: string) => {
         const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
         if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
         return url;
@@ -1462,11 +1462,12 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           {c.title && <h2 className="text-3xl font-bold mb-6 text-center">{c.title}</h2>}
           {c.url ? (
             <div className="aspect-video rounded-2xl overflow-hidden shadow-xl">
-              <iframe src={getEmbedUrl(c.url)} className="w-full h-full" allowFullScreen title="video" />
+              <iframe src={getVideoEmbedUrl(c.url)} className="w-full h-full" allowFullScreen title="video" />
             </div>
           ) : <div className="aspect-video bg-muted rounded-2xl flex items-center justify-center text-muted-foreground">🎬 Вставьте URL видео</div>}
         </section>
       );
+    }
 
     case 'countdown':
       return wrap(
