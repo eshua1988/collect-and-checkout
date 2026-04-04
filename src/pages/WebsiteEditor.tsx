@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppWebsite, WebsiteBlock, WebsiteBlockType, WebsitePage } from '@/types/website';
 import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
@@ -142,6 +142,19 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     window.addEventListener('websiteStorageUpdated', handler);
     return () => window.removeEventListener('websiteStorageUpdated', handler);
   }, [website.id, website.updatedAt, getWebsite]);
+
+  // Auto-save: persist to localStorage on every change (debounced)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const initialLoadRef = useRef(true);
+  useEffect(() => {
+    // Skip the very first render (initial load from storage)
+    if (initialLoadRef.current) { initialLoadRef.current = false; return; }
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      saveWebsite({ ...website, updatedAt: Date.now() });
+    }, 600);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [website.blocks, website.pages, website.name, website.globalStyles]);
 
   // Custom AI-registered block types
   const [customBlocks, setCustomBlocks] = useState(() => getCustomBlockTypes());

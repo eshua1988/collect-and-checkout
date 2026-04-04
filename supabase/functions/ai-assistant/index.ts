@@ -86,18 +86,24 @@ newNodeTypes:[{nodeType,label,icon,color:"bg-green-500/10 text-green-400 border-
 // === WEBSITE-SPECIFIC ===
 const PROMPT_WEBSITE = `
 
-## БЛОКИ САЙТА:
-- **navbar**: {logo,links:[{label,href}],ctaText,ctaHref,bgColor,textColor}
-- **hero**: {title,subtitle,ctaText,ctaHref,bgColor,textColor,align:"center"|"left"}
-- **text**: {title,body,align} | **image**: {src,caption} | **video**: {url,title}
-- **features**: {title,items:[{icon,title,desc}]}
+## БЛОКИ САЙТА (ТОЧНЫЕ имена свойств — используй ТОЛЬКО эти!):
+- **navbar**: {logo,links:[{label,href,mode?:"navigate"|"megamenu",sections?:[{title,links:[{label,href}]}],description?}],ctaText,ctaHref,bgColor,textColor,sticky?:boolean}
+- **hero**: {title,subtitle,ctaText,ctaHref,bgColor,textColor,align:"center"|"left",heroImage?,overlay?:0-1,searchFields?:[{label,placeholder,type}],searchButtonText?}
+- **text**: {title,body,align}
+- **image**: {src,caption}
+- **video**: {url,title}
+- **features**: {title,columns?:2|3|4,items:[{icon?,image?,title,desc}]}
 - **gallery**: {title,images:[{url,caption}]}
 - **pricing**: {title,plans:[{name,price,features[],highlighted}]}
-- **testimonials**: {title,items:[{name,text,rating}]}
+- **testimonials**: {title,items:[{name,text,rating,avatar?,role?}]}
 - **team**: {title,members:[{avatar,name,role}]}
-- **faq**: {title,items:[{q,a}]} | **contact**: {title,email,phone,address,social:[{name,url}]}
-- **countdown**: {title,targetDate} | **button**: {text,href,bgColor,align}
-- **footer**: {text,links:[{label,href}]} | **divider**: {} | **html**: {code}
+- **faq**: {title,items:[{q,a}]}
+- **contact**: {title,subtitle?,email,phone,address,hours?,buttonText?,buttonHref?,image?}
+- **countdown**: {title,targetDate}
+- **button**: {text,href,bgColor,align}
+- **footer**: {companyName?,description?,copyright,links:[{label,href}],socialLinks?:[{platform,url,icon}],paymentIcons?:[{name,image?}]}
+- **divider**: {}
+- **html**: {code}
 - **stats**: {title,items:[{value,label}],bgColor,textColor}
 - **logos**: {title,items:[{name,logo}],grayscale}
 - **cta**: {title,subtitle,ctaText,ctaHref,bgColor,textColor}
@@ -105,12 +111,24 @@ const PROMPT_WEBSITE = `
 - **social**: {title,links:[{platform,url,icon}]}
 - **newsletter**: {title,subtitle,buttonText,bgColor}
 - **banner**: {text,bgColor,textColor,closable}
-- **tabs**: {tabs:[{title,content}]} | **accordion**: {title,items:[{title,content}]}
+- **tabs**: {tabs:[{title,content}]}
+- **accordion**: {title,items:[{title,content}]}
 - **progress**: {title,items:[{label,value,color}]}
 - **comparison**: {title,columns[],rows:[{feature,values[]}]}
-- **marquee**: {text,speed,bgColor,textColor} | **quote**: {text,author,bgColor}
-- **map**: {address,embedUrl,height} | **columns**: {columns:[{title,text}]}
-- **spacer**: {height} | **form**: {title,fields:[{label,type}],buttonText,bgColor}
+- **marquee**: {text,speed,bgColor,textColor}
+- **quote**: {text,author,bgColor}
+- **map**: {address,embedUrl,height}
+- **columns**: {columns:[{title,text}]}
+- **spacer**: {height}
+- **form**: {title,fields:[{label,type}],buttonText,bgColor}
+- **cards**: {title,subtitle?,columns?:3,items:[{image?,title,desc,link?,badge?}]}
+- **carousel**: {title,subtitle?,iconImage?,linkText?,linkHref?,items:[{image?,title,desc,link?}]}
+- **product**: {title,price,priceNote?,badge?,images:[url],specs?:[{label,value}],ctaText,ctaHref}
+- **linkList**: {title,columns?:3,groups:[{heading,links:[{label,href}]}]}
+- **searchBar**: {title?,bgColor?,fields:[{label,placeholder,type}],buttonText}
+- **imageText**: {title,body,image,ctaText?,ctaHref?,imagePosition?:"left"|"right",bgColor?}
+
+КРИТИЧНО: footer использует "copyright" (НЕ "text"), "companyName", "socialLinks" (НЕ "social"). contact использует "buttonText" (НЕ кнопку action).
 
 ### globalStyles: {primaryColor,secondaryColor,accentColor,fontFamily("Inter"|"Roboto"|"Playfair Display"|"Montserrat"|"Poppins"|"Merriweather"),headingFont,backgroundColor,textColor,borderRadius,maxWidth}
 ### block.styles: {padding,margin,fontSize,fontWeight,fontFamily,boxShadow,border,opacity,backgroundImage,backgroundSize,maxWidth,minHeight,textTransform,letterSpacing,lineHeight,borderRadius}

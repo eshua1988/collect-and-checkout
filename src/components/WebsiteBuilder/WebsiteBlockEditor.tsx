@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { WebsiteBlock, WebsiteBlockExtra } from '@/types/website';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,14 +40,26 @@ interface WebsiteBlockEditorProps {
 export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: WebsiteBlockEditorProps) {
   const [content, setContent] = useState({ ...block.content });
   const [styles, setStyles] = useState({ ...(block.styles || {}) });
+  const localEdit = useRef(false);
+
+  // Sync local state when block prop changes externally (e.g. from IIFE styles editor)
+  useEffect(() => {
+    if (!localEdit.current) {
+      setContent({ ...block.content });
+      setStyles({ ...(block.styles || {}) });
+    }
+    localEdit.current = false;
+  }, [block.content, block.styles]);
 
   const save = () => onUpdate({ ...block, content, styles });
 
   const set = (key: string, value: any) => {
+    localEdit.current = true;
     setContent(prev => ({ ...prev, [key]: value }));
   };
 
   const setStyle = (key: string, value: any) => {
+    localEdit.current = true;
     setStyles(prev => ({ ...prev, [key]: value }));
   };
 
