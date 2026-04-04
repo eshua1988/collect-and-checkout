@@ -852,6 +852,233 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           </div>
         );
 
+      case 'steps':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>Расположение</Label>
+              <select value={content.layout || 'horizontal'} onChange={e => set('layout', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm mt-1">
+                <option value="horizontal">Горизонтально</option>
+                <option value="vertical">Вертикально</option>
+              </select>
+            </div>
+            {(content.items || []).map((item: any, i: number) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <Input placeholder="№ / иконка" value={item.icon || item.number || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], icon: e.target.value, number: e.target.value }; set('items', items); }} className="w-20" />
+                  <Input placeholder="Заголовок шага" value={item.title || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], title: e.target.value }; set('items', items); }} />
+                  <Button size="icon" variant="ghost" onClick={() => set('items', (content.items || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+                <Textarea placeholder="Описание" rows={2} value={item.desc || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], desc: e.target.value }; set('items', items); }} />
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('items', [...(content.items || []), { number: String((content.items || []).length + 1).padStart(2, '0'), title: '', desc: '', icon: '' }])}><Plus className="w-3 h-3 mr-1" /> Добавить шаг</Button>
+          </div>
+        );
+
+      case 'checklist':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>Колонок</Label><Input type="number" min={1} max={3} value={content.columns || 1} onChange={e => set('columns', Number(e.target.value))} /></div>
+            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#ffffff'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+            {(content.items || []).map((item: any, i: number) => (
+              <div key={i} className="flex gap-2 items-center">
+                <input type="checkbox" checked={item.checked || false} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], checked: e.target.checked }; set('items', items); }} />
+                <Input placeholder="Пункт" value={item.text || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], text: e.target.value }; set('items', items); }} />
+                <Button size="icon" variant="ghost" onClick={() => set('items', (content.items || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('items', [...(content.items || []), { text: '', checked: true }])}><Plus className="w-3 h-3 mr-1" /> Добавить пункт</Button>
+          </div>
+        );
+
+      case 'iconGrid':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>Колонок</Label><Input type="number" min={2} max={6} value={content.columns || 3} onChange={e => set('columns', Number(e.target.value))} /></div>
+            {(content.items || []).map((item: any, i: number) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div className="flex gap-2">
+                  <Input placeholder="Иконка (эмодзи)" value={item.icon || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], icon: e.target.value }; set('items', items); }} className="w-24" />
+                  <Input placeholder="Название" value={item.title || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], title: e.target.value }; set('items', items); }} />
+                  <Button size="icon" variant="ghost" onClick={() => set('items', (content.items || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+                <Input placeholder="Описание" value={item.desc || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], desc: e.target.value }; set('items', items); }} />
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('items', [...(content.items || []), { icon: '⭐', title: '', desc: '' }])}><Plus className="w-3 h-3 mr-1" /> Добавить</Button>
+          </div>
+        );
+
+      case 'blogGrid':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>Колонок</Label><Input type="number" min={1} max={4} value={content.columns || 3} onChange={e => set('columns', Number(e.target.value))} /></div>
+            {(content.posts || []).map((post: any, i: number) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <Input placeholder="Категория" value={post.category || ''} onChange={e => { const posts = [...(content.posts || [])]; posts[i] = { ...posts[i], category: e.target.value }; set('posts', posts); }} className="flex-1" />
+                  <Button size="icon" variant="ghost" onClick={() => set('posts', (content.posts || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+                <Input placeholder="Заголовок статьи" value={post.title || ''} onChange={e => { const posts = [...(content.posts || [])]; posts[i] = { ...posts[i], title: e.target.value }; set('posts', posts); }} />
+                <Textarea placeholder="Краткое описание" rows={2} value={post.excerpt || ''} onChange={e => { const posts = [...(content.posts || [])]; posts[i] = { ...posts[i], excerpt: e.target.value }; set('posts', posts); }} />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="Автор" value={post.author || ''} onChange={e => { const posts = [...(content.posts || [])]; posts[i] = { ...posts[i], author: e.target.value }; set('posts', posts); }} />
+                  <Input placeholder="Время чтения" value={post.readTime || ''} onChange={e => { const posts = [...(content.posts || [])]; posts[i] = { ...posts[i], readTime: e.target.value }; set('posts', posts); }} />
+                </div>
+                <Input placeholder="URL изображения" value={post.image || ''} onChange={e => { const posts = [...(content.posts || [])]; posts[i] = { ...posts[i], image: e.target.value }; set('posts', posts); }} />
+                <Input placeholder="Ссылка статьи" value={post.link || ''} onChange={e => { const posts = [...(content.posts || [])]; posts[i] = { ...posts[i], link: e.target.value }; set('posts', posts); }} />
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('posts', [...(content.posts || []), { image: '', category: '', title: '', excerpt: '', date: new Date().toLocaleDateString('ru-RU'), link: '#', author: '', readTime: '' }])}><Plus className="w-3 h-3 mr-1" /> Добавить статью</Button>
+          </div>
+        );
+
+      case 'cookieBanner':
+        return (
+          <div className="space-y-3">
+            <div><Label>Текст уведомления</Label><Textarea value={content.text || ''} onChange={e => set('text', e.target.value)} rows={3} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Текст «Принять»</Label><Input value={content.acceptText || 'Принять'} onChange={e => set('acceptText', e.target.value)} /></div>
+              <div><Label>Текст «Отклонить»</Label><Input value={content.declineText || ''} onChange={e => set('declineText', e.target.value)} placeholder="Отклонить (опц.)" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Текст ссылки</Label><Input value={content.linkText || ''} onChange={e => set('linkText', e.target.value)} placeholder="Подробнее" /></div>
+              <div><Label>URL ссылки</Label><Input value={content.linkHref || ''} onChange={e => set('linkHref', e.target.value)} placeholder="#" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#1e293b'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+              <div><Label>Цвет текста</Label><Input type="color" value={content.textColor || '#ffffff'} onChange={e => set('textColor', e.target.value)} className="h-9" /></div>
+            </div>
+          </div>
+        );
+
+      case 'popup':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Textarea value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} rows={2} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Текст кнопки</Label><Input value={content.buttonText || ''} onChange={e => set('buttonText', e.target.value)} /></div>
+              <div><Label>Ссылка кнопки</Label><Input value={content.buttonHref || ''} onChange={e => set('buttonHref', e.target.value)} /></div>
+            </div>
+            <div><Label>Текст закрытия</Label><Input value={content.closeText || ''} onChange={e => set('closeText', e.target.value)} placeholder="Нет, спасибо" /></div>
+            <div><Label>Изображение (URL)</Label><Input value={content.image || ''} onChange={e => set('image', e.target.value)} /></div>
+            <div><Label>Задержка показа (сек)</Label><Input type="number" min={0} max={60} value={content.delay ?? 3} onChange={e => set('delay', Number(e.target.value))} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#ffffff'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+              <div><Label>Цвет текста</Label><Input type="color" value={content.textColor || '#1e293b'} onChange={e => set('textColor', e.target.value)} className="h-9" /></div>
+            </div>
+          </div>
+        );
+
+      case 'beforeAfter':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div>
+              <Label>Изображение «До»</Label>
+              <div className="flex gap-1 mt-1">
+                <Input value={content.beforeImage || ''} onChange={e => set('beforeImage', e.target.value)} placeholder="URL..." className="flex-1" />
+                <label className="h-9 px-2 flex items-center gap-1 text-xs rounded border bg-muted/50 hover:bg-muted cursor-pointer shrink-0">📁<input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => set('beforeImage', ev.target?.result as string); r.readAsDataURL(f); } e.target.value = ''; }} /></label>
+              </div>
+            </div>
+            <div>
+              <Label>Изображение «После»</Label>
+              <div className="flex gap-1 mt-1">
+                <Input value={content.afterImage || ''} onChange={e => set('afterImage', e.target.value)} placeholder="URL..." className="flex-1" />
+                <label className="h-9 px-2 flex items-center gap-1 text-xs rounded border bg-muted/50 hover:bg-muted cursor-pointer shrink-0">📁<input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => set('afterImage', ev.target?.result as string); r.readAsDataURL(f); } e.target.value = ''; }} /></label>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Подпись «До»</Label><Input value={content.beforeLabel || 'До'} onChange={e => set('beforeLabel', e.target.value)} /></div>
+              <div><Label>Подпись «После»</Label><Input value={content.afterLabel || 'После'} onChange={e => set('afterLabel', e.target.value)} /></div>
+            </div>
+            <div>
+              <Label>Положение разделителя ({content.position ?? 50}%)</Label>
+              <input type="range" min={10} max={90} value={content.position ?? 50} onChange={e => set('position', Number(e.target.value))} className="w-full mt-1" />
+            </div>
+          </div>
+        );
+
+      case 'rating':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Оценка</Label><Input type="number" min={0} max={5} step={0.1} value={content.score ?? 4.8} onChange={e => set('score', parseFloat(e.target.value))} /></div>
+              <div><Label>Максимум</Label><Input type="number" min={5} max={10} value={content.maxScore ?? 5} onChange={e => set('maxScore', Number(e.target.value))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Кол-во отзывов</Label><Input type="number" value={content.totalReviews ?? 0} onChange={e => set('totalReviews', Number(e.target.value))} /></div>
+              <div><Label>Платформа</Label><Input value={content.platform || ''} onChange={e => set('platform', e.target.value)} placeholder="Google, Yandex..." /></div>
+            </div>
+            <div className="flex items-center gap-2"><input type="checkbox" checked={content.showStars !== false} onChange={e => set('showStars', e.target.checked)} /><Label>Показывать звёзды</Label></div>
+            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#ffffff'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+            {(content.breakdown || []).length > 0 && (
+              <div>
+                <Label>Разбивка по звёздам</Label>
+                {(content.breakdown || []).map((b: any, i: number) => (
+                  <div key={i} className="flex gap-2 items-center mt-1">
+                    <span className="text-xs w-10 shrink-0">{b.stars}★</span>
+                    <Input type="number" min={0} value={b.count || 0} onChange={e => { const br = [...(content.breakdown || [])]; br[i] = { ...br[i], count: Number(e.target.value) }; set('breakdown', br); }} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'embed':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Тип</Label>
+              <select value={content.type || 'youtube'} onChange={e => set('type', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm mt-1">
+                <option value="youtube">YouTube</option>
+                <option value="vimeo">Vimeo</option>
+                <option value="maps">Google Maps</option>
+                <option value="iframe">Любой URL / iframe</option>
+              </select>
+            </div>
+            <div><Label>URL / Ссылка</Label><Input value={content.url || ''} onChange={e => set('url', e.target.value)} placeholder="https://youtube.com/watch?v=..." /></div>
+            <div><Label>Высота</Label><Input value={content.height || '450px'} onChange={e => set('height', e.target.value)} placeholder="450px" /></div>
+            <div className="flex items-center gap-2"><input type="checkbox" checked={content.autoplay || false} onChange={e => set('autoplay', e.target.checked)} /><Label>Автозапуск (YouTube/Vimeo)</Label></div>
+          </div>
+        );
+
+      case 'table':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2"><input type="checkbox" checked={content.striped || false} onChange={e => set('striped', e.target.checked)} /><Label>Чередование строк</Label></div>
+              <div className="flex items-center gap-2"><input type="checkbox" checked={content.bordered !== false} onChange={e => set('bordered', e.target.checked)} /><Label>Рамки</Label></div>
+            </div>
+            <div>
+              <Label>Заголовки столбцов (по одному на строку)</Label>
+              <Textarea rows={3} value={(content.headers || []).join('\n')} onChange={e => set('headers', e.target.value.split('\n').filter(Boolean))} placeholder="Название&#10;Значение&#10;Статус" className="mt-1" />
+            </div>
+            <div>
+              <Label>Строки данных</Label>
+              {(content.rows || []).map((row: string[], ri: number) => (
+                <div key={ri} className="flex gap-2 mt-1">
+                  <Input placeholder={`Строка ${ri + 1} (ячейки через |)`} value={Array.isArray(row) ? row.join(' | ') : ''} onChange={e => { const rows = [...(content.rows || [])]; rows[ri] = e.target.value.split(' | ').map((s: string) => s.trim()); set('rows', rows); }} />
+                  <Button size="icon" variant="ghost" onClick={() => set('rows', (content.rows || []).filter((_: any, j: number) => j !== ri))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+              ))}
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => set('rows', [...(content.rows || []), (content.headers || []).map(() => '')])}><Plus className="w-3 h-3 mr-1" /> Добавить строку</Button>
+            </div>
+          </div>
+        );
+
       default:
         // Generic editor for custom AI-registered block types — edit all content properties dynamically
         return (

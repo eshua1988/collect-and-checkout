@@ -20,7 +20,8 @@ import {
   Bell, PanelTop, ChevronsRight, ListChecks, Table2, MoveHorizontal,
   Quote, MapPin, Columns3, ClipboardList, ArrowUpDown,
   LayoutGrid, GalleryHorizontal, ShoppingBag, ListTree, Search,
-  SplitSquareVertical
+  SplitSquareVertical, ListOrdered, CheckSquare, Grid3X3, BookOpen,
+  Cookie, Layers2, SlidersHorizontal, Star as StarIcon, MonitorPlay, TableProperties
 } from 'lucide-react';
 
 const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactNode; defaultContent: Record<string, any> }[] = [
@@ -64,6 +65,16 @@ const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactN
   { type: 'linkList', label: 'Список ссылок', icon: <ListTree className="w-4 h-4" />, defaultContent: { title: 'Полезные ссылки', columns: 3, groups: [{ heading: 'Раздел 1', links: [{ label: 'Ссылка 1', href: '#' }, { label: 'Ссылка 2', href: '#' }] }, { heading: 'Раздел 2', links: [{ label: 'Ссылка 1', href: '#' }] }] } },
   { type: 'searchBar', label: 'Поиск', icon: <Search className="w-4 h-4" />, defaultContent: { title: '', fields: [{ label: 'Поиск', placeholder: 'Введите запрос...', type: 'text' }], buttonText: 'Найти', bgColor: '#ffffff' } },
   { type: 'imageText', label: 'Картинка+Текст', icon: <SplitSquareVertical className="w-4 h-4" />, defaultContent: { title: 'Заголовок', body: 'Описание раздела с информацией о вашей компании или услуге.', image: '', imagePosition: 'left', ctaText: '', ctaHref: '#', bgColor: '' } },
+  { type: 'steps', label: 'Шаги', icon: <ListOrdered className="w-4 h-4" />, defaultContent: { title: 'Как это работает', subtitle: '', items: [{ number: '01', title: 'Зарегистрируйтесь', desc: 'Создайте аккаунт бесплатно за 2 минуты', icon: '📝' }, { number: '02', title: 'Настройте', desc: 'Выберите нужные параметры', icon: '⚙️' }, { number: '03', title: 'Запустите', desc: 'Начните работу и получите результат', icon: '🚀' }], layout: 'horizontal' } },
+  { type: 'checklist', label: 'Чеклист', icon: <CheckSquare className="w-4 h-4" />, defaultContent: { title: 'Что вы получите', subtitle: '', items: [{ text: 'Функция 1', checked: true }, { text: 'Функция 2', checked: true }, { text: 'Функция 3', checked: true }, { text: 'Функция 4', checked: false }], columns: 1, bgColor: '' } },
+  { type: 'iconGrid', label: 'Иконки', icon: <Grid3X3 className="w-4 h-4" />, defaultContent: { title: 'Наши услуги', subtitle: '', columns: 3, items: [{ icon: '🎯', title: 'Услуга 1', desc: 'Краткое описание' }, { icon: '💡', title: 'Услуга 2', desc: 'Краткое описание' }, { icon: '🔥', title: 'Услуга 3', desc: 'Краткое описание' }, { icon: '🛡️', title: 'Услуга 4', desc: 'Краткое описание' }, { icon: '⚡', title: 'Услуга 5', desc: 'Краткое описание' }, { icon: '💎', title: 'Услуга 6', desc: 'Краткое описание' }] } },
+  { type: 'blogGrid', label: 'Блог', icon: <BookOpen className="w-4 h-4" />, defaultContent: { title: 'Последние статьи', subtitle: '', columns: 3, posts: [{ image: '', category: 'Категория', title: 'Заголовок статьи 1', excerpt: 'Краткое описание статьи...', date: new Date().toLocaleDateString('ru-RU'), link: '#', author: '', readTime: '5 мин' }, { image: '', category: 'Категория', title: 'Заголовок статьи 2', excerpt: 'Краткое описание статьи...', date: new Date().toLocaleDateString('ru-RU'), link: '#', author: '', readTime: '3 мин' }, { image: '', category: 'Категория', title: 'Заголовок статьи 3', excerpt: 'Краткое описание статьи...', date: new Date().toLocaleDateString('ru-RU'), link: '#', author: '', readTime: '7 мин' }] } },
+  { type: 'cookieBanner', label: 'Cookie', icon: <Cookie className="w-4 h-4" />, defaultContent: { text: 'Мы используем файлы cookie для улучшения работы сайта. Нажимая «Принять», вы соглашаетесь с нашей политикой конфиденциальности.', acceptText: 'Принять', declineText: 'Отклонить', linkText: 'Подробнее', linkHref: '#', bgColor: '#1e293b', textColor: '#ffffff', position: 'bottom' } },
+  { type: 'popup', label: 'Поп-ап', icon: <Layers2 className="w-4 h-4" />, defaultContent: { title: 'Специальное предложение!', subtitle: 'Оставьте email и получите скидку 20%', buttonText: 'Получить скидку', buttonHref: '', closeText: 'Нет, спасибо', image: '', bgColor: '#ffffff', textColor: '#1e293b', delay: 3, showOnce: true } },
+  { type: 'beforeAfter', label: 'До/После', icon: <SlidersHorizontal className="w-4 h-4" />, defaultContent: { title: 'Результаты работы', beforeImage: '', afterImage: '', beforeLabel: 'До', afterLabel: 'После', position: 50 } },
+  { type: 'rating', label: 'Рейтинг', icon: <StarIcon className="w-4 h-4" />, defaultContent: { title: 'Наш рейтинг', score: 4.8, maxScore: 5, totalReviews: 1248, platform: 'Google', showStars: true, breakdown: [{ stars: 5, count: 980 }, { stars: 4, count: 178 }, { stars: 3, count: 62 }, { stars: 2, count: 18 }, { stars: 1, count: 10 }], bgColor: '' } },
+  { type: 'embed', label: 'Встраивание', icon: <MonitorPlay className="w-4 h-4" />, defaultContent: { title: '', url: '', type: 'youtube', height: '450px', autoplay: false } },
+  { type: 'table', label: 'Таблица', icon: <TableProperties className="w-4 h-4" />, defaultContent: { title: 'Данные', headers: ['Название', 'Значение', 'Статус'], rows: [['Строка 1', 'Данные', '✅'], ['Строка 2', 'Данные', '✅'], ['Строка 3', 'Данные', '❌']], striped: true, bordered: true } },
 ];
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';

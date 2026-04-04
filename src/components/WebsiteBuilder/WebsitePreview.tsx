@@ -1322,6 +1322,278 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         </section>
       );
 
+    case 'steps':
+      return wrap(
+        <section className="py-16 px-8">
+          <div className="max-w-5xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-4 text-center">{c.title}</h2>}
+            {c.subtitle && <p className="text-muted-foreground text-center mb-12">{c.subtitle}</p>}
+            {c.layout === 'vertical' ? (
+              <div className="relative max-w-2xl mx-auto space-y-0">
+                <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-primary/20" />
+                {(c.items || []).map((item: any, i: number) => (
+                  <div key={i} className="relative flex gap-6 pb-10 last:pb-0">
+                    <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shrink-0 z-10">{item.icon || item.number || (i + 1)}</div>
+                    <div className="pt-2">
+                      <h3 className="font-bold text-lg mb-1">{item.title}</h3>
+                      <p className="text-muted-foreground text-sm">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-0 relative">
+                {(c.items || []).map((item: any, i: number, arr: any[]) => (
+                  <div key={i} className="flex flex-col items-center text-center p-6 relative">
+                    {i < arr.length - 1 && <div className="hidden md:block absolute right-0 top-12 w-full h-0.5 bg-primary/20 z-0" style={{ width: '50%', right: '-25%' }} />}
+                    <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold mb-4 z-10 shadow-md">{item.icon || item.number || (i + 1)}</div>
+                    <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground text-sm">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      );
+
+    case 'checklist':
+      return wrap(
+        <section className="py-12 px-8" style={{ backgroundColor: c.bgColor || undefined }}>
+          <div className="max-w-4xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-3 text-center">{c.title}</h2>}
+            {c.subtitle && <p className="text-muted-foreground text-center mb-8">{c.subtitle}</p>}
+            <div className={`grid grid-cols-1 ${c.columns >= 2 ? 'md:grid-cols-2' : ''} ${c.columns >= 3 ? 'lg:grid-cols-3' : ''} gap-3`}>
+              {(c.items || []).map((item: any, i: number) => (
+                <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${item.checked ? 'bg-green-50 dark:bg-green-950/30' : 'bg-muted/30'}`}>
+                  <span className={`text-xl shrink-0 mt-0.5 ${item.checked ? 'text-green-500' : 'text-muted-foreground'}`}>{item.checked ? '✅' : '☐'}</span>
+                  <span className={`text-sm font-medium ${item.checked ? '' : 'text-muted-foreground'}`}>{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'iconGrid':
+      return wrap(
+        <section className="py-16 px-8">
+          <div className="max-w-5xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-4 text-center">{c.title}</h2>}
+            {c.subtitle && <p className="text-muted-foreground text-center mb-12">{c.subtitle}</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gridTemplateColumns: `repeat(${Math.min(c.columns || 3, 6)}, minmax(0, 1fr))` }}>
+              {(c.items || []).map((item: any, i: number) => (
+                <div key={i} className="group flex flex-col items-center text-center p-6 rounded-2xl hover:bg-primary/5 transition-colors cursor-default">
+                  <span className="text-4xl mb-4 group-hover:scale-110 transition-transform inline-block">{item.icon}</span>
+                  <h3 className="font-bold text-base mb-2">{item.title}</h3>
+                  {item.desc && <p className="text-sm text-muted-foreground">{item.desc}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'blogGrid':
+      return wrap(
+        <section className="py-16 px-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-end justify-between mb-10">
+              <div>
+                {c.title && <h2 className="text-3xl font-bold">{c.title}</h2>}
+                {c.subtitle && <p className="text-muted-foreground mt-2">{c.subtitle}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2" style={{ gridTemplateColumns: `repeat(${Math.min(c.columns || 3, 4)}, minmax(0, 1fr))` , gap: '1.5rem' }}>
+              {(c.posts || []).map((post: any, i: number) => (
+                <a key={i} href={post.link || '#'} onClick={(e) => handleLinkClick(e, post.link)} className="group rounded-2xl overflow-hidden border bg-card hover:shadow-lg transition-shadow cursor-pointer">
+                  <div className="aspect-[16/9] bg-muted overflow-hidden">
+                    {post.image ? <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" /> : <div className="w-full h-full flex items-center justify-center text-3xl">📰</div>}
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      {post.category && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{post.category}</span>}
+                      {post.readTime && <span className="text-xs text-muted-foreground">{post.readTime}</span>}
+                    </div>
+                    <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">{post.title}</h3>
+                    {post.excerpt && <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{post.excerpt}</p>}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {post.author && <span>✍️ {post.author}</span>}
+                      {post.date && <span>{post.date}</span>}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'cookieBanner': {
+      return wrap(
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4" style={{ position: 'relative' }}>
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-2xl shadow-2xl p-4 sm:p-5" style={{ backgroundColor: c.bgColor || '#1e293b', color: c.textColor || '#ffffff' }}>
+            <span className="text-2xl shrink-0">🍪</span>
+            <p className="flex-1 text-sm leading-relaxed">{c.text || 'Мы используем cookie-файлы.'}</p>
+            <div className="flex gap-2 shrink-0">
+              {c.linkText && <a href={c.linkHref || '#'} className="px-3 py-1.5 text-xs rounded-lg border border-current opacity-70 hover:opacity-100 cursor-pointer">{c.linkText}</a>}
+              {c.declineText && <button className="px-3 py-1.5 text-xs rounded-lg border border-current opacity-70 hover:opacity-100">{c.declineText}</button>}
+              <button className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:opacity-90">{c.acceptText || 'Принять'}</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    case 'popup': {
+      return wrap(
+        <div className="relative py-4 px-8">
+          <div className="text-xs text-muted-foreground text-center mb-2">
+            <span className="px-2 py-0.5 rounded bg-muted">Поп-ап (показывается через {c.delay || 3}с)</span>
+          </div>
+          <div className="max-w-md mx-auto rounded-2xl border shadow-2xl overflow-hidden" style={{ backgroundColor: c.bgColor || '#ffffff', color: c.textColor || '#1e293b' }}>
+            <div className="relative">
+              {c.image && <img src={c.image} alt="" className="w-full h-40 object-cover" />}
+              <button className="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white text-sm">✕</button>
+            </div>
+            <div className="p-6 text-center">
+              {c.title && <h3 className="text-xl font-bold mb-2">{c.title}</h3>}
+              {c.subtitle && <p className="text-sm text-muted-foreground mb-4">{c.subtitle}</p>}
+              <input type="email" placeholder="Ваш email" className="w-full px-4 py-2 rounded-lg border mb-3 text-sm bg-background text-foreground" readOnly />
+              {c.buttonText && <button className="w-full px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90">{c.buttonText}</button>}
+              {c.closeText && <button className="mt-3 text-xs text-muted-foreground hover:text-foreground block mx-auto">{c.closeText}</button>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    case 'beforeAfter': {
+      return wrap(
+        <section className="py-16 px-8">
+          <div className="max-w-3xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-8 text-center">{c.title}</h2>}
+            <div className="relative rounded-2xl overflow-hidden border shadow-lg select-none" style={{ aspectRatio: '16/9', backgroundColor: '#e2e8f0' }}>
+              {/* After image (background) */}
+              {c.afterImage ? <img src={c.afterImage} alt={c.afterLabel || 'После'} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center bg-green-100"><span className="text-4xl">🟢</span></div>}
+              {/* Before image (clipped left side) */}
+              <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - (c.position ?? 50)}% 0 0)` }}>
+                {c.beforeImage ? <img src={c.beforeImage} alt={c.beforeLabel || 'До'} className="absolute inset-0 w-full h-full object-cover" /> : <div className="absolute inset-0 flex items-center justify-center bg-red-100"><span className="text-4xl">🔴</span></div>}
+              </div>
+              {/* Labels */}
+              <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/50 text-white text-xs font-medium">{c.beforeLabel || 'До'}</div>
+              <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-black/50 text-white text-xs font-medium">{c.afterLabel || 'После'}</div>
+              {/* Divider line */}
+              <div className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg pointer-events-none" style={{ left: `${c.position ?? 50}%` }}>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center text-xs">⇔</div>
+              </div>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/60 text-xs">← Перетащите →</div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    case 'rating': {
+      const score = c.score ?? 4.8;
+      const maxScore = c.maxScore ?? 5;
+      const filled = Math.round(score);
+      const total = c.totalReviews ?? 0;
+      const breakdown: any[] = c.breakdown || [];
+      const maxBreakdown = Math.max(...breakdown.map((b: any) => b.count || 0), 1);
+      return wrap(
+        <section className="py-16 px-8" style={{ backgroundColor: c.bgColor || undefined }}>
+          <div className="max-w-3xl mx-auto">
+            {c.title && <h2 className="text-3xl font-bold mb-10 text-center">{c.title}</h2>}
+            <div className="flex flex-col md:flex-row items-center gap-10">
+              <div className="text-center shrink-0">
+                <div className="text-7xl font-extrabold text-primary">{score}</div>
+                {c.showStars && <div className="flex justify-center gap-1 my-2">
+                  {Array.from({ length: maxScore }).map((_, i) => <span key={i} className="text-2xl">{i < filled ? '⭐' : '☆'}</span>)}
+                </div>}
+                {c.platform && <div className="text-sm text-muted-foreground">{c.platform}</div>}
+                {total > 0 && <div className="text-xs text-muted-foreground mt-1">{total.toLocaleString()} отзывов</div>}
+              </div>
+              {breakdown.length > 0 && (
+                <div className="flex-1 w-full space-y-2">
+                  {[...breakdown].reverse().map((b: any, i: number) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs w-5 text-right">{b.stars}★</span>
+                      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(b.count / maxBreakdown) * 100}%` }} />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-8">{b.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    case 'embed': {
+      const getEmbedUrl = () => {
+        if (!c.url) return '';
+        const url = c.url;
+        // YouTube
+        const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+        if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}${c.autoplay ? '?autoplay=1' : ''}`;
+        // Vimeo
+        const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+        if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+        // Google Maps embed URL
+        if (url.includes('google.com/maps/embed')) return url;
+        // Direct iframe src
+        return url;
+      };
+      const embedUrl = getEmbedUrl();
+      return wrap(
+        <section className="py-8 px-8">
+          {c.title && <h2 className="text-2xl font-bold mb-6 text-center">{c.title}</h2>}
+          <div className="max-w-4xl mx-auto rounded-2xl overflow-hidden border shadow-lg">
+            {embedUrl ? (
+              <iframe src={embedUrl} className="w-full border-0" style={{ height: c.height || '450px' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={c.title || 'embed'} />
+            ) : (
+              <div className="w-full flex items-center justify-center bg-muted text-muted-foreground" style={{ height: c.height || '450px' }}>
+                <div className="text-center"><span className="text-4xl block mb-2">▶️</span><p className="text-sm">Вставьте URL YouTube, Vimeo или iframe</p></div>
+              </div>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    case 'table':
+      return wrap(
+        <section className="py-12 px-8">
+          <div className="max-w-5xl mx-auto">
+            {c.title && <h2 className="text-2xl font-bold mb-6">{c.title}</h2>}
+            <div className="overflow-x-auto rounded-xl border">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-primary text-primary-foreground">
+                    {(c.headers || []).map((h: string, i: number) => (
+                      <th key={i} className="p-3 text-left text-sm font-semibold border-b border-primary/20">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(c.rows || []).map((row: string[], ri: number) => (
+                    <tr key={ri} className={`${c.striped && ri % 2 === 1 ? 'bg-muted/30' : ''} hover:bg-muted/50 transition-colors`}>
+                      {row.map((cell: string, ci: number) => (
+                        <td key={ci} className={`p-3 text-sm ${c.bordered ? 'border-b border-border' : ''}`}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      );
+
     default:
       // Generic rendering for custom AI-registered block types
       const cc = block.content || {} as any;

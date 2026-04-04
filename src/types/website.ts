@@ -39,6 +39,17 @@ export type WebsiteBlockType =
   | 'linkList'
   | 'searchBar'
   | 'imageText'
+  // New blocks
+  | 'steps'
+  | 'checklist'
+  | 'iconGrid'
+  | 'blogGrid'
+  | 'cookieBanner'
+  | 'popup'
+  | 'beforeAfter'
+  | 'rating'
+  | 'embed'
+  | 'table'
   | (string & {});
 
 export interface WebsiteBlockExtra {
