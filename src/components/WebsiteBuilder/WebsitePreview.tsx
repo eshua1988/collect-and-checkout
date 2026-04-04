@@ -60,6 +60,23 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPos, setToolbarPos] = useState({ x: 0, y: 0 });
   const [currentColor, setCurrentColor] = useState('#ef4444');
+  const showToolbarRef = useRef(false);
+
+  // Set content ONCE on mount — avoids dangerouslySetInnerHTML resetting on every re-render
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = initialHtml;
+      // Place cursor at end
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      editorRef.current.focus();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveRange = useCallback(() => {
     const sel = window.getSelection();
@@ -77,7 +94,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
   const checkSelection = useCallback(() => {
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !editorRef.current?.contains(sel.anchorNode)) {
-      setShowToolbar(false);
+      if (showToolbarRef.current) { showToolbarRef.current = false; setShowToolbar(false); }
       return;
     }
     saveRange();
@@ -87,7 +104,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
     if (editorRect) {
       setToolbarPos({ x: rect.left - editorRect.left + rect.width / 2, y: rect.top - editorRect.top - 8 });
     }
-    setShowToolbar(true);
+    if (!showToolbarRef.current) { showToolbarRef.current = true; setShowToolbar(true); }
   }, [saveRange]);
 
   useEffect(() => {
@@ -247,7 +264,6 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
         suppressContentEditableWarning
         className="outline-none min-h-[2em] cursor-text rounded-lg border border-primary/30 bg-background/50 p-3 focus:border-primary focus:ring-1 focus:ring-primary"
         style={{ whiteSpace: 'pre-wrap' }}
-        dangerouslySetInnerHTML={{ __html: initialHtml }}
         onClick={e => e.stopPropagation()}
         onMouseDown={e => e.stopPropagation()}
         onKeyDown={e => e.stopPropagation()}
@@ -698,6 +714,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           {inlineEditId === block.id && onContentUpdate && block.type !== 'text' && block.type !== 'hero' && (
             <div className="px-6 pb-4 pt-2">
               <InlineTextEditor
+                key={block.id}
                 blockId={block.id}
                 initialHtml={getBlockInitialHtml(block)}
                 onSave={(html) => onContentUpdate(block.id, { richText: html })}
@@ -760,6 +777,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
             {inlineEditId === block.id && onContentUpdate ? (
               <div className="my-4">
                 <InlineTextEditor
+                  key={block.id}
                   blockId={block.id}
                   initialHtml={getBlockInitialHtml(block)}
                   onSave={(html) => { onContentUpdate(block.id, { richText: html }); setInlineEditId?.(null); }}
@@ -795,6 +813,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         <section className="py-12 px-8 max-w-4xl mx-auto">
           {inlineEditId === block.id && onContentUpdate ? (
             <InlineTextEditor
+              key={block.id}
               blockId={block.id}
               initialHtml={getBlockInitialHtml(block)}
               onSave={(html) => { onContentUpdate(block.id, { richText: html }); setInlineEditId?.(null); }}
