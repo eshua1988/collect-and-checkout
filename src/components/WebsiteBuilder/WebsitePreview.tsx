@@ -2404,7 +2404,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         </div>
       );
 
-    default:
+    default: {
       // Generic rendering for custom AI-registered block types
       const cc = block.content || {} as any;
       const blockType = block.type?.toLowerCase() || '';
@@ -2486,6 +2486,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           )}
         </div>
       );
+    }
   }
 }
 
