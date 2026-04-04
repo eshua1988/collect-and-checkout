@@ -1079,7 +1079,182 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           </div>
         );
 
-      default:
+      // ── VOUS-inspired block editors ────────────────────────────────────────
+
+      case 'parallax':
+        return (
+          <div className="space-y-3">
+            <div><Label>Метка (eyebrow)</Label><Input value={content.eyebrow || ''} onChange={e => set('eyebrow', e.target.value)} /></div>
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Textarea rows={2} value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>URL фонового изображения</Label><Input value={content.bgImage || ''} onChange={e => set('bgImage', e.target.value)} placeholder="https://..." /></div>
+            <div><Label>Цвет фона (если нет картинки)</Label><Input type="color" value={content.bgColor || '#1a1a2e'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+            <div><Label>Затемнение (0–1)</Label><Input type="number" min={0} max={1} step={0.05} value={content.overlay ?? 0.5} onChange={e => set('overlay', parseFloat(e.target.value))} /></div>
+            <div><Label>Мин. высота (vh)</Label><Input value={content.minHeight || '70vh'} onChange={e => set('minHeight', e.target.value)} /></div>
+            <div className="flex items-center gap-2"><input type="checkbox" checked={content.uppercase || false} onChange={e => set('uppercase', e.target.checked)} /><Label>Заглавные буквы</Label></div>
+            <div><Label>Выравнивание</Label>
+              <select value={content.align || 'center'} onChange={e => set('align', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm mt-1">
+                <option value="left">Слева</option><option value="center">По центру</option><option value="right">Справа</option>
+              </select>
+            </div>
+            <div><Label>Кнопка 1 (текст)</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
+            {content.ctaText && <div><Label>Кнопка 1 (ссылка)</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>}
+            <div><Label>Кнопка 2 (текст)</Label><Input value={content.cta2Text || ''} onChange={e => set('cta2Text', e.target.value)} /></div>
+            {content.cta2Text && <div><Label>Кнопка 2 (ссылка)</Label><Input value={content.cta2Href || ''} onChange={e => set('cta2Href', e.target.value)} /></div>}
+          </div>
+        );
+
+      case 'videoBg':
+        return (
+          <div className="space-y-3">
+            <div className="p-2 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-700">💡 Вставьте ссылку YouTube для видео-фона. Видео воспроизводится автоматически без звука.</div>
+            <div><Label>Метка (eyebrow)</Label><Input value={content.eyebrow || ''} onChange={e => set('eyebrow', e.target.value)} /></div>
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Textarea rows={2} value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>YouTube URL (видео-фон)</Label><Input value={content.videoUrl || ''} onChange={e => set('videoUrl', e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></div>
+            <div><Label>Запасное фото (если нет видео)</Label><Input value={content.bgImage || ''} onChange={e => set('bgImage', e.target.value)} placeholder="https://..." /></div>
+            <div><Label>Затемнение (0–1)</Label><Input type="number" min={0} max={1} step={0.05} value={content.overlay ?? 0.55} onChange={e => set('overlay', parseFloat(e.target.value))} /></div>
+            <div><Label>Мин. высота</Label><Input value={content.minHeight || '100vh'} onChange={e => set('minHeight', e.target.value)} /></div>
+            <div className="flex items-center gap-2"><input type="checkbox" checked={content.uppercase !== false} onChange={e => set('uppercase', e.target.checked)} /><Label>Заглавные буквы</Label></div>
+            <div><Label>Кнопка 1 (текст)</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
+            {content.ctaText && <div><Label>Кнопка 1 (ссылка)</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>}
+            <div><Label>Кнопка 2 (текст)</Label><Input value={content.cta2Text || ''} onChange={e => set('cta2Text', e.target.value)} /></div>
+            {content.cta2Text && <div><Label>Кнопка 2 (ссылка)</Label><Input value={content.cta2Href || ''} onChange={e => set('cta2Href', e.target.value)} /></div>}
+          </div>
+        );
+
+      case 'eventCards':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок секции</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>Колонок</Label><Input type="number" min={1} max={4} value={content.columns || 3} onChange={e => set('columns', Number(e.target.value))} /></div>
+            <div><Label>Ссылка "Все события"</Label><Input value={content.linkText || ''} onChange={e => set('linkText', e.target.value)} /></div>
+            {content.linkText && <div><Label>URL "Все события"</Label><Input value={content.linkHref || ''} onChange={e => set('linkHref', e.target.value)} /></div>}
+            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#0f0f0f'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Карточки событий</Label>
+            {(content.items || []).map((item: any, i: number) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <Input placeholder="Категория" value={item.category || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], category: e.target.value }; set('items', items); }} className="w-28" />
+                  <Input placeholder="Заголовок" value={item.title || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], title: e.target.value }; set('items', items); }} />
+                  <Button size="icon" variant="ghost" onClick={() => set('items', (content.items || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+                <Textarea placeholder="Описание" rows={2} value={item.desc || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], desc: e.target.value }; set('items', items); }} />
+                <div className="flex gap-2">
+                  <Input placeholder="URL фото" value={item.image || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], image: e.target.value }; set('items', items); }} />
+                  <Input placeholder="Ссылка" value={item.href || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], href: e.target.value }; set('items', items); }} />
+                </div>
+                <Input placeholder='Текст ссылки ("Узнать больше")' value={item.linkText || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], linkText: e.target.value }; set('items', items); }} />
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('items', [...(content.items || []), { category: 'СОБЫТИЕ', title: '', desc: '', image: '', href: '#', linkText: 'Узнать больше' }])}><Plus className="w-3 h-3 mr-1" /> Добавить карточку</Button>
+          </div>
+        );
+
+      case 'locations':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#111111'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Локации</Label>
+            {(content.locations || []).map((loc: any, i: number) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <Input placeholder="Название" value={loc.name || ''} onChange={e => { const locs = [...(content.locations || [])]; locs[i] = { ...locs[i], name: e.target.value }; set('locations', locs); }} />
+                  <Button size="icon" variant="ghost" onClick={() => set('locations', (content.locations || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+                <Input placeholder="Расписание (9:00, 11:00, 13:00)" value={loc.times || ''} onChange={e => { const locs = [...(content.locations || [])]; locs[i] = { ...locs[i], times: e.target.value }; set('locations', locs); }} />
+                <Input placeholder="Адрес" value={loc.address || ''} onChange={e => { const locs = [...(content.locations || [])]; locs[i] = { ...locs[i], address: e.target.value }; set('locations', locs); }} />
+                <div className="flex gap-2">
+                  <Input placeholder="URL фото" value={loc.image || ''} onChange={e => { const locs = [...(content.locations || [])]; locs[i] = { ...locs[i], image: e.target.value }; set('locations', locs); }} />
+                  <Input placeholder="Ссылка Google Maps" value={loc.mapHref || ''} onChange={e => { const locs = [...(content.locations || [])]; locs[i] = { ...locs[i], mapHref: e.target.value }; set('locations', locs); }} />
+                </div>
+                <Input placeholder="Ссылка &quot;Подробнее&quot;" value={loc.href || ''} onChange={e => { const locs = [...(content.locations || [])]; locs[i] = { ...locs[i], href: e.target.value }; set('locations', locs); }} />
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('locations', [...(content.locations || []), { name: '', times: '', address: '', href: '#', mapHref: '', image: '' }])}><Plus className="w-3 h-3 mr-1" /> Добавить локацию</Button>
+          </div>
+        );
+
+      case 'values':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>Символ-разделитель (напр. ▽)</Label><Input value={content.divider || ''} onChange={e => set('divider', e.target.value)} placeholder="▽" /></div>
+            <div className="flex items-center gap-2"><input type="checkbox" checked={content.showDragHint !== false} onChange={e => set('showDragHint', e.target.checked)} /><Label>Показать подсказку DRAG</Label></div>
+            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#0a0a0a'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Пункты ценностей</Label>
+            {(content.items || []).map((item: any, i: number) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <Input placeholder={`Заголовок ${i + 1} (используйте ▽ для разделителя)`} value={item.title || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], title: e.target.value }; set('items', items); }} />
+                  <Button size="icon" variant="ghost" onClick={() => set('items', (content.items || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+                </div>
+                <Textarea placeholder="Описание" rows={2} value={item.desc || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], desc: e.target.value }; set('items', items); }} />
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('items', [...(content.items || []), { title: '', desc: '' }])}><Plus className="w-3 h-3 mr-1" /> Добавить ценность</Button>
+          </div>
+        );
+
+      case 'splitHero':
+        return (
+          <div className="space-y-3">
+            <div><Label>Метка (eyebrow)</Label><Input value={content.eyebrow || ''} onChange={e => set('eyebrow', e.target.value)} /></div>
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Текст</Label><Textarea rows={3} value={content.body || ''} onChange={e => set('body', e.target.value)} /></div>
+            <div><Label>URL изображения</Label><Input value={content.image || ''} onChange={e => set('image', e.target.value)} placeholder="https://..." /></div>
+            <div className="flex items-center gap-2"><input type="checkbox" checked={content.uppercase || false} onChange={e => set('uppercase', e.target.checked)} /><Label>Заглавные буквы</Label></div>
+            <div><Label>Цвет фона контент-стороны</Label><Input type="color" value={content.contentBg || '#0f0f0f'} onChange={e => set('contentBg', e.target.value)} className="h-9" /></div>
+            <div><Label>Цвет текста</Label><Input type="color" value={content.textColor || '#ffffff'} onChange={e => set('textColor', e.target.value)} className="h-9" /></div>
+            <div><Label>Кнопка 1 (текст)</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
+            {content.ctaText && <div><Label>Кнопка 1 (ссылка)</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>}
+            <div><Label>Кнопка 2 (текст)</Label><Input value={content.cta2Text || ''} onChange={e => set('cta2Text', e.target.value)} /></div>
+            {content.cta2Text && <div><Label>Кнопка 2 (ссылка)</Label><Input value={content.cta2Href || ''} onChange={e => set('cta2Href', e.target.value)} /></div>}
+          </div>
+        );
+
+      case 'bigQuote':
+        return (
+          <div className="space-y-3">
+            <div><Label>Метка (eyebrow)</Label><Input value={content.eyebrow || ''} onChange={e => set('eyebrow', e.target.value)} /></div>
+            <div><Label>Текст цитаты</Label><Textarea rows={4} value={content.text || ''} onChange={e => set('text', e.target.value)} /></div>
+            <div><Label>Автор</Label><Input value={content.author || ''} onChange={e => set('author', e.target.value)} /></div>
+            <div><Label>Должность / роль</Label><Input value={content.role || ''} onChange={e => set('role', e.target.value)} /></div>
+            <div><Label>Размер шрифта</Label><Input value={content.fontSize || '2rem'} onChange={e => set('fontSize', e.target.value)} placeholder="2rem" /></div>
+            <div><Label>Выравнивание</Label>
+              <select value={content.align || 'center'} onChange={e => set('align', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm mt-1">
+                <option value="left">Слева</option><option value="center">По центру</option><option value="right">Справа</option>
+              </select>
+            </div>
+            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#f8f8f8'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+            <div><Label>Цвет текста</Label><Input type="color" value={content.textColor || '#1a1a1a'} onChange={e => set('textColor', e.target.value)} className="h-9" /></div>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2"><input type="checkbox" checked={content.italic !== false} onChange={e => set('italic', e.target.checked)} /><Label>Курсив</Label></div>
+              <div className="flex items-center gap-2"><input type="checkbox" checked={content.tight || false} onChange={e => set('tight', e.target.checked)} /><Label>Плотный</Label></div>
+              <div className="flex items-center gap-2"><input type="checkbox" checked={content.openQuote !== false} onChange={e => set('openQuote', e.target.checked)} /><Label>Кавычка ❝</Label></div>
+            </div>
+            <div><Label>Текст кнопки</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
+            {content.ctaText && <div><Label>Ссылка кнопки</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>}
+          </div>
+        );
+
+      case 'announcement':
+        return (
+          <div className="space-y-3">
+            <div><Label>Основной текст</Label><Input value={content.text || ''} onChange={e => set('text', e.target.value)} /></div>
+            <div><Label>Дополнительный текст</Label><Input value={content.subtext || ''} onChange={e => set('subtext', e.target.value)} /></div>
+            <div><Label>Эмодзи (опционально)</Label><Input value={content.emoji || ''} onChange={e => set('emoji', e.target.value)} placeholder="🔥" className="w-24" /></div>
+            <div><Label>Текст кнопки</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
+            {content.ctaText && <div><Label>Ссылка кнопки</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>}
+            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#1a1a1a'} onChange={e => set('bgColor', e.target.value)} className="h-9" /></div>
+            <div><Label>Цвет текста</Label><Input type="color" value={content.textColor || '#ffffff'} onChange={e => set('textColor', e.target.value)} className="h-9" /></div>
+            <div className="flex items-center gap-2"><input type="checkbox" checked={content.closable !== false} onChange={e => set('closable', e.target.checked)} /><Label>Закрываемый</Label></div>
+          </div>
+        );
         // Generic editor for custom AI-registered block types — edit all content properties dynamically
         return (
           <div className="space-y-3">

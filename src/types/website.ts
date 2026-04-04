@@ -50,6 +50,15 @@ export type WebsiteBlockType =
   | 'rating'
   | 'embed'
   | 'table'
+  // VOUS-inspired blocks
+  | 'parallax'
+  | 'videoBg'
+  | 'eventCards'
+  | 'locations'
+  | 'values'
+  | 'splitHero'
+  | 'bigQuote'
+  | 'announcement'
   | (string & {});
 
 export interface WebsiteBlockExtra {

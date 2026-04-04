@@ -127,15 +127,36 @@ const PROMPT_WEBSITE = `
 - **linkList**: {title,columns?:3,groups:[{heading,links:[{label,href}]}]}
 - **searchBar**: {title?,bgColor?,fields:[{label,placeholder,type}],buttonText}
 - **imageText**: {title,body,image,ctaText?,ctaHref?,imagePosition?:"left"|"right",bgColor?}
+- **steps**: {title,subtitle?,items:[{number,title,desc,icon?}],layout?:"horizontal"|"vertical"}
+- **checklist**: {title,subtitle?,items:[{text,checked}],columns?:1,bgColor?}
+- **iconGrid**: {title,subtitle?,columns?:3,items:[{icon,title,desc}]}
+- **blogGrid**: {title,subtitle?,columns?:3,posts:[{image?,category,title,excerpt,date,link,author?,readTime?}]}
+- **rating**: {title,score,maxScore,totalReviews,platform?,showStars,breakdown?:[{stars,count}],bgColor?}
+- **embed**: {title?,url,type?:"youtube"|"vimeo"|"iframe",height?,autoplay?}
+- **table**: {title?,headers:[str],rows:[[cell]],striped?,bordered?}
+- **beforeAfter**: {title?,beforeImage,afterImage,beforeLabel?,afterLabel?,position?:50}
+- **cookieBanner**: {text,acceptText,declineText,linkText?,linkHref?,bgColor?,textColor?,position?:"top"|"bottom"}
+- **popup**: {title,subtitle?,buttonText,buttonHref?,closeText?,image?,bgColor?,textColor?,delay?:3,showOnce?}
+-- ── VOUS-INSPIRED BLOCKS (dark/cinematic/church style) ─────────────────────────
+- **parallax**: {title,subtitle?,eyebrow?,ctaText?,ctaHref?,cta2Text?,cta2Href?,bgImage?,bgColor?,overlay?:0-1,minHeight?:"70vh",uppercase?:bool,align?:"center"|"left"}  ← Full-screen parallax bg section
+- **videoBg**: {title,subtitle?,eyebrow?,ctaText?,ctaHref?,cta2Text?,cta2Href?,videoUrl?(YouTube),bgImage?,bgColor?,overlay?:0-1,minHeight?:"100vh",uppercase?:bool}  ← Full-screen YouTube video background hero
+- **eventCards**: {title,subtitle?,linkText?,linkHref?,columns?:3,bgColor?,textColor?,items:[{category,title,desc?,image?,href?,linkText?}]}  ← Dark event grid with category badges (EVENT/COLLECTION/COMMUNITY)
+- **locations**: {title,subtitle?,bgColor?,textColor?,locations:[{name,times,address,href?,mapHref?,image?}]}  ← Multi-location cards with service times and map links
+- **values**: {title,subtitle?,bgColor?,textColor?,divider?:"▽",showDragHint?:bool,items:[{title,desc}]}  ← Horizontal drag carousel of numbered values (01, 02...) with optional ▽ divider in title
+- **splitHero**: {title,body?,eyebrow?,ctaText?,ctaHref?,cta2Text?,cta2Href?,image?,bgColor?,contentBg?,textColor?,minHeight?,uppercase?,imageFlex?,contentFlex?}  ← Split screen: image left/right + content
+- **bigQuote**: {text,author?,role?,eyebrow?,ctaText?,ctaHref?,bgColor?,textColor?,fontSize?,fontWeight?,italic?,tight?,align?,openQuote?}  ← Large oversized quote / mission statement
+- **announcement**: {text,subtext?,emoji?,ctaText?,ctaHref?,bgColor?,textColor?,closable?:bool}  ← Slim promotional announcement bar (top/bottom banner)
 
 КРИТИЧНО: footer использует "copyright" (НЕ "text"), "companyName", "socialLinks" (НЕ "social"). contact использует "buttonText" (НЕ кнопку action).
 
 ### globalStyles: {primaryColor,secondaryColor,accentColor,fontFamily("Inter"|"Roboto"|"Open Sans"|"Lato"|"Montserrat"|"Poppins"|"Nunito"|"Raleway"|"Ubuntu"|"PT Sans"|"Manrope"|"DM Sans"|"Plus Jakarta Sans"|"Outfit"|"Space Grotesk"|"Barlow"|"IBM Plex Sans"|"Nunito Sans"|"Figtree"|"Lexend"|"Josefin Sans"|"Karla"|"Quicksand"|"Playfair Display"|"Merriweather"|"PT Serif"|"Lora"|"EB Garamond"|"Cormorant"|"Spectral"|"Libre Baskerville"|"Crimson Pro"|"Bitter"|"Bodoni Moda"|"Oswald"|"Russo One"|"Bebas Neue"|"Comfortaa"|"Anton"|"Teko"|"League Spartan"|"Roboto Flex"|"Fraunces"|"Literata"|"Dancing Script"|"Caveat"|"Great Vibes"|"Sacramento"|"Source Code Pro"|"JetBrains Mono"|"Fira Code"|"IBM Plex Mono"),headingFont,backgroundColor,textColor,borderRadius,maxWidth}
-### block.styles: {padding,margin,fontSize,fontWeight("100"|"200"|"300"|"400"|"500"|"600"|"700"|"800"|"900"),fontFamily,boxShadow,border,opacity,backgroundImage,backgroundSize,maxWidth,minHeight,textTransform,letterSpacing,lineHeight,wordSpacing,fontVariant("small-caps"|"normal"),borderRadius,textShadow,WebkitTextStroke("1px #000"|"2px #fff"|...)}
+### block.styles: {padding,margin,fontSize,fontWeight("100"|"200"|"300"|"400"|"500"|"600"|"700"|"800"|"900"),fontFamily,boxShadow,border,opacity,backgroundImage,backgroundSize,maxWidth,minHeight,textTransform,letterSpacing,lineHeight,wordSpacing,fontVariant("small-caps"|"normal"),borderRadius,textShadow,WebkitTextStroke("1px #000"|"2px #fff"|...),animateIn("fadeUp"|"fadeIn"|"fadeLeft"|"fadeRight"|"zoomIn"|"flipIn"),animateDelay("100"|"200"|"300"|"400"|"500")}
 
 ПРАВИЛА: navbar→hero→контент→footer, min 10-15 блоков (как на реальном сайте — длинная страница!), ВСЕГДА globalStyles+styles(padding,градиенты,тени), контент на языке запроса.
-ПАЛИТРЫ: Корпоративный(#2563eb/#f8fafc), Минимализм(#18181b/#fff), Фиолетовый(#7c3aed/#faf5ff), Тёмный(#a855f7/#0f0f23), Зелёный(#16a34a/#f0fdf4), Оранжевый(#ea580c/#fff7ed), Океан(#0891b2/#ecfeff)
-ШРИФТЫ: Playfair Display+Inter, Montserrat+Open Sans, Poppins+Roboto, Merriweather+Lato, DM Sans+Lora, Outfit+Spectral, League Spartan+Libre Baskerville, Space Grotesk+EB Garamond, Josefin Sans+Crimson Pro, Fraunces+Manrope
+ПАЛИТРЫ: Корпоративный(#2563eb/#f8fafc), Минимализм(#18181b/#fff), Фиолетовый(#7c3aed/#faf5ff), Тёмный(#a855f7/#0f0f23), Зелёный(#16a34a/#f0fdf4), Оранжевый(#ea580c/#fff7ed), Океан(#0891b2/#ecfeff), Цинематик(#0a0a0a/#f59e0b)
+ШРИФТЫ: Playfair Display+Inter, Montserrat+Open Sans, Poppins+Roboto, Merriweather+Lato, DM Sans+Lora, Outfit+Spectral, League Spartan+Libre Baskerville, Space Grotesk+EB Garamond, Josefin Sans+Crimson Pro, Fraunces+Manrope, Bebas Neue+Lato, Oswald+Open Sans
+ЦЕРКОВЬ/СООБЩЕСТВО: используй videoBg(или parallax)+announcement+bigQuote+locations+values+eventCards+splitHero для сайтов церквей/организаций
+АНИМАЦИИ: добавляй animateIn("fadeUp") к блокам контента для эффекта скролла, используй animateDelay для каскадных задержек
 МНОГОСТРАНИЧНЫЙ: pages:[{slug,title,blocks}], Navbar одинаковый на всех: href="/slug", Главная slug="home"
 ФОТО: структура→цвета→воссоздай КАЖДУЮ секцию отдельным блоком→bgColor/textColor близко к оригиналу
 КАСТОМНЫЕ БЛОКИ: newBlockTypes:[{blockType,label,icon,description}]`;

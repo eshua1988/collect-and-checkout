@@ -75,6 +75,15 @@ const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactN
   { type: 'rating', label: 'Рейтинг', icon: <StarIcon className="w-4 h-4" />, defaultContent: { title: 'Наш рейтинг', score: 4.8, maxScore: 5, totalReviews: 1248, platform: 'Google', showStars: true, breakdown: [{ stars: 5, count: 980 }, { stars: 4, count: 178 }, { stars: 3, count: 62 }, { stars: 2, count: 18 }, { stars: 1, count: 10 }], bgColor: '' } },
   { type: 'embed', label: 'Встраивание', icon: <MonitorPlay className="w-4 h-4" />, defaultContent: { title: '', url: '', type: 'youtube', height: '450px', autoplay: false } },
   { type: 'table', label: 'Таблица', icon: <TableProperties className="w-4 h-4" />, defaultContent: { title: 'Данные', headers: ['Название', 'Значение', 'Статус'], rows: [['Строка 1', 'Данные', '✅'], ['Строка 2', 'Данные', '✅'], ['Строка 3', 'Данные', '❌']], striped: true, bordered: true } },
+  // ── VOUS-inspired blocks ──────────────────────────────────────────────────
+  { type: 'parallax', label: 'Параллакс', icon: <Layers className="w-4 h-4" />, defaultContent: { title: 'Яркий заголовок', subtitle: 'Подзаголовок с описанием', eyebrow: 'Метка', ctaText: 'Начать', ctaHref: '#', bgImage: '', bgColor: '#1a1a2e', overlay: 0.5, minHeight: '70vh', uppercase: true, align: 'center' } },
+  { type: 'videoBg', label: 'Видео-фон', icon: <Video className="w-4 h-4" />, defaultContent: { title: 'ВАШ СЛОГАН ЗДЕСЬ', subtitle: 'Краткое описание, которое задаёт настрой', eyebrow: 'ДОБРО ПОЖАЛОВАТЬ', ctaText: 'Присоединиться', ctaHref: '#', cta2Text: 'Узнать больше', cta2Href: '#', videoUrl: '', bgImage: '', bgColor: '#000', overlay: 0.55, minHeight: '100vh', uppercase: true } },
+  { type: 'eventCards', label: 'Карточки событий', icon: <LayoutGrid className="w-4 h-4" />, defaultContent: { title: 'Последние события', subtitle: '', linkText: 'Все события', linkHref: '#', columns: 3, bgColor: '#0f0f0f', textColor: '#fff', items: [{ category: 'СОБЫТИЕ', title: 'Название события 1', desc: 'Краткое описание', image: '', href: '#', linkText: 'Узнать больше' }, { category: 'КОЛЛЕКЦИЯ', title: 'Название события 2', desc: 'Краткое описание', image: '', href: '#', linkText: 'Узнать больше' }, { category: 'СООБЩЕСТВО', title: 'Название события 3', desc: 'Краткое описание', image: '', href: '#', linkText: 'Узнать больше' }] } },
+  { type: 'locations', label: 'Локации', icon: <MapPin className="w-4 h-4" />, defaultContent: { title: 'Наши адреса', subtitle: 'Присоединяйтесь к нам в ближайшем месте', bgColor: '#111', textColor: '#fff', locations: [{ name: 'Центральный офис', times: '9:00, 11:00, 14:00', address: 'ул. Ленина 1, Москва', href: '#', mapHref: '#', image: '' }, { name: 'Северный филиал', times: '10:00, 13:00', address: 'пр. Мира 22, Москва', href: '#', mapHref: '#', image: '' }] } },
+  { type: 'values', label: 'Ценности', icon: <ListChecks className="w-4 h-4" />, defaultContent: { title: 'Наши ценности', subtitle: 'То, во что мы верим', bgColor: '#0a0a0a', textColor: '#fff', divider: '▽', showDragHint: true, items: [{ title: 'КАЧЕСТВО ▽ НАД КОЛИЧЕСТВОМ', desc: 'Мы фокусируемся на том, что действительно важно' }, { title: 'ЛЮДИ ▽ ПРЕЖДЕ ВСЕГО', desc: 'Наши клиенты — центр всего, что мы делаем' }, { title: 'ИННОВАЦИИ ▽ КАЖДЫЙ ДЕНЬ', desc: 'Мы постоянно ищем новые подходы' }, { title: 'ЧЕСТНОСТЬ ▽ И ПРОЗРАЧНОСТЬ', desc: 'Открытость — основа доверия' }] } },
+  { type: 'splitHero', label: 'Разделённый герой', icon: <SplitSquareVertical className="w-4 h-4" />, defaultContent: { title: 'Сильный заголовок', body: 'Подробное описание вашей миссии или ключевого предложения, которое объясняет ценность.', eyebrow: 'О НАС', ctaText: 'Узнать больше', ctaHref: '#', cta2Text: 'Связаться', cta2Href: '#', image: '', bgColor: '#000', contentBg: '#0f0f0f', textColor: '#fff', minHeight: '70vh', uppercase: false } },
+  { type: 'bigQuote', label: 'Большая цитата', icon: <Quote className="w-4 h-4" />, defaultContent: { text: 'Наша миссия проста — создавать продукты, которые меняют жизнь людей к лучшему.', author: 'Основатель компании', role: 'CEO', eyebrow: 'НАША МИССИЯ', bgColor: '#ffffff', textColor: '#1a1a1a', fontSize: '2rem', fontWeight: 700, italic: true, tight: false, align: 'center', ctaText: '', ctaHref: '#', openQuote: true } },
+  { type: 'announcement', label: 'Объявление', icon: <Bell className="w-4 h-4" />, defaultContent: { text: '🔥 Специальное предложение только сегодня!', subtext: 'Скидка 30% на все тарифы', ctaText: 'Получить скидку', ctaHref: '#', emoji: '', bgColor: '#1a1a1a', textColor: '#fff', closable: true } },
 ];
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';
@@ -787,6 +796,32 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                                 </div>
                               </div>
                               <div><Label className="text-xs">Рамка</Label><Input value={blockStyles.border || ''} onChange={e => setBlockStyle('border', e.target.value)} placeholder="1px solid #e2e8f0" className="mt-1 text-xs" /></div>
+                              {/* Анимация при прокрутке */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs">🎬 Анимация входа</Label>
+                                  <select value={blockStyles.animateIn || ''} onChange={e => setBlockStyle('animateIn', e.target.value)} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
+                                    <option value="">Нет</option>
+                                    <option value="fadeUp">▲ Снизу вверх</option>
+                                    <option value="fadeIn">◎ Появление</option>
+                                    <option value="fadeLeft">← Слева</option>
+                                    <option value="fadeRight">→ Справа</option>
+                                    <option value="zoomIn">⊕ Увеличение</option>
+                                    <option value="flipIn">↻ Переворот</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <Label className="text-xs">⏱ Задержка (мс)</Label>
+                                  <select value={blockStyles.animateDelay || ''} onChange={e => setBlockStyle('animateDelay', e.target.value)} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
+                                    <option value="">0</option>
+                                    <option value="100">100</option>
+                                    <option value="200">200</option>
+                                    <option value="300">300</option>
+                                    <option value="400">400</option>
+                                    <option value="500">500</option>
+                                  </select>
+                                </div>
+                              </div>
                               <div className="grid grid-cols-2 gap-2">
                                 <div><Label className="text-xs">Размер шрифта</Label><Input value={blockStyles.fontSize || ''} onChange={e => setBlockStyle('fontSize', e.target.value)} onBlur={e => { const n = normPx(e.target.value); if (n !== e.target.value) setBlockStyle('fontSize', n); }} placeholder="16px" className="mt-1 text-xs" /></div>
                                 <div><Label className="text-xs">Прозрачность</Label><Input type="range" min="0" max="1" step="0.05" value={blockStyles.opacity || '1'} onChange={e => setBlockStyle('opacity', e.target.value)} className="mt-2" /></div>

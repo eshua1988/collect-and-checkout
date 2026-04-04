@@ -1016,6 +1016,9 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   if (bs.lineHeight) blockStyle.lineHeight = bs.lineHeight;
   // Apply global font if no block-specific provided
   if (!blockStyle.fontFamily && gs?.fontFamily) blockStyle.fontFamily = gs.fontFamily;
+  // Scroll-animation data attributes (not CSS — applied via data-* on wrapper div)
+  const animateIn = bs.animateIn as string | undefined;
+  const animateDelay = bs.animateDelay as string | undefined;
 
   /** Handle link click — intercept internal page links (e.g. /about) */
   const handleLinkClick = (e: React.MouseEvent, href?: string) => {
@@ -1145,7 +1148,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     if (margin) sizeStyle.margin = margin;
 
     return (
-      <div key={block.id} data-block-wrap data-block-id={block.id} className={wrapperClass} style={{ ...sizeStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
+      <div key={block.id} data-block-wrap data-block-id={block.id} {...(animateIn ? { 'data-animate': animateIn } : {})} {...(animateDelay ? { 'data-animate-delay': animateDelay } : {})} className={wrapperClass} style={{ ...sizeStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
         {onClick && (
           <div className={`absolute top-2 right-2 z-10 flex items-center gap-1 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
             {/* Move handle */}
@@ -2224,6 +2227,183 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         </section>
       );
 
+    // ─── VOUS-inspired blocks ──────────────────────────────────────────────
+
+    case 'parallax':
+      return wrap(
+        <div style={{ position: 'relative', overflow: 'hidden', minHeight: c.minHeight || '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ backgroundImage: c.bgImage ? `url(${c.bgImage})` : 'none', backgroundAttachment: 'fixed', backgroundSize: 'cover', backgroundPosition: 'center', position: 'absolute', inset: 0, zIndex: 0, backgroundColor: c.bgColor || '#1a1a2e' }} />
+          <div style={{ position: 'absolute', inset: 0, backgroundColor: `rgba(0,0,0,${c.overlay ?? 0.5})`, zIndex: 1 }} />
+          <div style={{ position: 'relative', zIndex: 2, textAlign: (c.align || 'center') as any, padding: '60px 32px', maxWidth: '900px', width: '100%' }}>
+            {c.eyebrow && <p style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: gs?.primaryColor || '#f59e0b', marginBottom: '14px' }}>{c.eyebrow}</p>}
+            {c.title && <h1 style={{ fontSize: c.titleSize || '3.5rem', fontWeight: 900, color: c.textColor || '#fff', lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '16px', textTransform: c.uppercase ? 'uppercase' : 'none' as any }}>{c.title}</h1>}
+            {c.subtitle && <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', marginBottom: '32px', maxWidth: '600px', margin: c.align === 'center' ? '0 auto 32px' : '0 0 32px' }}>{c.subtitle}</p>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: c.align === 'center' ? 'center' : 'flex-start', marginTop: '16px' }}>
+              {c.ctaText && <a href={c.ctaHref || '#'} style={{ display: 'inline-block', padding: '14px 32px', borderRadius: '8px', fontWeight: 700, color: '#fff', textDecoration: 'none', backgroundColor: gs?.primaryColor || '#2563eb' }}>{c.ctaText}</a>}
+              {c.cta2Text && <a href={c.cta2Href || '#'} style={{ display: 'inline-block', padding: '14px 32px', borderRadius: '8px', fontWeight: 700, color: '#fff', textDecoration: 'none', backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)' }}>{c.cta2Text}</a>}
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'videoBg': {
+      const ytId = (c.videoUrl || '').match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\s?#]+)/)?.[1] || '';
+      return wrap(
+        <div style={{ position: 'relative', overflow: 'hidden', minHeight: c.minHeight || '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {ytId ? (
+            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0 }}>
+              <iframe src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&showinfo=0&rel=0&disablekb=1`} allow="autoplay; encrypted-media" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '177.78vh', height: '100vh', minWidth: '100%', minHeight: '56.25vw', border: 'none', pointerEvents: 'none' }} title="bg-video" />
+            </div>
+          ) : c.bgImage ? (
+            <div style={{ backgroundImage: `url(${c.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'absolute', inset: 0, zIndex: 0 }} />
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: c.bgColor || '#0a0a0a' }} />
+          )}
+          <div style={{ position: 'absolute', inset: 0, backgroundColor: `rgba(0,0,0,${c.overlay ?? 0.55})`, zIndex: 1 }} />
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '80px 32px', maxWidth: '960px', width: '100%' }}>
+            {c.eyebrow && <p style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase', color: gs?.primaryColor || '#f59e0b', marginBottom: '14px' }}>{c.eyebrow}</p>}
+            {c.title && <h1 style={{ fontSize: c.titleSize || '5rem', fontWeight: 900, color: '#fff', lineHeight: 1.05, letterSpacing: '-0.03em', marginBottom: '20px', textTransform: c.uppercase !== false ? 'uppercase' : 'none' as any }}>{c.title}</h1>}
+            {c.subtitle && <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.75)', marginBottom: '40px', lineHeight: 1.6, maxWidth: '600px', margin: '0 auto 40px' }}>{c.subtitle}</p>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', justifyContent: 'center' }}>
+              {c.ctaText && <a href={c.ctaHref || '#'} style={{ display: 'inline-block', padding: '16px 40px', borderRadius: '8px', fontWeight: 800, fontSize: '1rem', color: '#fff', textDecoration: 'none', backgroundColor: gs?.primaryColor || '#2563eb' }}>{c.ctaText}</a>}
+              {c.cta2Text && <a href={c.cta2Href || '#'} style={{ display: 'inline-block', padding: '16px 40px', borderRadius: '8px', fontWeight: 800, fontSize: '1rem', color: '#fff', textDecoration: 'none', border: '2px solid rgba(255,255,255,0.5)' }}>{c.cta2Text}</a>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    case 'eventCards':
+      return wrap(
+        <section style={{ padding: c.padding || '64px 32px', backgroundColor: c.bgColor || '#0f0f0f' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                {c.title && <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: c.textColor || '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{c.title}</h2>}
+                {c.subtitle && <p style={{ color: 'rgba(255,255,255,0.55)', marginTop: '8px', fontSize: '1rem' }}>{c.subtitle}</p>}
+              </div>
+              {c.linkText && <a href={c.linkHref || '#'} style={{ fontSize: '0.9rem', fontWeight: 700, color: gs?.primaryColor || '#f59e0b', textDecoration: 'none' }}>{c.linkText} →</a>}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${c.columns || 3}, 1fr)`, gap: '20px' }}>
+              {(c.items || []).map((item: any, i: number) => (
+                <a key={i} href={item.href || '#'} style={{ display: 'block', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#1a1a1a', textDecoration: 'none' }}>
+                  {item.image && (
+                    <div style={{ height: '200px', backgroundImage: `url(${item.image})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                      {item.category && <span style={{ position: 'absolute', top: '12px', left: '12px', backgroundColor: gs?.primaryColor || '#f59e0b', color: '#000', fontSize: '10px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '4px' }}>{item.category}</span>}
+                    </div>
+                  )}
+                  <div style={{ padding: '20px' }}>
+                    {!item.image && item.category && <span style={{ display: 'inline-block', backgroundColor: gs?.primaryColor || '#f59e0b', color: '#000', fontSize: '10px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '4px', marginBottom: '10px' }}>{item.category}</span>}
+                    {item.title && <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: c.textColor || '#fff', marginBottom: '6px', lineHeight: 1.3 }}>{item.title}</h3>}
+                    {item.desc && <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{item.desc}</p>}
+                    {item.linkText && <p style={{ fontSize: '0.85rem', fontWeight: 700, color: gs?.primaryColor || '#f59e0b', marginTop: '12px' }}>{item.linkText} →</p>}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'locations':
+      return wrap(
+        <section style={{ padding: c.padding || '64px 32px', backgroundColor: c.bgColor || '#111111' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            {c.title && <h2 style={{ fontSize: '2.2rem', fontWeight: 900, color: c.textColor || '#fff', marginBottom: c.subtitle ? '8px' : '48px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>{c.title}</h2>}
+            {c.subtitle && <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.55)', marginBottom: '48px', fontSize: '1rem' }}>{c.subtitle}</p>}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+              {(c.locations || []).map((loc: any, i: number) => (
+                <div key={i} style={{ borderRadius: '16px', overflow: 'hidden', backgroundColor: '#1c1c1c', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  {loc.image && <div style={{ height: '160px', backgroundImage: `url(${loc.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />}
+                  <div style={{ padding: '22px' }}>
+                    {loc.name && <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{loc.name}</h3>}
+                    {loc.times && <p style={{ fontSize: '0.85rem', color: gs?.primaryColor || '#f59e0b', marginBottom: '6px', fontWeight: 600 }}>🕐 {loc.times}</p>}
+                    {loc.address && <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginBottom: '16px', lineHeight: 1.4 }}>📍 {loc.address}</p>}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {loc.href && <a href={loc.href} style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff', backgroundColor: gs?.primaryColor || '#2563eb', padding: '7px 14px', borderRadius: '6px', textDecoration: 'none' }}>Подробнее</a>}
+                      {loc.mapHref && <a href={loc.mapHref} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)', backgroundColor: 'rgba(255,255,255,0.08)', padding: '7px 14px', borderRadius: '6px', textDecoration: 'none' }}>Карта</a>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'values':
+      return wrap(
+        <section style={{ padding: `${c.paddingV || '64px'} 0`, backgroundColor: c.bgColor || '#0a0a0a', overflow: 'hidden' }}>
+          <div style={{ padding: '0 32px', marginBottom: '32px' }}>
+            {c.title && <h2 style={{ fontSize: '2.5rem', fontWeight: 900, color: c.textColor || '#fff', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>{c.title}</h2>}
+            {c.subtitle && <p style={{ color: 'rgba(255,255,255,0.55)', marginTop: '8px' }}>{c.subtitle}</p>}
+            {c.showDragHint !== false && <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', marginTop: '14px', textTransform: 'uppercase' }}>⟵ DRAG ⟶</p>}
+          </div>
+          <div style={{ display: 'flex', overflowX: 'auto', scrollbarWidth: 'none', padding: '0 32px', gap: '2px' }}>
+            {(c.items || []).map((item: any, i: number) => (
+              <div key={i} style={{ flex: '0 0 290px', padding: '32px 24px', borderLeft: '1px solid rgba(255,255,255,0.08)', backgroundColor: i % 2 === 0 ? (c.bgColor || '#0a0a0a') : 'rgba(255,255,255,0.03)', minWidth: '260px' }}>
+                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: gs?.primaryColor || '#f59e0b', letterSpacing: '0.2em', marginBottom: '18px' }}>{String(i + 1).padStart(2, '0')}</p>
+                {item.title && (
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.25, marginBottom: '14px', color: '#fff' }}>
+                    {c.divider && item.title.includes(c.divider)
+                      ? item.title.split(c.divider).map((part: string, pi: number) => (
+                          <span key={pi}>{pi > 0 && <span style={{ color: gs?.primaryColor || '#f59e0b', margin: '0 5px' }}>{c.divider}</span>}{part}</span>
+                        ))
+                      : item.title}
+                  </h3>
+                )}
+                {item.desc && <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7 }}>{item.desc}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+
+    case 'splitHero':
+      return wrap(
+        <div style={{ display: 'flex', flexWrap: 'wrap', minHeight: c.minHeight || '70vh', backgroundColor: c.bgColor || '#000' }}>
+          <div style={{ flex: `1 1 ${c.imageFlex || '50%'}`, backgroundImage: c.image ? `url(${c.image})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '350px', position: 'relative', backgroundColor: c.image ? undefined : '#1a1a1a' }}>
+            {(c.imageOverlay || !c.image) && <div style={{ position: 'absolute', inset: 0, backgroundColor: `rgba(0,0,0,${c.imageOverlay || (c.image ? 0.25 : 0.8)})` }} />}
+          </div>
+          <div style={{ flex: `1 1 ${c.contentFlex || '50%'}`, padding: c.contentPadding || '72px 56px', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: c.contentBg || '#0f0f0f', color: c.textColor || '#fff' }}>
+            {c.eyebrow && <p style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase', color: gs?.primaryColor || '#f59e0b', marginBottom: '16px' }}>{c.eyebrow}</p>}
+            {c.title && <h2 style={{ fontSize: c.titleSize || '2.8rem', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '16px', textTransform: c.uppercase ? 'uppercase' : 'none' as any }}>{c.title}</h2>}
+            {c.body && <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: '32px', maxWidth: '500px' }}>{c.body}</p>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              {c.ctaText && <a href={c.ctaHref || '#'} style={{ display: 'inline-block', padding: '13px 28px', borderRadius: '8px', fontWeight: 700, backgroundColor: gs?.primaryColor || '#2563eb', color: '#fff', textDecoration: 'none' }}>{c.ctaText}</a>}
+              {c.cta2Text && <a href={c.cta2Href || '#'} style={{ display: 'inline-block', padding: '13px 28px', borderRadius: '8px', fontWeight: 700, backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff', textDecoration: 'none' }}>{c.cta2Text}</a>}
+            </div>
+          </div>
+        </div>
+      );
+
+    case 'bigQuote':
+      return wrap(
+        <section style={{ padding: c.padding || '80px 32px', backgroundColor: c.bgColor || '#f8f8f8', textAlign: (c.align || 'center') as any }}>
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            {c.eyebrow && <p style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase', color: gs?.primaryColor || '#2563eb', marginBottom: '24px' }}>{c.eyebrow}</p>}
+            {c.openQuote !== false && <div style={{ fontSize: '5rem', lineHeight: 0.8, color: gs?.primaryColor || '#2563eb', opacity: 0.25, marginBottom: '16px', fontFamily: 'Georgia, serif', userSelect: 'none' }}>❝</div>}
+            {c.text && <blockquote style={{ fontSize: c.fontSize || '2rem', fontWeight: c.fontWeight || 700, lineHeight: 1.35, color: c.textColor || '#1a1a1a', fontStyle: c.italic !== false ? 'italic' : 'normal', letterSpacing: c.tight ? '-0.03em' : 'normal' }}>{c.text}</blockquote>}
+            {c.author && <p style={{ marginTop: '28px', fontSize: '1rem', fontWeight: 600, color: c.textColor ? `${c.textColor}99` : '#555' }}>— {c.author}</p>}
+            {c.role && <p style={{ fontSize: '0.85rem', color: c.textColor ? `${c.textColor}66` : '#888' }}>{c.role}</p>}
+            {c.ctaText && <a href={c.ctaHref || '#'} style={{ display: 'inline-block', marginTop: '32px', padding: '13px 28px', borderRadius: '8px', fontWeight: 700, backgroundColor: gs?.primaryColor || '#2563eb', color: '#fff', textDecoration: 'none' }}>{c.ctaText}</a>}
+          </div>
+        </section>
+      );
+
+    case 'announcement':
+      return wrap(
+        <div style={{ backgroundColor: c.bgColor || '#1a1a1a', color: c.textColor || '#fff', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ textAlign: 'center' }}>
+            {c.emoji && <span style={{ marginRight: '6px' }}>{c.emoji}</span>}
+            {c.text && <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{c.text}</span>}
+            {c.subtext && <span style={{ fontSize: '0.8rem', opacity: 0.75, marginLeft: '8px' }}>{c.subtext}</span>}
+          </div>
+          {c.ctaText && <a href={c.ctaHref || '#'} style={{ fontSize: '0.8rem', fontWeight: 800, padding: '6px 16px', borderRadius: '6px', backgroundColor: gs?.primaryColor || '#f59e0b', color: '#000', textDecoration: 'none', whiteSpace: 'nowrap' }}>{c.ctaText}</a>}
+          {c.closable !== false && <span style={{ fontSize: '1rem', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', padding: '0 4px', lineHeight: 1 }}>✕</span>}
+        </div>
+      );
+
     default:
       // Generic rendering for custom AI-registered block types
       const cc = block.content || {} as any;
@@ -2318,6 +2498,22 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
   useEffect(() => {
     if (currentPageSlug) setActiveSlug(currentPageSlug);
   }, [currentPageSlug]);
+
+  // Inject scroll-animation CSS and set up IntersectionObserver
+  useEffect(() => {
+    const styleId = 'wbuilder-scroll-animations';
+    if (!document.getElementById(styleId)) {
+      const s = document.createElement('style');
+      s.id = styleId;
+      s.textContent = `[data-animate]{transition:opacity .65s ease,transform .65s ease;}[data-animate="fadeUp"]{opacity:0;transform:translateY(40px);}[data-animate="fadeIn"]{opacity:0;}[data-animate="fadeLeft"]{opacity:0;transform:translateX(-50px);}[data-animate="fadeRight"]{opacity:0;transform:translateX(50px);}[data-animate="zoomIn"]{opacity:0;transform:scale(0.8);}[data-animate="flipIn"]{opacity:0;transform:perspective(600px) rotateX(80deg);}[data-animate].anim-visible{opacity:1!important;transform:none!important;}[data-animate-delay="100"]{transition-delay:.1s;}[data-animate-delay="200"]{transition-delay:.2s;}[data-animate-delay="300"]{transition-delay:.3s;}[data-animate-delay="400"]{transition-delay:.4s;}[data-animate-delay="500"]{transition-delay:.5s;}`;
+      document.head.appendChild(s);
+    }
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('anim-visible'); obs.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('[data-animate]').forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, [displayBlocks]);
 
   const hasPages = !!(pages && pages.length > 0);
   const displayBlocks = blocks;
