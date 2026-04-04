@@ -489,6 +489,37 @@ function getBlockInitialHtml(block: WebsiteBlock): string {
   if (c.text && typeof c.text === 'string' && c.text !== c.title && c.text !== c.body) parts.push(`<p>${esc(c.text)}</p>`);
   if (c.description && c.description !== c.subtitle && c.description !== c.body) parts.push(`<p style="margin-top:6px">${esc(c.description)}</p>`);
   if (c.logo && !c.title) parts.push(`<strong>${esc(c.logo)}</strong>`);
+  // Capture additional AI-generated block fields
+  if (c.copyright) parts.push(`<p style="margin-top:6px">${esc(c.copyright)}</p>`);
+  if (c.tagline && c.tagline !== c.subtitle) parts.push(`<p>${esc(c.tagline)}</p>`);
+  if (c.heading && c.heading !== c.title) parts.push(`<h3>${esc(c.heading)}</h3>`);
+  if (c.content && typeof c.content === 'string' && c.content !== c.body) parts.push(`<p>${esc(c.content)}</p>`);
+  // Capture items/links as a list
+  if (!parts.length && c.items && Array.isArray(c.items)) {
+    parts.push('<ul style="list-style:disc;padding-left:20px">');
+    c.items.forEach((item: any) => {
+      const label = item.title || item.text || item.name || item.label || '';
+      if (label) parts.push(`<li>${esc(label)}${item.desc ? ` — ${esc(item.desc)}` : ''}</li>`);
+    });
+    parts.push('</ul>');
+  }
+  if (!parts.length && c.links && Array.isArray(c.links)) {
+    parts.push('<ul style="list-style:disc;padding-left:20px">');
+    c.links.forEach((link: any) => {
+      const label = link.label || link.text || link.name || link.href || '';
+      if (label) parts.push(`<li>${esc(label)}</li>`);
+    });
+    parts.push('</ul>');
+  }
+  // Last resort: collect all top-level string values (excluding URL-like and color fields)
+  if (!parts.length) {
+    const skip = new Set(['richText','bgColor','textColor','heroImage','image','imageUrl','src','overlayImage','embedUrl','href','url','link','ctaHref','icon','iconUrl']);
+    Object.entries(c).forEach(([k, v]) => {
+      if (!skip.has(k) && typeof v === 'string' && v.length > 0 && v.length < 500 && !v.startsWith('http') && !v.startsWith('#') && !v.startsWith('data:')) {
+        parts.push(`<p><strong>${esc(k)}:</strong> ${esc(v)}</p>`);
+      }
+    });
+  }
   return parts.length ? parts.join('') : '<p>Начните вводить текст...</p>';
 }
 
@@ -679,49 +710,58 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           </div>
         )}
         <div style={visualStyle}>
-          {/* Overlay image — top position (before content) */}
-          {c.overlayImage && (c.overlayPosition === 'top') && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}>
-              <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
-            </div>
-          )}
-          {/* Overlay image — left/right wraps content side-by-side */}
-          {c.overlayImage && (c.overlayPosition === 'left' || c.overlayPosition === 'right') ? (
-            <div style={{ display: 'flex', flexDirection: c.overlayPosition === 'left' ? 'row' : 'row-reverse', alignItems: 'center', gap: '16px' }}>
-              <div style={{ flexShrink: 0, maxWidth: c.overlayMaxWidth || '40%', padding: '8px' }}>
-                <img src={c.overlayImage} alt="" style={{ width: '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>{node}</div>
-            </div>
-          ) : (
-            <>{node}</>
-          )}
-          {/* Overlay image — bottom/center position (after content) */}
-          {c.overlayImage && (c.overlayPosition === 'bottom' || c.overlayPosition === 'center' || (!c.overlayPosition)) && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}>
-              <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
-            </div>
-          )}
-          {/* Render extras at bottom of any block (except navbar which renders inline) */}
-          {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
-            <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
-          )}
-          {/* Rich text display — skip for 'text' and 'hero' blocks which render richText internally */}
-          {c.richText && inlineEditId !== block.id && block.type !== 'text' && block.type !== 'hero' && (
-            <div className="px-6 pb-4" dangerouslySetInnerHTML={{ __html: c.richText }} />
-          )}
-          {/* Inline text editor — skip for 'text' and 'hero' blocks which embed the editor internally */}
-          {inlineEditId === block.id && onContentUpdate && block.type !== 'text' && block.type !== 'hero' && (
-            <div className="px-6 pb-4 pt-2">
-              <InlineTextEditor
-                key={block.id}
-                blockId={block.id}
-                initialHtml={getBlockInitialHtml(block)}
-                onSave={(html) => onContentUpdate(block.id, { richText: html })}
-                onClose={() => setInlineEditId?.(null)}
-              />
-            </div>
-          )}
+          {(() => {
+            // When T-editor is open for non-text/hero blocks, REPLACE block content with the editor
+            const isInlineEditing = inlineEditId === block.id && block.type !== 'text' && block.type !== 'hero';
+            if (isInlineEditing && onContentUpdate) {
+              return (
+                <div className="px-4 pb-4 pt-2">
+                  <InlineTextEditor
+                    key={block.id}
+                    blockId={block.id}
+                    initialHtml={getBlockInitialHtml(block)}
+                    onSave={(html) => onContentUpdate(block.id, { richText: html })}
+                    onClose={() => setInlineEditId?.(null)}
+                  />
+                </div>
+              );
+            }
+            return (
+              <>
+                {/* Overlay image — top position (before content) */}
+                {c.overlayImage && (c.overlayPosition === 'top') && (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}>
+                    <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
+                  </div>
+                )}
+                {/* Overlay image — left/right wraps content side-by-side */}
+                {c.overlayImage && (c.overlayPosition === 'left' || c.overlayPosition === 'right') ? (
+                  <div style={{ display: 'flex', flexDirection: c.overlayPosition === 'left' ? 'row' : 'row-reverse', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ flexShrink: 0, maxWidth: c.overlayMaxWidth || '40%', padding: '8px' }}>
+                      <img src={c.overlayImage} alt="" style={{ width: '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>{node}</div>
+                  </div>
+                ) : (
+                  <>{node}</>
+                )}
+                {/* Overlay image — bottom/center position (after content) */}
+                {c.overlayImage && (c.overlayPosition === 'bottom' || c.overlayPosition === 'center' || (!c.overlayPosition)) && (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}>
+                    <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
+                  </div>
+                )}
+                {/* Render extras at bottom of any block (except navbar) */}
+                {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
+                  <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
+                )}
+                {/* Rich text display — skip for 'text' and 'hero' which render richText internally */}
+                {c.richText && block.type !== 'text' && block.type !== 'hero' && (
+                  <div className="px-6 pb-4" dangerouslySetInnerHTML={{ __html: c.richText }} />
+                )}
+              </>
+            );
+          })()}
         </div>
         {/* Resize handles — only when block is selected and editable */}
         {isSelected && onStyleUpdate && (
