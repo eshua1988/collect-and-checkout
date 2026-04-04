@@ -38,6 +38,7 @@ export type WebsiteBlockType =
   | 'product'
   | 'linkList'
   | 'searchBar'
+  | 'imageText'
   | (string & {});
 
 export interface WebsiteBlockExtra {

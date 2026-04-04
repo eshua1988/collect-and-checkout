@@ -543,7 +543,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   switch (block.type) {
     case 'navbar':
       return wrap(
-        <nav style={{ backgroundColor: c.bgColor || '#1e293b', color: c.textColor || '#fff' }} className="px-6 py-4 flex items-center justify-between">
+        <nav style={{ backgroundColor: c.bgColor || '#1e293b', color: c.textColor || '#fff' }} className={`px-6 py-4 flex items-center justify-between ${c.sticky ? 'sticky top-0 z-50' : ''}`}>
           <div className="font-bold text-xl cursor-pointer shrink-0" onClick={(e) => { e.stopPropagation(); onNavigate?.('home'); }}>{c.logo || 'Сайт'}</div>
           <div className="flex items-center gap-4 flex-wrap justify-end overflow-visible max-h-20">
             {(c.links || []).map((link: any, i: number) => (
@@ -557,11 +557,23 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
 
     case 'hero':
       return wrap(
-        <section style={{ backgroundColor: c.bgColor || gs?.backgroundColor || '#1e293b', color: c.textColor || gs?.textColor || '#fff' }} className="py-20 px-8">
-          <div className={`max-w-4xl mx-auto text-${c.align || 'center'}`}>
+        <section style={{ backgroundColor: c.bgColor || gs?.backgroundColor || '#1e293b', color: c.textColor || gs?.textColor || '#fff', backgroundImage: c.heroImage ? `url(${c.heroImage})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }} className="py-20 px-8">
+          {c.heroImage && <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${c.overlay ?? 0.4})` }} />}
+          <div className={`max-w-4xl mx-auto text-${c.align || 'center'} relative z-10`}>
             <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight" style={gs?.headingFont ? { fontFamily: gs.headingFont } : undefined}>{c.title || 'Заголовок'}</h1>
             {c.subtitle && <p className="text-lg md:text-xl opacity-80 mb-8 max-w-2xl mx-auto">{c.subtitle}</p>}
             {c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} style={gs?.accentColor ? { backgroundColor: gs.accentColor } : undefined} className="inline-block px-8 py-4 rounded-xl bg-white/20 hover:bg-white/30 font-semibold text-lg transition-colors cursor-pointer">{c.ctaText}</a>}
+            {(c.searchFields || []).length > 0 && (
+              <div className="flex flex-wrap items-end gap-3 mt-8 max-w-3xl mx-auto bg-white/10 backdrop-blur-sm p-4 rounded-2xl">
+                {(c.searchFields || []).map((f: any, i: number) => (
+                  <div key={i} className="flex-1 min-w-[140px]">
+                    {f.label && <label className="block text-xs font-medium mb-1 opacity-80">{f.label}</label>}
+                    <input type={f.type || 'text'} placeholder={f.placeholder || ''} className="w-full px-4 py-3 rounded-lg border-0 bg-white text-gray-900 text-sm" readOnly />
+                  </div>
+                ))}
+                <button className="px-6 py-3 rounded-lg font-medium text-white" style={{ backgroundColor: gs?.primaryColor || '#2563eb' }}>{c.searchButtonText || 'Найти'}</button>
+              </div>
+            )}
           </div>
         </section>
       );
@@ -604,10 +616,10 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         <section className="py-16 px-8 bg-muted/30">
           <div className="max-w-5xl mx-auto">
             {c.title && <h2 className="text-3xl font-bold mb-12 text-center">{c.title}</h2>}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${c.columns || 4} gap-6`}>
               {(c.items || []).map((item: any, i: number) => (
                 <div key={i} className="text-center p-6 rounded-2xl bg-background shadow-sm">
-                  <div className="text-4xl mb-3">{item.icon}</div>
+                  {item.image ? <img src={item.image} alt={item.title} className="w-16 h-16 object-contain mx-auto mb-3" /> : <div className="text-4xl mb-3">{item.icon}</div>}
                   <h3 className="font-bold text-lg mb-2">{item.title}</h3>
                   <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </div>
@@ -649,7 +661,13 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
                 <div key={i} className="bg-background rounded-2xl p-6 shadow-sm">
                   <div className="flex mb-3">{Array.from({ length: item.rating || 5 }).map((_, j) => <span key={j} className="text-yellow-400">★</span>)}</div>
                   <p className="text-muted-foreground mb-4 italic">"{item.text}"</p>
-                  <div className="font-semibold">{item.name}</div>
+                  <div className="flex items-center gap-3">
+                    {item.avatar && <img src={item.avatar} alt={item.name} className="w-10 h-10 rounded-full object-cover" />}
+                    <div>
+                      <div className="font-semibold">{item.name}</div>
+                      {item.role && <div className="text-xs text-muted-foreground">{item.role}</div>}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -660,15 +678,21 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     case 'contact':
       return wrap(
         <section className="py-16 px-8 bg-primary text-primary-foreground">
-          <div className="max-w-2xl mx-auto text-center">
-            {c.title && <h2 className="text-3xl font-bold mb-4">{c.title}</h2>}
-            {c.subtitle && <p className="opacity-80 mb-8">{c.subtitle}</p>}
-            <div className="flex flex-wrap justify-center gap-4 text-sm">
-              {c.email && <a href={`mailto:${c.email}`} className="opacity-90 hover:opacity-100">📧 {c.email}</a>}
-              {c.phone && <a href={`tel:${c.phone}`} className="opacity-90 hover:opacity-100">📞 {c.phone}</a>}
-              {c.address && <span>📍 {c.address}</span>}
-              {c.hours && <span>🕐 {c.hours}</span>}
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8 items-center">
+            <div className={`flex-1 ${c.image ? 'text-left' : 'text-center w-full'}`}>
+              {c.title && <h2 className="text-3xl font-bold mb-4">{c.title}</h2>}
+              {c.subtitle && <p className="opacity-80 mb-6">{c.subtitle}</p>}
+              <div className={`flex flex-wrap ${c.image ? 'justify-start' : 'justify-center'} gap-4 text-sm mb-4`}>
+                {c.phone && <a href={`tel:${c.phone}`} className="opacity-90 hover:opacity-100 text-lg font-semibold">📞 {c.phone}</a>}
+              </div>
+              {c.buttonText && <a href={c.buttonHref || '#'} onClick={(e) => handleLinkClick(e, c.buttonHref)} className="inline-block px-6 py-3 rounded-xl bg-white/20 hover:bg-white/30 font-medium cursor-pointer mb-4">{c.buttonText}</a>}
+              <div className={`flex flex-wrap ${c.image ? 'justify-start' : 'justify-center'} gap-4 text-sm`}>
+                {c.email && <a href={`mailto:${c.email}`} className="opacity-90 hover:opacity-100">📧 {c.email}</a>}
+                {c.address && <span>📍 {c.address}</span>}
+                {c.hours && <span>🕐 {c.hours}</span>}
+              </div>
             </div>
+            {c.image && <div className="md:w-1/3 shrink-0"><img src={c.image} alt={c.title || ''} className="w-full rounded-2xl object-cover" /></div>}
           </div>
         </section>
       );
@@ -1015,21 +1039,45 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
 
     case 'footer':
       return wrap(
-        <footer className="bg-muted/50 py-8 px-8 text-center">
-          {c.companyName && <div className="font-bold text-lg mb-2">{c.companyName}</div>}
-          {(c.links || []).length > 0 && (
-            <div className="flex justify-center gap-4 mb-4">
-              {(c.links || []).map((link: any, i: number) => <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">{link.label}</a>)}
+        <footer className="bg-muted/50 py-10 px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-8 mb-6">
+              <div className="md:w-1/3">
+                {c.companyName && <div className="font-bold text-lg mb-2">{c.companyName}</div>}
+                {c.description && <p className="text-sm text-muted-foreground mb-4">{c.description}</p>}
+                {(c.socialLinks || []).length > 0 && (
+                  <div className="flex gap-3">
+                    {(c.socialLinks || []).map((s: any, i: number) => (
+                      <a key={i} href={s.url || '#'} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-lg hover:bg-muted/80 cursor-pointer" title={s.platform}>{s.icon || '🔗'}</a>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {(c.links || []).length > 0 && (
+                <div className="flex-1 flex flex-wrap gap-4 justify-end">
+                  {(c.links || []).map((link: any, i: number) => <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">{link.label}</a>)}
+                </div>
+              )}
             </div>
-          )}
-          <div className="text-sm text-muted-foreground">{c.copyright || '© 2024'}</div>
+            <div className="border-t pt-4 flex flex-col md:flex-row justify-between items-center gap-3">
+              <div className="text-sm text-muted-foreground">{c.copyright || '© 2024'}</div>
+              {(c.paymentIcons || []).length > 0 && (
+                <div className="flex gap-2">
+                  {(c.paymentIcons || []).map((icon: any, i: number) => (
+                    icon.image ? <img key={i} src={icon.image} alt={icon.name || ''} className="h-6 object-contain" /> : <span key={i} className="px-2 py-1 border rounded text-xs font-medium text-muted-foreground">{icon.name}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </footer>
       );
 
     case 'cards':
       return wrap(
         <section className="py-12 px-8">
-          {c.title && <h2 className="text-2xl font-bold mb-8 text-center">{c.title}</h2>}
+          {c.title && <h2 className="text-2xl font-bold mb-2 text-center">{c.title}</h2>}
+          {c.subtitle && <p className="text-muted-foreground text-center mb-8">{c.subtitle}</p>}
           <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${c.columns || 3}, minmax(0, 1fr))` }}>
             {(c.items || []).map((item: any, i: number) => (
               <a key={i} href={item.link || '#'} onClick={(e) => handleLinkClick(e, item.link)} className="group rounded-xl overflow-hidden border bg-card shadow-sm hover:shadow-lg transition-shadow cursor-pointer">
@@ -1047,7 +1095,16 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     case 'carousel':
       return wrap(
         <section className="py-12 px-8">
-          {c.title && <h2 className="text-2xl font-bold mb-8 text-center">{c.title}</h2>}
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center gap-4 mb-6">
+              {c.iconImage && <img src={c.iconImage} alt="" className="w-12 h-12 object-contain" />}
+              <div className="flex-1">
+                {c.title && <h2 className="text-2xl font-bold">{c.title}</h2>}
+                {c.subtitle && <p className="text-muted-foreground text-sm mt-1">{c.subtitle}</p>}
+              </div>
+              {c.linkText && <a href={c.linkHref || '#'} onClick={(e) => handleLinkClick(e, c.linkHref)} className="text-sm font-medium text-primary hover:underline cursor-pointer whitespace-nowrap">{c.linkText} →</a>}
+            </div>
+          </div>
           <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin">
             {(c.items || []).map((item: any, i: number) => (
               <a key={i} href={item.link || '#'} onClick={(e) => handleLinkClick(e, item.link)} className="snap-start shrink-0 w-72 rounded-xl overflow-hidden border bg-card shadow-sm hover:shadow-lg transition-shadow cursor-pointer">
@@ -1124,6 +1181,22 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
               </div>
             ))}
             <button className="px-6 py-3 rounded-lg font-medium text-white" style={{ backgroundColor: gs?.primaryColor || '#2563eb' }}>{c.buttonText || 'Найти'}</button>
+          </div>
+        </section>
+      );
+
+    case 'imageText':
+      return wrap(
+        <section className="py-16 px-8" style={{ backgroundColor: c.bgColor || undefined }}>
+          <div className={`max-w-5xl mx-auto flex flex-col ${c.imagePosition === 'right' ? 'md:flex-row-reverse' : 'md:flex-row'} gap-8 items-center`}>
+            <div className="md:w-1/2">
+              {c.image ? <img src={c.image} alt={c.title || ''} className="w-full rounded-2xl shadow-lg object-cover" /> : <div className="w-full aspect-video bg-muted rounded-2xl flex items-center justify-center text-muted-foreground">🖼️ Добавьте изображение</div>}
+            </div>
+            <div className="md:w-1/2">
+              {c.title && <h2 className="text-3xl font-bold mb-4">{c.title}</h2>}
+              {c.body && <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap mb-6">{c.body}</p>}
+              {c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} className="inline-block px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 cursor-pointer">{c.ctaText}</a>}
+            </div>
           </div>
         </section>
       );

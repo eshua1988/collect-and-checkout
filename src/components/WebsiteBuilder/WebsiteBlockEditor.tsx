@@ -60,6 +60,19 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
             <div><Label>Подзаголовок</Label><Textarea value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} rows={2} /></div>
             <div><Label>Текст кнопки</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
             <div><Label>Ссылка кнопки</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>
+            <div><Label>Фоновое изображение (URL)</Label><Input value={content.heroImage || ''} onChange={e => set('heroImage', e.target.value)} placeholder="https://..." /></div>
+            {content.heroImage && <div><Label>Затемнение фона</Label><Input type="range" min={0} max={1} step={0.1} value={content.overlay ?? 0.4} onChange={e => set('overlay', Number(e.target.value))} /><span className="text-xs text-muted-foreground">{Math.round((content.overlay ?? 0.4) * 100)}%</span></div>}
+            <div><Label>Поля поиска (встроенные)</Label></div>
+            {(content.searchFields || []).map((f: any, i: number) => (
+              <div key={i} className="flex gap-2">
+                <Input placeholder="Название" value={f.label || ''} onChange={e => { const sf = [...(content.searchFields || [])]; sf[i] = { ...sf[i], label: e.target.value }; set('searchFields', sf); }} />
+                <Input placeholder="Placeholder" value={f.placeholder || ''} onChange={e => { const sf = [...(content.searchFields || [])]; sf[i] = { ...sf[i], placeholder: e.target.value }; set('searchFields', sf); }} />
+                <select value={f.type || 'text'} onChange={e => { const sf = [...(content.searchFields || [])]; sf[i] = { ...sf[i], type: e.target.value }; set('searchFields', sf); }} className="px-2 py-1 border rounded text-sm"><option value="text">Текст</option><option value="date">Дата</option><option value="number">Число</option></select>
+                <Button size="icon" variant="ghost" onClick={() => set('searchFields', (content.searchFields || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('searchFields', [...(content.searchFields || []), { label: '', placeholder: '', type: 'text' }])}><Plus className="w-3 h-3 mr-1" /> Поле поиска</Button>
+            {(content.searchFields || []).length > 0 && <div><Label>Текст кнопки поиска</Label><Input value={content.searchButtonText || ''} onChange={e => set('searchButtonText', e.target.value)} placeholder="Найти" /></div>}
           </div>
         );
 
@@ -68,6 +81,7 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
           <div className="space-y-3">
             <div><Label>Логотип / Название</Label><Input value={content.logo || ''} onChange={e => set('logo', e.target.value)} /></div>
             <div><Label>Текст кнопки CTA</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
+            <div className="flex items-center gap-2"><input type="checkbox" checked={content.sticky || false} onChange={e => set('sticky', e.target.checked)} /><Label>Прилипающее меню (sticky)</Label></div>
             <div>
               <Label>Ссылки меню</Label>
               {(content.links || []).map((link: any, i: number) => (
@@ -207,6 +221,7 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
         return (
           <div className="space-y-3">
             <div><Label>Заголовок раздела</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Колонок</Label><Input type="number" min={1} max={6} value={content.columns || 4} onChange={e => set('columns', Number(e.target.value))} /></div>
             <div>
               <Label>Элементы</Label>
               {(content.items || []).map((item: any, i: number) => (
@@ -222,12 +237,15 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
+                  <Input placeholder="URL изображения (вместо иконки)" value={item.image || ''} onChange={e => {
+                    const items = [...(content.items || [])]; items[i] = { ...items[i], image: e.target.value }; set('items', items);
+                  }} />
                   <Input placeholder="Описание" value={item.desc} onChange={e => {
                     const items = [...(content.items || [])]; items[i] = { ...items[i], desc: e.target.value }; set('items', items);
                   }} />
                 </div>
               ))}
-              <Button size="sm" variant="outline" className="mt-2" onClick={() => set('items', [...(content.items || []), { icon: '⭐', title: '', desc: '' }])}>
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => set('items', [...(content.items || []), { icon: '⭐', image: '', title: '', desc: '' }])}>
                 <Plus className="w-3 h-3 mr-1" /> Добавить элемент
               </Button>
             </div>
@@ -271,6 +289,9 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
             <div><Label>Телефон</Label><Input value={content.phone || ''} onChange={e => set('phone', e.target.value)} /></div>
             <div><Label>Адрес</Label><Input value={content.address || ''} onChange={e => set('address', e.target.value)} /></div>
             <div><Label>Часы работы</Label><Input value={content.hours || ''} onChange={e => set('hours', e.target.value)} /></div>
+            <div><Label>Текст кнопки</Label><Input value={content.buttonText || ''} onChange={e => set('buttonText', e.target.value)} placeholder="Написать" /></div>
+            {content.buttonText && <div><Label>Ссылка кнопки</Label><Input value={content.buttonHref || ''} onChange={e => set('buttonHref', e.target.value)} /></div>}
+            <div><Label>Изображение (URL)</Label><Input value={content.image || ''} onChange={e => set('image', e.target.value)} placeholder="https://..." /></div>
           </div>
         );
 
@@ -288,12 +309,18 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
+                <Input placeholder="Должность / Компания" value={item.role || ''} onChange={e => {
+                  const items = [...(content.items || [])]; items[i] = { ...items[i], role: e.target.value }; set('items', items);
+                }} />
+                <Input placeholder="URL аватара" value={item.avatar || ''} onChange={e => {
+                  const items = [...(content.items || [])]; items[i] = { ...items[i], avatar: e.target.value }; set('items', items);
+                }} />
                 <Textarea placeholder="Отзыв" rows={2} value={item.text} onChange={e => {
                   const items = [...(content.items || [])]; items[i] = { ...items[i], text: e.target.value }; set('items', items);
                 }} />
               </div>
             ))}
-            <Button size="sm" variant="outline" onClick={() => set('items', [...(content.items || []), { name: '', text: '', rating: 5 }])}>
+            <Button size="sm" variant="outline" onClick={() => set('items', [...(content.items || []), { name: '', text: '', rating: 5, avatar: '', role: '' }])}>
               <Plus className="w-3 h-3 mr-1" /> Добавить отзыв
             </Button>
           </div>
@@ -387,7 +414,36 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
         return (
           <div className="space-y-3">
             <div><Label>Название компании</Label><Input value={content.companyName || ''} onChange={e => set('companyName', e.target.value)} /></div>
+            <div><Label>Описание</Label><Textarea value={content.description || ''} onChange={e => set('description', e.target.value)} rows={2} placeholder="Краткое описание компании" /></div>
             <div><Label>Копирайт</Label><Input value={content.copyright || ''} onChange={e => set('copyright', e.target.value)} /></div>
+            <div><Label>Ссылки</Label></div>
+            {(content.links || []).map((link: any, i: number) => (
+              <div key={i} className="flex gap-2">
+                <Input placeholder="Текст" value={link.label || ''} onChange={e => { const links = [...(content.links || [])]; links[i] = { ...links[i], label: e.target.value }; set('links', links); }} />
+                <Input placeholder="URL" value={link.href || ''} onChange={e => { const links = [...(content.links || [])]; links[i] = { ...links[i], href: e.target.value }; set('links', links); }} />
+                <Button size="icon" variant="ghost" onClick={() => set('links', (content.links || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('links', [...(content.links || []), { label: '', href: '#' }])}><Plus className="w-3 h-3 mr-1" /> Ссылка</Button>
+            <div><Label>Соцсети</Label></div>
+            {(content.socialLinks || []).map((s: any, i: number) => (
+              <div key={i} className="flex gap-2">
+                <Input placeholder="Иконка" value={s.icon || ''} onChange={e => { const sl = [...(content.socialLinks || [])]; sl[i] = { ...sl[i], icon: e.target.value }; set('socialLinks', sl); }} className="w-16" />
+                <Input placeholder="Название" value={s.platform || ''} onChange={e => { const sl = [...(content.socialLinks || [])]; sl[i] = { ...sl[i], platform: e.target.value }; set('socialLinks', sl); }} />
+                <Input placeholder="URL" value={s.url || ''} onChange={e => { const sl = [...(content.socialLinks || [])]; sl[i] = { ...sl[i], url: e.target.value }; set('socialLinks', sl); }} />
+                <Button size="icon" variant="ghost" onClick={() => set('socialLinks', (content.socialLinks || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('socialLinks', [...(content.socialLinks || []), { icon: '🔗', platform: '', url: '' }])}><Plus className="w-3 h-3 mr-1" /> Соцсеть</Button>
+            <div><Label>Иконки оплаты</Label></div>
+            {(content.paymentIcons || []).map((p: any, i: number) => (
+              <div key={i} className="flex gap-2">
+                <Input placeholder="Название (Visa, MC...)" value={p.name || ''} onChange={e => { const pi = [...(content.paymentIcons || [])]; pi[i] = { ...pi[i], name: e.target.value }; set('paymentIcons', pi); }} />
+                <Input placeholder="URL изображения" value={p.image || ''} onChange={e => { const pi = [...(content.paymentIcons || [])]; pi[i] = { ...pi[i], image: e.target.value }; set('paymentIcons', pi); }} />
+                <Button size="icon" variant="ghost" onClick={() => set('paymentIcons', (content.paymentIcons || []).filter((_: any, j: number) => j !== i))}><Trash2 className="w-4 h-4" /></Button>
+              </div>
+            ))}
+            <Button size="sm" variant="outline" onClick={() => set('paymentIcons', [...(content.paymentIcons || []), { name: '', image: '' }])}><Plus className="w-3 h-3 mr-1" /> Иконка оплаты</Button>
           </div>
         );
 
@@ -653,6 +709,7 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
         return (
           <div className="space-y-3">
             <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
             <div><Label>Колонок</Label><Input type="number" min={1} max={6} value={content.columns || 3} onChange={e => set('columns', Number(e.target.value))} /></div>
             {(content.items || []).map((item: any, i: number) => (
               <div key={i} className="border rounded-lg p-3 space-y-2">
@@ -674,6 +731,10 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
         return (
           <div className="space-y-3">
             <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Подзаголовок</Label><Input value={content.subtitle || ''} onChange={e => set('subtitle', e.target.value)} /></div>
+            <div><Label>Иконка секции (URL)</Label><Input value={content.iconImage || ''} onChange={e => set('iconImage', e.target.value)} placeholder="https://..." /></div>
+            <div><Label>Текст ссылки «Ещё»</Label><Input value={content.linkText || ''} onChange={e => set('linkText', e.target.value)} placeholder="Смотреть все" /></div>
+            {content.linkText && <div><Label>Ссылка «Ещё»</Label><Input value={content.linkHref || ''} onChange={e => set('linkHref', e.target.value)} /></div>}
             {(content.items || []).map((item: any, i: number) => (
               <div key={i} className="border rounded-lg p-3 space-y-2">
                 <Input placeholder="URL изображения" value={item.image || ''} onChange={e => { const items = [...(content.items || [])]; items[i] = { ...items[i], image: e.target.value }; set('items', items); }} />
@@ -758,6 +819,24 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
               </div>
             ))}
             <Button size="sm" variant="outline" onClick={() => set('fields', [...(content.fields || []), { label: '', placeholder: '', type: 'text' }])}><Plus className="w-3 h-3 mr-1" /> Добавить поле</Button>
+          </div>
+        );
+
+      case 'imageText':
+        return (
+          <div className="space-y-3">
+            <div><Label>Заголовок</Label><Input value={content.title || ''} onChange={e => set('title', e.target.value)} /></div>
+            <div><Label>Текст</Label><Textarea value={content.body || ''} onChange={e => set('body', e.target.value)} rows={4} /></div>
+            <div><Label>URL изображения</Label><Input value={content.image || ''} onChange={e => set('image', e.target.value)} placeholder="https://..." /></div>
+            <div><Label>Позиция изображения</Label>
+              <select value={content.imagePosition || 'left'} onChange={e => set('imagePosition', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm">
+                <option value="left">Слева</option>
+                <option value="right">Справа</option>
+              </select>
+            </div>
+            <div><Label>Текст кнопки</Label><Input value={content.ctaText || ''} onChange={e => set('ctaText', e.target.value)} /></div>
+            {content.ctaText && <div><Label>Ссылка кнопки</Label><Input value={content.ctaHref || ''} onChange={e => set('ctaHref', e.target.value)} /></div>}
+            <div><Label>Цвет фона</Label><Input type="color" value={content.bgColor || '#ffffff'} onChange={e => set('bgColor', e.target.value)} className="h-10" /></div>
           </div>
         );
 

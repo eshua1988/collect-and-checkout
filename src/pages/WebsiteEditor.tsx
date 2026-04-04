@@ -19,27 +19,28 @@ import {
   FileText, BarChart3, Award, Megaphone, GitBranch, Share2, Mail,
   Bell, PanelTop, ChevronsRight, ListChecks, Table2, MoveHorizontal,
   Quote, MapPin, Columns3, ClipboardList, ArrowUpDown,
-  LayoutGrid, GalleryHorizontal, ShoppingBag, ListTree, Search
+  LayoutGrid, GalleryHorizontal, ShoppingBag, ListTree, Search,
+  SplitSquareVertical
 } from 'lucide-react';
 
 const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactNode; defaultContent: Record<string, any> }[] = [
-  { type: 'navbar', label: 'Навигация', icon: <Layout className="w-4 h-4" />, defaultContent: { logo: 'Мой Сайт', links: [{ label: 'О нас', href: '#about' }, { label: 'Контакты', href: '#contact' }], bgColor: '#1e293b', textColor: '#ffffff' } },
-  { type: 'hero', label: 'Герой-секция', icon: <Star className="w-4 h-4" />, defaultContent: { title: 'Заголовок страницы', subtitle: 'Краткое описание вашего продукта или услуги', ctaText: 'Начать', bgColor: '#1e293b', textColor: '#ffffff', align: 'center' } },
+  { type: 'navbar', label: 'Навигация', icon: <Layout className="w-4 h-4" />, defaultContent: { logo: 'Мой Сайт', links: [{ label: 'О нас', href: '#about' }, { label: 'Контакты', href: '#contact' }], bgColor: '#1e293b', textColor: '#ffffff', sticky: false } },
+  { type: 'hero', label: 'Герой-секция', icon: <Star className="w-4 h-4" />, defaultContent: { title: 'Заголовок страницы', subtitle: 'Краткое описание вашего продукта или услуги', ctaText: 'Начать', bgColor: '#1e293b', textColor: '#ffffff', align: 'center', heroImage: '', overlay: 0.4, searchFields: [] } },
   { type: 'text', label: 'Текст', icon: <Type className="w-4 h-4" />, defaultContent: { title: 'Заголовок раздела', body: 'Опишите здесь ваш контент...', align: 'left' } },
   { type: 'image', label: 'Изображение', icon: <Image className="w-4 h-4" />, defaultContent: { src: '', caption: '' } },
   { type: 'gallery', label: 'Галерея', icon: <Layers className="w-4 h-4" />, defaultContent: { title: 'Галерея', images: [] } },
   { type: 'video', label: 'Видео', icon: <Video className="w-4 h-4" />, defaultContent: { url: '', title: '' } },
-  { type: 'features', label: 'Преимущества', icon: <Star className="w-4 h-4" />, defaultContent: { title: 'Наши преимущества', items: [{ icon: '⭐', title: 'Преимущество 1', desc: 'Описание' }] } },
+  { type: 'features', label: 'Преимущества', icon: <Star className="w-4 h-4" />, defaultContent: { title: 'Наши преимущества', columns: 4, items: [{ icon: '⭐', image: '', title: 'Преимущество 1', desc: 'Описание' }] } },
   { type: 'pricing', label: 'Тарифы', icon: <DollarSign className="w-4 h-4" />, defaultContent: { title: 'Тарифы', plans: [{ name: 'Базовый', price: '0₽', features: ['Функция 1'] }] } },
-  { type: 'testimonials', label: 'Отзывы', icon: <MessageSquare className="w-4 h-4" />, defaultContent: { title: 'Отзывы клиентов', items: [{ name: 'Иван И.', text: 'Отличный продукт!', rating: 5 }] } },
+  { type: 'testimonials', label: 'Отзывы', icon: <MessageSquare className="w-4 h-4" />, defaultContent: { title: 'Отзывы клиентов', items: [{ name: 'Иван И.', text: 'Отличный продукт!', rating: 5, avatar: '', role: '' }] } },
   { type: 'team', label: 'Команда', icon: <Users className="w-4 h-4" />, defaultContent: { title: 'Наша команда', members: [{ name: 'Имя Фамилия', role: 'Должность', avatar: '👤' }] } },
   { type: 'faq', label: 'FAQ', icon: <HelpCircle className="w-4 h-4" />, defaultContent: { title: 'Часто задаваемые вопросы', items: [{ q: 'Вопрос?', a: 'Ответ' }] } },
   { type: 'countdown', label: 'Таймер', icon: <Timer className="w-4 h-4" />, defaultContent: { title: 'До события осталось', targetDate: new Date(Date.now() + 7 * 86400000).toISOString() } },
-  { type: 'contact', label: 'Контакты', icon: <Phone className="w-4 h-4" />, defaultContent: { title: 'Свяжитесь с нами', email: '', phone: '' } },
+  { type: 'contact', label: 'Контакты', icon: <Phone className="w-4 h-4" />, defaultContent: { title: 'Свяжитесь с нами', subtitle: '', email: '', phone: '', address: '', hours: '', buttonText: '', buttonHref: '#', image: '' } },
   { type: 'button', label: 'Кнопка', icon: <AlignLeft className="w-4 h-4" />, defaultContent: { text: 'Нажмите здесь', href: '#', bgColor: '#4f46e5', align: 'center' } },
   { type: 'divider', label: 'Разделитель', icon: <Minus className="w-4 h-4" />, defaultContent: {} },
   { type: 'html', label: 'HTML код', icon: <Code2 className="w-4 h-4" />, defaultContent: { code: '<p>Вставьте HTML код</p>' } },
-  { type: 'footer', label: 'Футер', icon: <AlignLeft className="w-4 h-4" />, defaultContent: { companyName: 'Моя Компания', copyright: `© ${new Date().getFullYear()} Все права защищены.`, links: [] } },
+  { type: 'footer', label: 'Футер', icon: <AlignLeft className="w-4 h-4" />, defaultContent: { companyName: 'Моя Компания', description: '', copyright: `© ${new Date().getFullYear()} Все права защищены.`, links: [], socialLinks: [], paymentIcons: [] } },
   { type: 'stats', label: 'Статистика', icon: <BarChart3 className="w-4 h-4" />, defaultContent: { title: 'Наши достижения', items: [{ value: '500+', label: 'Клиентов' }, { value: '10', label: 'Лет опыта' }, { value: '99%', label: 'Довольных' }], bgColor: '#4f46e5', textColor: '#ffffff' } },
   { type: 'logos', label: 'Партнёры', icon: <Award className="w-4 h-4" />, defaultContent: { title: 'Нам доверяют', items: [{ name: 'Компания 1', logo: '' }, { name: 'Компания 2', logo: '' }], grayscale: true } },
   { type: 'cta', label: 'Призыв (CTA)', icon: <Megaphone className="w-4 h-4" />, defaultContent: { title: 'Готовы начать?', subtitle: 'Присоединяйтесь к тысячам довольных клиентов', ctaText: 'Начать сейчас', ctaHref: '#', bgColor: '#7c3aed', textColor: '#ffffff' } },
@@ -57,11 +58,12 @@ const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactN
   { type: 'columns', label: 'Колонки', icon: <Columns3 className="w-4 h-4" />, defaultContent: { columns: [{ title: 'Колонка 1', text: 'Содержимое первой колонки' }, { title: 'Колонка 2', text: 'Содержимое второй колонки' }] } },
   { type: 'spacer', label: 'Отступ', icon: <ArrowUpDown className="w-4 h-4" />, defaultContent: { height: '60px' } },
   { type: 'form', label: 'Форма', icon: <ClipboardList className="w-4 h-4" />, defaultContent: { title: 'Оставьте заявку', fields: [{ label: 'Имя', type: 'text' }, { label: 'Email', type: 'email' }, { label: 'Сообщение', type: 'textarea' }], buttonText: 'Отправить', bgColor: '#f8fafc' } },
-  { type: 'cards', label: 'Карточки', icon: <LayoutGrid className="w-4 h-4" />, defaultContent: { title: 'Наши направления', columns: 3, items: [{ image: '', title: 'Карточка 1', desc: 'Описание карточки', badge: '', link: '#' }, { image: '', title: 'Карточка 2', desc: 'Описание карточки', badge: '', link: '#' }, { image: '', title: 'Карточка 3', desc: 'Описание карточки', badge: '', link: '#' }] } },
-  { type: 'carousel', label: 'Карусель', icon: <GalleryHorizontal className="w-4 h-4" />, defaultContent: { title: 'Популярное', items: [{ image: '', title: 'Слайд 1', desc: 'Описание', link: '#' }, { image: '', title: 'Слайд 2', desc: 'Описание', link: '#' }, { image: '', title: 'Слайд 3', desc: 'Описание', link: '#' }], autoplay: false } },
+  { type: 'cards', label: 'Карточки', icon: <LayoutGrid className="w-4 h-4" />, defaultContent: { title: 'Наши направления', subtitle: '', columns: 3, items: [{ image: '', title: 'Карточка 1', desc: 'Описание карточки', badge: '', link: '#' }, { image: '', title: 'Карточка 2', desc: 'Описание карточки', badge: '', link: '#' }, { image: '', title: 'Карточка 3', desc: 'Описание карточки', badge: '', link: '#' }] } },
+  { type: 'carousel', label: 'Карусель', icon: <GalleryHorizontal className="w-4 h-4" />, defaultContent: { title: 'Популярное', subtitle: '', linkText: '', linkHref: '#', iconImage: '', items: [{ image: '', title: 'Слайд 1', desc: 'Описание', link: '#' }, { image: '', title: 'Слайд 2', desc: 'Описание', link: '#' }, { image: '', title: 'Слайд 3', desc: 'Описание', link: '#' }], autoplay: false } },
   { type: 'product', label: 'Товар/Услуга', icon: <ShoppingBag className="w-4 h-4" />, defaultContent: { title: 'Название товара', images: [''], specs: [{ label: 'Характеристика', value: 'Значение' }], price: '0₽', priceNote: '', ctaText: 'Подробнее', ctaHref: '#', badge: '' } },
   { type: 'linkList', label: 'Список ссылок', icon: <ListTree className="w-4 h-4" />, defaultContent: { title: 'Полезные ссылки', columns: 3, groups: [{ heading: 'Раздел 1', links: [{ label: 'Ссылка 1', href: '#' }, { label: 'Ссылка 2', href: '#' }] }, { heading: 'Раздел 2', links: [{ label: 'Ссылка 1', href: '#' }] }] } },
   { type: 'searchBar', label: 'Поиск', icon: <Search className="w-4 h-4" />, defaultContent: { title: '', fields: [{ label: 'Поиск', placeholder: 'Введите запрос...', type: 'text' }], buttonText: 'Найти', bgColor: '#ffffff' } },
+  { type: 'imageText', label: 'Картинка+Текст', icon: <SplitSquareVertical className="w-4 h-4" />, defaultContent: { title: 'Заголовок', body: 'Описание раздела с информацией о вашей компании или услуге.', image: '', imagePosition: 'left', ctaText: '', ctaHref: '#', bgColor: '' } },
 ];
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';
