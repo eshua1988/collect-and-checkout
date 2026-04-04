@@ -157,12 +157,15 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   // Auto-save: persist to localStorage on every change (debounced)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const initialLoadRef = useRef(true);
+  // Always keep a ref to the latest website to avoid stale closures in the timer
+  const websiteRef = useRef(website);
+  websiteRef.current = website;
   useEffect(() => {
     // Skip the very first render (initial load from storage)
     if (initialLoadRef.current) { initialLoadRef.current = false; return; }
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      saveWebsite({ ...website, updatedAt: Date.now() });
+      saveWebsite({ ...websiteRef.current, updatedAt: Date.now() });
     }, 600);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [website.blocks, website.pages, website.name, website.globalStyles]);

@@ -867,18 +867,18 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
               </div>
             )}
             {/* Edit (pencil) button */}
-            <div data-edit-btn className="px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/80" onClick={(e) => { e.stopPropagation(); onEdit?.(block.id); }}>
+            <div data-edit-btn className="px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/80" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); onEdit?.(block.id); }}>
               ✏️
             </div>
             {/* Inline text edit (T) button */}
             {onContentUpdate && (
-              <div data-edit-btn className="px-1.5 py-0.5 text-xs rounded bg-indigo-500 text-white cursor-pointer hover:bg-indigo-600 font-bold" onClick={(e) => { e.stopPropagation(); setInlineEditId?.(inlineEditId === block.id ? null : block.id); }} title="Редактировать текст">
+              <div data-edit-btn className="px-1.5 py-0.5 text-xs rounded bg-indigo-500 text-white cursor-pointer hover:bg-indigo-600 font-bold" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); setInlineEditId?.(inlineEditId === block.id ? null : block.id); }} title="Редактировать текст">
                 <Type className="w-3.5 h-3.5" />
               </div>
             )}
             {/* Delete button */}
             {onDelete && (
-              <div data-edit-btn className="px-1.5 py-0.5 text-xs rounded bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/80" onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}>
+              <div data-edit-btn className="px-1.5 py-0.5 text-xs rounded bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/80" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}>
                 <Trash2 className="w-3.5 h-3.5" />
               </div>
             )}
@@ -909,30 +909,34 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
                     <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
                   </div>
                 )}
-                {/* Overlay image — left/right wraps content side-by-side */}
-                {c.overlayImage && (c.overlayPosition === 'left' || c.overlayPosition === 'right') ? (
-                  <div style={{ display: 'flex', flexDirection: c.overlayPosition === 'left' ? 'row' : 'row-reverse', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ flexShrink: 0, maxWidth: c.overlayMaxWidth || '40%', padding: '8px' }}>
-                      <img src={c.overlayImage} alt="" style={{ width: '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>{node}</div>
-                  </div>
+                {/* If richText exists (block was T-edited), show it instead of structural content */}
+                {c.richText && block.type !== 'text' && block.type !== 'hero' ? (
+                  <div className="px-6 py-4" dangerouslySetInnerHTML={{ __html: c.richText }} />
                 ) : (
-                  <>{node}</>
+                  <>
+                    {/* Overlay image — left/right wraps content side-by-side */}
+                    {c.overlayImage && (c.overlayPosition === 'left' || c.overlayPosition === 'right') ? (
+                      <div style={{ display: 'flex', flexDirection: c.overlayPosition === 'left' ? 'row' : 'row-reverse', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ flexShrink: 0, maxWidth: c.overlayMaxWidth || '40%', padding: '8px' }}>
+                          <img src={c.overlayImage} alt="" style={{ width: '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>{node}</div>
+                      </div>
+                    ) : (
+                      <>{node}</>
+                    )}
+                  </>
                 )}
-                {/* Overlay image — bottom/center position (after content) */}
+                {/* Overlay image — bottom/center position (after content, always shown) */}
                 {c.overlayImage && (c.overlayPosition === 'bottom' || c.overlayPosition === 'center' || (!c.overlayPosition)) && (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}>
                     <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
                   </div>
                 )}
+                {/* Overlay image — top position is already handled above, skip here */}
                 {/* Render extras at bottom of any block (except navbar) */}
                 {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
                   <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
-                )}
-                {/* Rich text display — skip for 'text' and 'hero' which render richText internally */}
-                {c.richText && block.type !== 'text' && block.type !== 'hero' && (
-                  <div className="px-6 pb-4" dangerouslySetInnerHTML={{ __html: c.richText }} />
                 )}
               </>
             );
