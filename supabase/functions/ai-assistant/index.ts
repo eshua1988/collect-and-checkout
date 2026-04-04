@@ -159,7 +159,34 @@ const PROMPT_WEBSITE = `
 АНИМАЦИИ: добавляй animateIn("fadeUp") к блокам контента для эффекта скролла, используй animateDelay для каскадных задержек
 МНОГОСТРАНИЧНЫЙ: pages:[{slug,title,blocks}], Navbar одинаковый на всех: href="/slug", Главная slug="home"
 ФОТО: структура→цвета→воссоздай КАЖДУЮ секцию отдельным блоком→bgColor/textColor близко к оригиналу
-КАСТОМНЫЕ БЛОКИ: newBlockTypes:[{blockType,label,icon,description}]`;
+КАСТОМНЫЕ БЛОКИ: newBlockTypes:[{blockType,label,icon,description}]
+
+-- ── ЭТАЛОННЫЙ ШАБЛОН: VOUS CHURCH STYLE (церковь/сообщество) ────────────────
+ШАБЛОН "vous-church" (id) — 12 блоков, тёмная цинематичная палитра (#0a0a0a + #f5c842 + #fff):
+1. announcement: пасхальная акция/событие, bgColor:#f5c842, textColor:#0a0a0a, closable:true
+2. navbar: logo="GRACE CHURCH", bgColor:#0a0a0a, textColor:#fff, sticky:true, fontFamily:Bebas Neue
+3. videoBg: YouTube видео + overlay:0.55, minHeight:"100vh", uppercase:true; eyebrow+title+2 CTA кнопки
+4. bigQuote: миссионерская цитата, eyebrow:"НАША МИССИЯ", fontSize:"3.5rem", bgColor:#0a0a0a, textColor:#fff
+5. eventCards: 3 события (categories: СОБЫТИЕ/КОНФЕРЕНЦИЯ/СБОР), bgColor:#0f0f0f с плейсхолдер-фото
+6. locations: 3 локации с временами служений, адресами, mapHref, bgColor:#111111
+7. values: 7 ценностей-карточек со скроллом, divider:"▽", showDragHint:true, bgColor:#0a0a0a, fontFamily:Bebas Neue
+8. splitHero: "КАК МЫ СТРОИМ СООБЩЕСТВО" — фото+текст+2 CTA, contentBg:#0f172a
+9. features: 4 направления (Служения/Группы/Команда/Дети), bgColor:#0f172a, textColor:#fff
+10. splitHero: ПАСТОРЫ — фото+биография, contentBg:#1a1a2e
+11. cta: призыв к пожертвованию, bgColor:#f5c842, textColor:#0a0a0a, fontFamily:Bebas Neue
+12. footer: 3 колонки (СВЯЗЬ/СЛУЖЕНИЯ/РЕСУРСЫ), socialLinks:[telegram,youtube,instagram], bgColor:#0a0a0a
+globalStyles: {fontFamily:"Lato", headingFont:"Bebas Neue", backgroundColor:"#0a0a0a", textColor:"#ffffff", primaryColor:"#f5c842"}
+-- ── ПРАВИЛА СОЗДАНИЯ ЦЕРКОВНОГО САЙТА ────────────────────────────────────────
+При запросе "церковь"/"church"/"сообщество"/"mosque"/"synagogue"/"ministry":
+- Используй ЦИНЕМАТИК палитру (#0a0a0a/#f59e0b) или ТЁМНУЮ (#a855f7/#0f0f23)
+- ОБЯЗАТЕЛЬНО: announcement(вверху) + videoBg/parallax(герой) + bigQuote(миссия) + locations(расписание) + values(ценности) + eventCards(события)
+- РЕКОМЕНДУЕМО: splitHero(пасторы/командe) + features(направления) + cta(пожертвования) + footer(многоколоночный)
+- fontFamily: "Bebas Neue" + "Lato" для заголовков/текста
+- animateIn: "fadeUp" или "fadeLeft" на каждый блок с animateDelay:100-300
+- Ценности: нумерация 01, 02... с разделителем ▽ в заголовке
+- Локации: всегда указывать service times в поле "times" (напр. "10:00 + 12:00 + 14:00")
+- События: категории ЗАГЛАВНЫМИ: СОБЫТИЕ / КОНФЕРЕНЦИЯ / СБОР / КРЕЩЕНИЕ
+- Не используй типы блоков hero/text/features без customization под церковный стиль — предпочитай parallax/videoBg/bigQuote/values/eventCards/locations`;
 
 // === FORM-SPECIFIC ===
 const PROMPT_FORM = `

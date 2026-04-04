@@ -235,12 +235,167 @@ export const WEBSITE_TEMPLATES = [
       }
     ]
   }
+  ,
+  // ── VOUS-CHURCH style: dark/cinematic church & community ──────────
+  {
+    id: 'vous-church',
+    name: 'Церковь / Сообщество',
+    nameEn: 'Church / Community (VOUS style)',
+    description: 'Тёмный кинематичный сайт для церкви или сообщества в стиле VOUS Church Miami. Полный набор: видеогерой, миссия, события, локации, ценности, пасторы, призыв к даянию.',
+    category: 'church',
+    preview: '⛪',
+    blocks: [
+      {
+        id: 'ch_ann', type: 'announcement',
+        content: { emoji: '✝️', text: 'Пасхальное служение — Христос Воскресе!', subtext: 'Воскресенье, 12 апреля • 10:00 и 12:00', ctaText: 'Зарегистрироваться', ctaHref: '#visit', bgColor: '#f5c842', textColor: '#0a0a0a', closable: true },
+        styles: { fontFamily: 'Lato', fontSize: '13px', fontWeight: '600' }
+      },
+      {
+        id: 'ch_nav', type: 'navbar',
+        content: { logo: 'GRACE CHURCH', links: [{ label: 'ПОСЕТИТЬ', href: '#visit' }, { label: 'ПРОПОВЕДИ', href: '#sermons' }, { label: 'СООБЩЕСТВО', href: '#community' }, { label: 'СЛУЖЕНИЕ', href: '#ministry' }], ctaText: 'ПЛАН ВИЗИТА', ctaHref: '#visit', bgColor: '#0a0a0a', textColor: '#ffffff', sticky: true },
+        styles: { fontFamily: 'Bebas Neue', letterSpacing: '0.1em' }
+      },
+      {
+        id: 'ch_vbg', type: 'videoBg',
+        content: { eyebrow: 'GRACE CHURCH', title: 'Добро пожаловать домой', subtitle: 'Каждое воскресенье. Для всех. Место, где вам всегда рады.', ctaText: 'ПОСЕТИТЬ СЛУЖЕНИЕ', ctaHref: '#visit', cta2Text: 'СМОТРЕТЬ ОНЛАЙН', cta2Href: '#online', videoUrl: 'https://www.youtube.com/watch?v=bajjG6TX33o', bgImage: 'https://placehold.co/1920x1080/0a0a0a/ffffff?text=Grace+Church', overlay: 0.55, minHeight: '100vh', uppercase: true },
+        styles: { fontFamily: 'Bebas Neue', animateIn: 'fadeIn' }
+      },
+      {
+        id: 'ch_bq', type: 'bigQuote',
+        content: { eyebrow: 'НАША МИССИЯ', text: 'Привести тех, кто далеко от Бога, — близко к Нему.', bgColor: '#0a0a0a', textColor: '#ffffff', fontSize: '3.5rem', fontWeight: '700', italic: false, tight: true, align: 'center', openQuote: false, ctaText: 'Узнать больше о нас', ctaHref: '#about' },
+        styles: { animateIn: 'fadeUp', fontFamily: 'Bebas Neue', padding: '100px 40px' }
+      },
+      {
+        id: 'ch_ev', type: 'eventCards',
+        content: {
+          title: 'АКТУАЛЬНОЕ',
+          subtitle: 'Ближайшие события и программы',
+          bgColor: '#0f0f0f',
+          textColor: '#ffffff',
+          columns: 3,
+          linkText: 'Все события →',
+          linkHref: '#events',
+          items: [
+            { category: 'СОБЫТИЕ', title: 'Пасхальное служение', desc: 'Торжественное служение в честь Воскресения Христова. Приходите всей семьёй.', image: 'https://placehold.co/600x400/1a1a1a/f5c842?text=Пасха', href: '#easter', linkText: 'Подробнее' },
+            { category: 'СОБЫТИЕ', title: 'Водное крещение', desc: 'Сделайте следующий шаг в вашей вере и станьте официальной частью семьи церкви.', image: 'https://placehold.co/600x400/1a1a1a/ffffff?text=Крещение', href: '#baptism', linkText: 'Зарегистрироваться' },
+            { category: 'КОНФЕРЕНЦИЯ', title: 'ChurchCon 2026', desc: 'Ежегодная конференция для лидеров, служителей и всех желающих расти.', image: 'https://placehold.co/600x400/111111/f5c842?text=ChurchCon', href: '#conference', linkText: 'Получить билет' }
+          ]
+        },
+        styles: { animateIn: 'fadeUp', animateDelay: '100' }
+      },
+      {
+        id: 'ch_loc', type: 'locations',
+        content: {
+          title: 'ПОСЕТИТЬ ЦЕРКОВЬ',
+          subtitle: 'Приходите каждое воскресенье в одном из наших мест',
+          bgColor: '#111111',
+          textColor: '#ffffff',
+          locations: [
+            { name: 'GRACE — ЦЕНТР', times: '9:00 + 11:00 + 13:00', address: 'ул. Центральная, 12, Москва', href: '#loc1', mapHref: 'https://maps.google.com', image: 'https://placehold.co/600x400/1a1a1a/ffffff?text=Центр' },
+            { name: 'GRACE — СЕВЕР', times: '10:00 + 12:00', address: 'пр. Северный, 45, Москва', href: '#loc2', mapHref: 'https://maps.google.com', image: 'https://placehold.co/600x400/1a1a1a/ffffff?text=Север' },
+            { name: 'ОНЛАЙН', times: 'YouTube: 10:00 + 12:00', address: 'youtube.com/@gracechurch', href: '#online', mapHref: '#online', image: 'https://placehold.co/600x400/0a0a0a/f5c842?text=Online' }
+          ]
+        },
+        styles: { animateIn: 'fadeUp' }
+      },
+      {
+        id: 'ch_val', type: 'values',
+        content: {
+          title: 'НАШИ ЦЕННОСТИ',
+          subtitle: 'Наши основные ценности — это то, кто мы есть. Не просто то, что мы делаем — это наша ДНК.',
+          bgColor: '#0a0a0a',
+          textColor: '#ffffff',
+          divider: '▽',
+          showDragHint: true,
+          items: [
+            { title: 'ИИСУС ▽ НАШЕ ПОСЛАНИЕ', desc: 'Цель нашей церкви — нести надежду Иисуса. Методы приходят и уходят, но наше послание остаётся неизменным.' },
+            { title: 'ЛЮДИ ▽ НАШЕ СЕРДЦЕ', desc: 'Наше сердце для ВСЕХ людей. Мы не извиняемся за то, что специально нацелены на тех, кто далёк от Бога.' },
+            { title: 'ЩЕДРОСТЬ ▽ НАШ ПРИВИЛЕГИЙ', desc: 'Щедрость — это давать больше, чем требуется. Мы щедры временем, талантами и средствами.' },
+            { title: 'СОВЕРШЕНСТВО ▽ НАШ ДУХ', desc: 'Мы всегда делаем наилучшее из того, что имеем. Приходим вовремя, вовлечены и подготовлены.' },
+            { title: 'СЛУЖЕНИЕ ▽ НАША ИДЕНТИЧНОСТЬ', desc: 'Если ты слишком велик для служения — ты слишком мал для лидерства. Каждый лидер прежде всего слуга.' },
+            { title: 'ЧЕСТЬ ▽ НАШЕ ПРИЗВАНИЕ', desc: 'Мы открыто выражаем честь и не скупимся на слова. Подчиняемся лидерству и благодарны за духовный авторитет.' },
+            { title: 'СТРАСТЬ ▽ НАШЕ СТРЕМЛЕНИЕ', desc: 'Всё, что мы делаем — со страстью. К Иисусу. К людям. К Его церкви.' }
+          ]
+        },
+        styles: { animateIn: 'fadeLeft', fontFamily: 'Bebas Neue', letterSpacing: '0.05em' }
+      },
+      {
+        id: 'ch_sh1', type: 'splitHero',
+        content: {
+          eyebrow: 'СООБЩЕСТВО',
+          title: 'Как мы СТРОИМ сообщество',
+          body: 'Воскресные служения, малые группы и команды — три столпа нашего сообщества. Найдите своё место в семье церкви.',
+          image: 'https://placehold.co/800x600/1a1a2e/ffffff?text=Community',
+          contentBg: '#0f172a',
+          textColor: '#ffffff',
+          ctaText: 'Найти группу',
+          ctaHref: '#community',
+          cta2Text: 'Войти в команду',
+          cta2Href: '#team'
+        },
+        styles: { animateIn: 'fadeRight' }
+      },
+      {
+        id: 'ch_feat', type: 'features',
+        content: {
+          title: 'Способы участвовать',
+          items: [
+            { icon: '🙏', title: 'Воскресные служения', desc: 'Главное собрание нашей общины каждое воскресенье. Поклонение Богу и общение.' },
+            { icon: '👥', title: 'Малые группы', desc: 'Группы 10–15 человек для общения, молитвы и изучения Слова — лично или онлайн.' },
+            { icon: '🎯', title: 'Войти в команду', desc: 'Начните делать разницу и найдите призвание. Каждый может внести вклад в Божье дело.' },
+            { icon: '👦', title: 'Детская церковь', desc: 'Для детей 6 мес. — 6 класс. Параллельные программы во время каждого служения.' }
+          ],
+          bgColor: '#0f172a',
+          textColor: '#ffffff'
+        },
+        styles: { animateIn: 'fadeUp', animateDelay: '100', padding: '80px 32px' }
+      },
+      {
+        id: 'ch_sh2', type: 'splitHero',
+        content: {
+          eyebrow: 'НАШИ ПАСТОРЫ',
+          title: 'Ричард и Анастасия Виноградовы',
+          body: 'Видение нашей церкви родилось из небольшого еженедельного собрания верующих. Миссия — создать церковь в сердце города, которая станет домом для людей всех возрастов и отразит красоту нашего города.',
+          image: 'https://placehold.co/800x600/1a1a1a/f5c842?text=Pastors',
+          contentBg: '#1a1a2e',
+          textColor: '#ffffff',
+          ctaText: 'Познакомиться с командой',
+          ctaHref: '#team'
+        },
+        styles: { animateIn: 'fadeLeft' }
+      },
+      {
+        id: 'ch_cta', type: 'cta',
+        content: { title: 'ЩЕДРОСТЬ — НАШ ПРИВИЛЕГИЙ', subtitle: 'Бог щедро дал нам — наша честь отдавать в ответ. Присоединитесь к культуре щедрости.', ctaText: 'ПОЖЕРТВОВАТЬ', ctaHref: '#give', bgColor: '#f5c842', textColor: '#0a0a0a', align: 'center' },
+        styles: { animateIn: 'zoomIn', fontFamily: 'Bebas Neue', padding: '80px 40px' }
+      },
+      {
+        id: 'ch_ftr', type: 'footer',
+        content: {
+          companyName: 'GRACE CHURCH',
+          description: 'Церковь для всех. Приходите такими, какие вы есть.',
+          copyright: '© 2026 Grace Church. Все права защищены.',
+          columns: [
+            { title: 'СВЯЗЬ', links: [{ label: 'Воскресные служения', href: '#visit' }, { label: 'Малые группы', href: '#groups' }, { label: 'Growth Track', href: '#track' }] },
+            { title: 'СЛУЖЕНИЯ', links: [{ label: 'Детская церковь', href: '#kids' }, { label: 'Молодёжь', href: '#youth' }, { label: 'Забота', href: '#care' }] },
+            { title: 'РЕСУРСЫ', links: [{ label: 'Пожертвовать', href: '#give' }, { label: 'Проповеди', href: '#sermons' }, { label: 'Контакт', href: '#contact' }] }
+          ],
+          socialLinks: [{ platform: 'telegram', url: '#' }, { platform: 'youtube', url: '#' }, { platform: 'instagram', url: '#' }],
+          bgColor: '#0a0a0a',
+          textColor: '#888888',
+          linkColor: '#ffffff'
+        },
+        styles: { fontFamily: 'Lato' }
+      }
+    ]
+  }
 ];
 
-export type TemplateCategory = 'all' | 'business' | 'personal' | 'store' | 'food' | 'content' | 'event' | 'healthcare';
+export type TemplateCategory = 'all' | 'business' | 'personal' | 'store' | 'food' | 'content' | 'event' | 'healthcare' | 'church';
 
 export const TEMPLATE_CATEGORIES: { id: TemplateCategory; label: string; emoji: string }[] = [
   { id: 'all', label: 'Все шаблоны', emoji: '📦' },
+  { id: 'church', label: 'Церковь', emoji: '⛪' },
   { id: 'business', label: 'Бизнес', emoji: '🏢' },
   { id: 'personal', label: 'Личное', emoji: '👤' },
   { id: 'store', label: 'Магазин', emoji: '🛒' },

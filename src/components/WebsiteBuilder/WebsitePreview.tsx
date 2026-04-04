@@ -1794,32 +1794,48 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
 
     case 'footer':
       return wrap(
-        <footer className="bg-muted/50 py-10 px-8">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-8 mb-6">
-              <div className="md:w-1/3">
-                {c.companyName && <div className="font-bold text-lg mb-2">{c.companyName}</div>}
-                {c.description && <p className="text-sm text-muted-foreground mb-4">{c.description}</p>}
+        <footer style={{ backgroundColor: c.bgColor || undefined, color: c.textColor || undefined }} className="py-12 px-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-10 mb-8">
+              {/* Brand column */}
+              <div className="md:w-1/3 shrink-0">
+                {c.companyName && <div className="font-bold text-xl mb-3" style={{ color: c.linkColor || c.textColor || undefined }}>{c.companyName}</div>}
+                {c.description && <p className="text-sm opacity-70 mb-5">{c.description}</p>}
                 {(c.socialLinks || []).length > 0 && (
-                  <div className="flex gap-3">
-                    {(c.socialLinks || []).map((s: any, i: number) => (
-                      <a key={i} href={s.url || '#'} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-lg hover:bg-muted/80 cursor-pointer" title={s.platform}>{s.icon || '🔗'}</a>
-                    ))}
+                  <div className="flex gap-3 flex-wrap">
+                    {(c.socialLinks || []).map((s: any, i: number) => {
+                      const icons: Record<string, string> = { youtube: '▶', instagram: '📷', telegram: '✈', facebook: '𝐟', twitter: '𝕏', tiktok: '♪', vk: 'VK' };
+                      return <a key={i} href={s.url || '#'} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-current/30 flex items-center justify-center text-sm hover:opacity-80 transition-opacity cursor-pointer" title={s.platform}>{icons[s.platform] || s.icon || '🔗'}</a>;
+                    })}
                   </div>
                 )}
               </div>
-              {(c.links || []).length > 0 && (
-                <div className="flex-1 flex flex-wrap gap-4 justify-end">
-                  {(c.links || []).map((link: any, i: number) => <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">{link.label}</a>)}
+              {/* Multi-column links */}
+              {(c.columns || []).length > 0 ? (
+                <div className="flex-1 grid gap-8" style={{ gridTemplateColumns: `repeat(${Math.min((c.columns || []).length, 4)}, minmax(0, 1fr))` }}>
+                  {(c.columns || []).map((col: any, ci: number) => (
+                    <div key={ci}>
+                      {col.title && <div className="font-semibold text-sm mb-4 tracking-widest uppercase opacity-60">{col.title}</div>}
+                      <div className="flex flex-col gap-2">
+                        {(col.links || []).map((link: any, li: number) => (
+                          <a key={li} href={link.href || '#'} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm opacity-70 hover:opacity-100 transition-opacity cursor-pointer" style={{ color: c.linkColor || undefined }}>{link.label}</a>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+              ) : (c.links || []).length > 0 ? (
+                <div className="flex-1 flex flex-wrap gap-4 justify-end items-start">
+                  {(c.links || []).map((link: any, i: number) => <a key={i} href={link.href} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm opacity-70 hover:opacity-100 transition-opacity cursor-pointer">{link.label}</a>)}
+                </div>
+              ) : null}
             </div>
-            <div className="border-t pt-4 flex flex-col md:flex-row justify-between items-center gap-3">
-              <div className="text-sm text-muted-foreground">{c.copyright || '© 2024'}</div>
+            <div className="border-t border-current/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
+              <div className="text-sm opacity-50">{c.copyright || '© 2024'}</div>
               {(c.paymentIcons || []).length > 0 && (
                 <div className="flex gap-2">
                   {(c.paymentIcons || []).map((icon: any, i: number) => (
-                    icon.image ? <img key={i} src={icon.image} alt={icon.name || ''} className="h-6 object-contain" /> : <span key={i} className="px-2 py-1 border rounded text-xs font-medium text-muted-foreground">{icon.name}</span>
+                    icon.image ? <img key={i} src={icon.image} alt={icon.name || ''} className="h-6 object-contain" /> : <span key={i} className="px-2 py-1 border border-current/20 rounded text-xs font-medium opacity-60">{icon.name}</span>
                   ))}
                 </div>
               )}
