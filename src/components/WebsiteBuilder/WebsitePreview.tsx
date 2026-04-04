@@ -4,32 +4,108 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 
 /** Inline rich text editor with floating format toolbar */
 const EDITOR_FONT_SIZES = [
-  { label: '10', value: '10px' }, { label: '12', value: '12px' }, { label: '14', value: '14px' },
+  { label: '8', value: '8px' }, { label: '9', value: '9px' }, { label: '10', value: '10px' },
+  { label: '11', value: '11px' }, { label: '12', value: '12px' }, { label: '14', value: '14px' },
   { label: '16', value: '16px' }, { label: '18', value: '18px' }, { label: '20', value: '20px' },
-  { label: '24', value: '24px' }, { label: '28', value: '28px' }, { label: '32', value: '32px' },
-  { label: '36', value: '36px' }, { label: '48', value: '48px' }, { label: '64', value: '64px' },
-  { label: '72', value: '72px' }, { label: '96', value: '96px' },
+  { label: '22', value: '22px' }, { label: '24', value: '24px' }, { label: '28', value: '28px' },
+  { label: '32', value: '32px' }, { label: '36', value: '36px' }, { label: '42', value: '42px' },
+  { label: '48', value: '48px' }, { label: '56', value: '56px' }, { label: '64', value: '64px' },
+  { label: '72', value: '72px' }, { label: '84', value: '84px' }, { label: '96', value: '96px' },
+  { label: '120', value: '120px' },
 ];
 
-const EDITOR_FONTS = [
-  { label: 'По умолчанию', value: 'inherit' },
-  { label: 'Arial', value: 'Arial, sans-serif' },
-  { label: 'Georgia', value: 'Georgia, serif' },
-  { label: 'Times New Roman', value: "'Times New Roman', serif" },
-  { label: 'Courier New', value: "'Courier New', monospace" },
-  { label: 'Verdana', value: 'Verdana, sans-serif' },
-  { label: 'Trebuchet MS', value: "'Trebuchet MS', sans-serif" },
-  { label: 'Inter', value: 'Inter, sans-serif' },
-  { label: 'Roboto', value: 'Roboto, sans-serif' },
-  { label: 'Poppins', value: 'Poppins, sans-serif' },
-  { label: 'Montserrat', value: 'Montserrat, sans-serif' },
-  { label: 'Open Sans', value: "'Open Sans', sans-serif" },
-  { label: 'Lato', value: 'Lato, sans-serif' },
-  { label: 'Oswald', value: 'Oswald, sans-serif' },
-  { label: 'Playfair Display', value: "'Playfair Display', serif" },
-  { label: 'Raleway', value: 'Raleway, sans-serif' },
-  { label: 'Nunito', value: 'Nunito, sans-serif' },
-  { label: 'Comic Sans', value: "'Comic Sans MS', cursive" },
+const EDITOR_FONT_GROUPS: { group: string; fonts: { label: string; value: string }[] }[] = [
+  { group: 'Системные', fonts: [
+    { label: 'По умолчанию', value: 'inherit' },
+    { label: 'Arial', value: 'Arial, sans-serif' },
+    { label: 'Georgia', value: 'Georgia, serif' },
+    { label: 'Times New Roman', value: "'Times New Roman', serif" },
+    { label: 'Courier New', value: "'Courier New', monospace" },
+    { label: 'Verdana', value: 'Verdana, sans-serif' },
+    { label: 'Trebuchet MS', value: "'Trebuchet MS', sans-serif" },
+  ]},
+  { group: 'Без засечек / Кириллица', fonts: [
+    { label: 'Inter', value: 'Inter, sans-serif' },
+    { label: 'Roboto', value: 'Roboto, sans-serif' },
+    { label: 'Open Sans', value: "'Open Sans', sans-serif" },
+    { label: 'Lato', value: 'Lato, sans-serif' },
+    { label: 'Montserrat', value: 'Montserrat, sans-serif' },
+    { label: 'Poppins', value: 'Poppins, sans-serif' },
+    { label: 'Nunito', value: 'Nunito, sans-serif' },
+    { label: 'Raleway', value: 'Raleway, sans-serif' },
+    { label: 'Ubuntu', value: 'Ubuntu, sans-serif' },
+    { label: 'Fira Sans', value: "'Fira Sans', sans-serif" },
+    { label: 'Exo 2', value: "'Exo 2', sans-serif" },
+    { label: 'PT Sans', value: "'PT Sans', sans-serif" },
+    { label: 'Noto Sans', value: "'Noto Sans', sans-serif" },
+    { label: 'Source Sans 3', value: "'Source Sans 3', sans-serif" },
+    { label: 'Mulish', value: 'Mulish, sans-serif' },
+    { label: 'Rubik', value: 'Rubik, sans-serif' },
+    { label: 'Work Sans', value: "'Work Sans', sans-serif" },
+    { label: 'Manrope', value: 'Manrope, sans-serif' },
+  ]},
+  { group: 'С засечками / Кириллица', fonts: [
+    { label: 'Playfair Display', value: "'Playfair Display', serif" },
+    { label: 'Merriweather', value: 'Merriweather, serif' },
+    { label: 'PT Serif', value: "'PT Serif', serif" },
+    { label: 'Lora', value: 'Lora, serif' },
+    { label: 'Noto Serif', value: "'Noto Serif', serif" },
+    { label: 'EB Garamond', value: "'EB Garamond', serif" },
+    { label: 'Cormorant', value: 'Cormorant, serif' },
+    { label: 'Spectral', value: 'Spectral, serif' },
+  ]},
+  { group: 'Декоративные', fonts: [
+    { label: 'Oswald', value: 'Oswald, sans-serif' },
+    { label: 'Russo One', value: "'Russo One', sans-serif" },
+    { label: 'Bebas Neue', value: "'Bebas Neue', cursive" },
+    { label: 'Righteous', value: 'Righteous, cursive' },
+    { label: 'Lobster', value: 'Lobster, cursive' },
+    { label: 'Pacifico', value: 'Pacifico, cursive' },
+    { label: 'Fredoka One', value: "'Fredoka One', cursive" },
+    { label: 'Comfortaa', value: 'Comfortaa, cursive' },
+    { label: 'Press Start 2P', value: "'Press Start 2P', cursive" },
+    { label: 'Bungee', value: 'Bungee, cursive' },
+    { label: 'Lilita One', value: "'Lilita One', cursive" },
+    { label: 'Abril Fatface', value: "'Abril Fatface', cursive" },
+  ]},
+  { group: 'Рукописные', fonts: [
+    { label: 'Dancing Script', value: "'Dancing Script', cursive" },
+    { label: 'Caveat', value: 'Caveat, cursive' },
+    { label: 'Indie Flower', value: "'Indie Flower', cursive" },
+    { label: 'Shadows Into Light', value: "'Shadows Into Light', cursive" },
+    { label: 'Patrick Hand', value: "'Patrick Hand', cursive" },
+    { label: 'Kalam', value: 'Kalam, cursive' },
+    { label: 'Architects Daughter', value: "'Architects Daughter', cursive" },
+    { label: 'Comic Sans', value: "'Comic Sans MS', cursive" },
+  ]},
+  { group: 'Моноширинные', fonts: [
+    { label: 'Source Code Pro', value: "'Source Code Pro', monospace" },
+    { label: 'JetBrains Mono', value: "'JetBrains Mono', monospace" },
+    { label: 'Fira Code', value: "'Fira Code', monospace" },
+    { label: 'Space Mono', value: "'Space Mono', monospace" },
+    { label: 'Roboto Mono', value: "'Roboto Mono', monospace" },
+  ]},
+];
+
+const EDITOR_SHADOWS = [
+  { label: 'Нет', value: 'none' },
+  { label: 'Чёрная', value: '1px 1px 2px rgba(0,0,0,0.8)' },
+  { label: 'Белая', value: '1px 1px 2px rgba(255,255,255,0.9),-1px -1px 2px rgba(255,255,255,0.9)' },
+  { label: 'Мягкая', value: '2px 2px 4px rgba(0,0,0,0.4)' },
+  { label: 'Глубокая', value: '3px 3px 0 rgba(0,0,0,0.4),5px 5px 10px rgba(0,0,0,0.3)' },
+  { label: 'Неон 🔵', value: '0 0 5px #3b82f6,0 0 15px #3b82f6,0 0 30px #3b82f6' },
+  { label: 'Неон 🔴', value: '0 0 5px #ef4444,0 0 15px #ef4444,0 0 30px #ef4444' },
+  { label: 'Неон 🟢', value: '0 0 5px #22c55e,0 0 15px #22c55e,0 0 30px #22c55e' },
+  { label: 'Неон 🟡', value: '0 0 5px #f59e0b,0 0 15px #f59e0b,0 0 30px #f59e0b' },
+  { label: 'Неон 🟣', value: '0 0 5px #8b5cf6,0 0 15px #8b5cf6,0 0 30px #8b5cf6' },
+  { label: 'Ретро', value: '2px 2px 0 #ff6b6b,4px 4px 0 #4ecdc4' },
+  { label: 'Контур', value: '-1px -1px 0 rgba(0,0,0,0.9),1px -1px 0 rgba(0,0,0,0.9),-1px 1px 0 rgba(0,0,0,0.9),1px 1px 0 rgba(0,0,0,0.9)' },
+  { label: 'Золото', value: '1px 1px 0 #b8860b,2px 2px 4px rgba(184,134,11,0.5),0 0 8px rgba(255,215,0,0.3)' },
+  { label: '3D', value: '1px 1px 0 #555,2px 2px 0 #555,3px 3px 0 #555,4px 4px 0 #555' },
+];
+
+const EDITOR_HIGHLIGHT_COLORS = [
+  'transparent','#fef08a','#bbf7d0','#bfdbfe','#fecaca','#e9d5ff','#fed7aa','#fce7f3','#ffffff','#000000',
 ];
 
 const EDITOR_COLOR_PALETTE = [
@@ -53,6 +129,25 @@ const EDITOR_COLOR_PALETTE = [
   '#6d28d9','#7c3aed','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe',
 ];
 
+function loadEditorFonts() {
+  const id = 'copilot-editor-gfonts';
+  if (document.getElementById(id)) return;
+  const list = [
+    'Inter','Roboto','Open+Sans','Lato','Montserrat','Poppins','Nunito','Raleway',
+    'Ubuntu','Fira+Sans','Exo+2','PT+Sans','Noto+Sans','Source+Sans+3','Mulish','Rubik','Work+Sans','Manrope',
+    'Playfair+Display','Merriweather','PT+Serif','Lora','Noto+Serif','EB+Garamond','Cormorant','Spectral',
+    'Oswald','Russo+One','Bebas+Neue','Righteous','Lobster','Pacifico','Fredoka+One','Comfortaa',
+    'Press+Start+2P','Bungee','Lilita+One','Abril+Fatface',
+    'Dancing+Script','Caveat','Indie+Flower','Shadows+Into+Light','Patrick+Hand','Kalam','Architects+Daughter',
+    'Source+Code+Pro','JetBrains+Mono','Fira+Code','Space+Mono','Roboto+Mono',
+  ];
+  const params = list.map(f => `family=${f}:wght@400;700`).join('&');
+  const link = document.createElement('link');
+  link.id = id; link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?${params}&display=swap`;
+  document.head.appendChild(link);
+}
+
 function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: string; initialHtml: string; onSave: (html: string) => void; onClose: () => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -60,13 +155,16 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPos, setToolbarPos] = useState({ x: 0, y: 0 });
   const [currentColor, setCurrentColor] = useState('#ef4444');
+  const [currentHighlight, setCurrentHighlight] = useState('transparent');
   const showToolbarRef = useRef(false);
+
+  // Load Google Fonts once
+  useEffect(() => { loadEditorFonts(); }, []);
 
   // Set content ONCE on mount — avoids dangerouslySetInnerHTML resetting on every re-render
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = initialHtml;
-      // Place cursor at end
       const range = document.createRange();
       const sel = window.getSelection();
       range.selectNodeContents(editorRef.current);
@@ -102,7 +200,10 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
     const rect = range.getBoundingClientRect();
     const editorRect = editorRef.current.closest('[data-block-wrap]')?.getBoundingClientRect();
     if (editorRect) {
-      setToolbarPos({ x: rect.left - editorRect.left + rect.width / 2, y: rect.top - editorRect.top - 8 });
+      setToolbarPos({
+        x: Math.max(270, Math.min(rect.left - editorRect.left + rect.width / 2, editorRect.width - 270)),
+        y: rect.top - editorRect.top,
+      });
     }
     if (!showToolbarRef.current) { showToolbarRef.current = true; setShowToolbar(true); }
   }, [saveRange]);
@@ -118,6 +219,23 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
     editorRef.current?.focus();
   };
 
+  /** Wrap selected text in a span with a CSS style property */
+  const applySpanStyle = useCallback((prop: string, value: string) => {
+    restoreRange();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) { editorRef.current?.focus(); return; }
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) { editorRef.current?.focus(); return; }
+    try {
+      const fragment = range.extractContents();
+      const span = document.createElement('span');
+      (span.style as any)[prop] = value;
+      span.appendChild(fragment);
+      range.insertNode(span);
+    } catch { /* ignore */ }
+    editorRef.current?.focus();
+  }, [restoreRange]);
+
   const applyColor = (color: string) => {
     setCurrentColor(color);
     restoreRange();
@@ -125,30 +243,34 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
     editorRef.current?.focus();
   };
 
-  const applyFontSize = (px: string) => {
+  const applyHighlight = (color: string) => {
+    setCurrentHighlight(color);
     restoreRange();
-    document.execCommand('styleWithCSS', false, 'true');
-    document.execCommand('fontSize', false, '7');
-    if (editorRef.current) {
-      editorRef.current.querySelectorAll('font[size="7"]').forEach(el => {
-        const span = document.createElement('span');
-        span.style.fontSize = px;
-        span.innerHTML = (el as HTMLElement).innerHTML;
-        el.parentNode?.replaceChild(span, el);
-      });
+    if (color === 'transparent') {
+      document.execCommand('hiliteColor', false, 'rgba(0,0,0,0)');
+    } else {
+      const applied = document.execCommand('hiliteColor', false, color);
+      if (!applied) applySpanStyle('backgroundColor', color);
     }
-    document.execCommand('styleWithCSS', false, 'false');
     editorRef.current?.focus();
   };
 
+  const applyFontSize = (px: string) => {
+    applySpanStyle('fontSize', px);
+  };
+
   const applyFont = (family: string) => {
-    restoreRange();
-    if (family === 'inherit') {
-      document.execCommand('removeFormat', false, undefined);
-    } else {
-      document.execCommand('fontName', false, family);
-    }
-    editorRef.current?.focus();
+    if (family === 'inherit') { cmd('removeFormat'); return; }
+    applySpanStyle('fontFamily', family);
+  };
+
+  const applyShadow = (shadow: string) => {
+    applySpanStyle('textShadow', shadow === 'none' ? '' : shadow);
+  };
+
+  const insertLink = () => {
+    const url = window.prompt('Введите URL ссылки:', 'https://');
+    if (url) cmd('createLink', url);
   };
 
   const handleSave = () => {
@@ -161,7 +283,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
       title={title}
       onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
       onClick={e => { e.preventDefault(); e.stopPropagation(); onClick(); }}
-      className={`h-7 min-w-[26px] px-1 rounded hover:bg-muted text-xs flex items-center justify-center ${className}`}
+      className={`h-7 min-w-[24px] px-1 rounded hover:bg-muted text-xs flex items-center justify-center shrink-0 ${className}`}
     >{children}</button>
   );
 
@@ -170,90 +292,142 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
       {showToolbar && (
         <div
           ref={toolbarRef}
-          className="absolute z-50 bg-popover border rounded-xl shadow-2xl p-2 w-[420px]"
-          style={{ left: toolbarPos.x, top: Math.max(4, toolbarPos.y), transform: 'translateX(-50%)' }}
+          className="absolute z-50 bg-popover border rounded-xl shadow-2xl p-2"
+          style={{ left: toolbarPos.x, top: toolbarPos.y, transform: 'translateX(-50%) translateY(-105%)', width: '540px', maxWidth: '92vw' }}
           onClick={e => e.stopPropagation()}
           onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
         >
-          {/* ── Row 1: Headings · Font family · Font size · Format · Align ── */}
+          {/* ── Row 1: Block format · Font · Size · B/I/U/S · Undo/Redo · Remove ── */}
           <div className="flex flex-wrap items-center gap-0.5">
             <TB onClick={() => cmd('formatBlock', 'h1')} title="H1" className="font-extrabold text-[11px]">H1</TB>
             <TB onClick={() => cmd('formatBlock', 'h2')} title="H2" className="font-bold text-[11px]">H2</TB>
             <TB onClick={() => cmd('formatBlock', 'h3')} title="H3" className="font-semibold text-[11px]">H3</TB>
-            <TB onClick={() => cmd('formatBlock', 'p')} title="Параграф" className="text-[11px]">¶</TB>
+            <TB onClick={() => cmd('formatBlock', 'p')} title="Параграф">¶</TB>
             <div className="w-px h-5 bg-border mx-0.5" />
 
-            {/* Font family */}
-            <select
-              title="Шрифт"
-              onMouseDown={e => e.stopPropagation()}
-              onChange={e => { applyFont(e.target.value); }}
-              defaultValue=""
-              className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer max-w-[110px]"
-            >
+            {/* Font family — grouped with optgroup */}
+            <select title="Шрифт" onMouseDown={e => e.stopPropagation()} onChange={e => { if (e.target.value) applyFont(e.target.value); }} defaultValue=""
+              className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer w-[130px]">
               <option value="" disabled>Шрифт</option>
-              {EDITOR_FONTS.map(f => (
-                <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
+              {EDITOR_FONT_GROUPS.map(g => (
+                <optgroup key={g.group} label={g.group}>
+                  {g.fonts.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                </optgroup>
               ))}
             </select>
 
-            {/* Font size (numeric px) */}
-            <select
-              title="Размер"
-              onMouseDown={e => e.stopPropagation()}
-              onChange={e => { applyFontSize(e.target.value); }}
-              defaultValue=""
-              className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer w-16"
-            >
-              <option value="" disabled>Размер</option>
-              {EDITOR_FONT_SIZES.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
+            {/* Font size px */}
+            <select title="Размер (px)" onMouseDown={e => e.stopPropagation()} onChange={e => { if (e.target.value) applyFontSize(e.target.value); }} defaultValue=""
+              className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer w-[56px]">
+              <option value="" disabled>px</option>
+              {EDITOR_FONT_SIZES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
             <div className="w-px h-5 bg-border mx-0.5" />
 
-            {/* Format */}
             <TB onClick={() => cmd('bold')} title="Жирный" className="font-bold">B</TB>
             <TB onClick={() => cmd('italic')} title="Курсив" className="italic">I</TB>
             <TB onClick={() => cmd('underline')} title="Подчёркнутый" className="underline">U</TB>
             <TB onClick={() => cmd('strikeThrough')} title="Зачёркнутый" className="line-through">S</TB>
             <div className="w-px h-5 bg-border mx-0.5" />
 
-            {/* Align */}
+            <TB onClick={() => cmd('undo')} title="Отменить">↩</TB>
+            <TB onClick={() => cmd('redo')} title="Повторить">↪</TB>
+            <div className="w-px h-5 bg-border mx-0.5" />
+            <TB onClick={() => cmd('removeFormat')} title="Убрать форматирование" className="text-muted-foreground text-[10px]">✕</TB>
+          </div>
+
+          {/* ── Row 2: Align · Lists · Indent · Super/Sub · Transform · Spacing · Link ── */}
+          <div className="flex flex-wrap items-center gap-0.5 mt-0.5 pt-0.5 border-t border-border/30">
             <TB onClick={() => cmd('justifyLeft')} title="По левому краю">⬅</TB>
             <TB onClick={() => cmd('justifyCenter')} title="По центру">↔</TB>
             <TB onClick={() => cmd('justifyRight')} title="По правому краю">➡</TB>
+            <TB onClick={() => cmd('justifyFull')} title="По ширине" className="text-[10px]">☰</TB>
             <div className="w-px h-5 bg-border mx-0.5" />
-
-            <TB onClick={() => cmd('removeFormat')} title="Убрать форматирование" className="text-muted-foreground text-[11px]">✕</TB>
+            <TB onClick={() => cmd('insertUnorderedList')} title="Маркированный список" className="text-[10px]">•≡</TB>
+            <TB onClick={() => cmd('insertOrderedList')} title="Нумерованный список" className="text-[10px]">1≡</TB>
+            <TB onClick={() => cmd('outdent')} title="Уменьшить отступ" className="text-[10px]">←|</TB>
+            <TB onClick={() => cmd('indent')} title="Увеличить отступ" className="text-[10px]">|→</TB>
+            <div className="w-px h-5 bg-border mx-0.5" />
+            <TB onClick={() => cmd('superscript')} title="Надстрочный (x²)" className="text-[10px]">X²</TB>
+            <TB onClick={() => cmd('subscript')} title="Подстрочный (x₂)" className="text-[10px]">X₂</TB>
+            <div className="w-px h-5 bg-border mx-0.5" />
+            <TB onClick={() => applySpanStyle('textTransform', 'uppercase')} title="ВСЕ ЗАГЛАВНЫЕ" className="font-semibold text-[10px]">AA</TB>
+            <TB onClick={() => applySpanStyle('textTransform', 'capitalize')} title="Каждое Слово" className="text-[10px]">Aa</TB>
+            <TB onClick={() => applySpanStyle('textTransform', 'lowercase')} title="все строчные" className="text-[10px]">aa</TB>
+            <TB onClick={() => applySpanStyle('textTransform', 'none')} title="Обычный" className="text-[9px] text-muted-foreground">—T</TB>
+            <div className="w-px h-5 bg-border mx-0.5" />
+            <TB onClick={insertLink} title="Вставить ссылку" className="text-[11px]">🔗</TB>
+            <TB onClick={() => cmd('unlink')} title="Удалить ссылку" className="text-[10px] text-muted-foreground">✂🔗</TB>
+            <div className="w-px h-5 bg-border mx-0.5" />
+            {/* Letter spacing */}
+            <span className="text-[9px] text-muted-foreground shrink-0">A↔A:</span>
+            {[{l:'–',v:'-0.05em',t:'Тесно'},{l:'·',v:'normal',t:'Норма'},{l:'+',v:'0.08em',t:'Шире'},{l:'++',v:'0.15em',t:'Широко'},{l:'+++',v:'0.25em',t:'Очень широко'}].map(({l,v,t}) => (
+              <button key={v} title={t} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={e=>{e.preventDefault();e.stopPropagation();applySpanStyle('letterSpacing',v);}}
+                className="h-6 px-1 rounded text-[9px] hover:bg-muted border border-border/40">{l}</button>
+            ))}
+            <div className="w-px h-5 bg-border mx-0.5" />
+            {/* Line height */}
+            <span className="text-[9px] text-muted-foreground shrink-0">↕:</span>
+            {[{l:'1',v:'1'},{l:'1.2',v:'1.2'},{l:'1.5',v:'1.5'},{l:'1.8',v:'1.8'},{l:'2',v:'2'},{l:'2.5',v:'2.5'}].map(({l,v}) => (
+              <button key={v} title={`Межстрочный: ${v}`} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={e=>{e.preventDefault();e.stopPropagation();applySpanStyle('lineHeight',v);}}
+                className="h-6 px-1 rounded text-[9px] hover:bg-muted border border-border/40">{l}</button>
+            ))}
           </div>
 
-          {/* ── Row 2: Rich colour palette ── */}
-          <div className="border-t border-border/50 mt-1.5 pt-1.5 flex items-start gap-1.5">
-            {/* Custom colour picker */}
-            <div className="flex flex-col items-center gap-1 shrink-0">
-              <input
-                type="color"
-                value={currentColor}
-                title="Произвольный цвет"
-                onMouseDown={e => { e.stopPropagation(); saveRange(); }}
-                onChange={e => applyColor(e.target.value)}
-                className="w-8 h-8 rounded cursor-pointer border-2 border-border p-0.5 shrink-0"
-              />
-              <span className="text-[9px] text-muted-foreground leading-none">HEX</span>
+          {/* ── Row 3: Text shadows ── */}
+          <div className="flex flex-wrap items-center gap-0.5 mt-0.5 pt-0.5 border-t border-border/30">
+            <span className="text-[9px] text-muted-foreground mr-0.5 shrink-0">Тень:</span>
+            {EDITOR_SHADOWS.map(s => (
+              <button key={s.value} title={s.label}
+                onMouseDown={e=>{e.preventDefault();e.stopPropagation();}}
+                onClick={e=>{e.preventDefault();e.stopPropagation();applyShadow(s.value);}}
+                className="h-6 px-1.5 rounded text-[10px] hover:bg-muted border border-border/40 whitespace-nowrap"
+                style={{ textShadow: s.value === 'none' ? 'none' : s.value }}
+              >{s.label}</button>
+            ))}
+          </div>
+
+          {/* ── Row 4: Text colour ── */}
+          <div className="border-t border-border/50 mt-1 pt-1 flex items-start gap-1.5">
+            <div className="flex flex-col items-center gap-0.5 shrink-0">
+              <input type="color" value={currentColor} title="Цвет текста"
+                onMouseDown={e=>{e.stopPropagation();saveRange();}} onChange={e=>applyColor(e.target.value)}
+                className="w-8 h-7 rounded cursor-pointer border border-border p-0.5 shrink-0" />
+              <span className="text-[8px] text-muted-foreground leading-none">текст</span>
             </div>
-            {/* Colour grid */}
-            <div className="grid gap-0.5" style={{ gridTemplateColumns: 'repeat(12, 20px)' }}>
+            <div className="grid gap-0.5 flex-1" style={{ gridTemplateColumns: 'repeat(12, 1fr)' }}>
               {EDITOR_COLOR_PALETTE.map(col => (
-                <button
-                  key={col}
-                  title={col}
-                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
-                  onClick={e => { e.preventDefault(); e.stopPropagation(); applyColor(col); }}
-                  className="w-5 h-5 rounded-sm border border-black/10 hover:scale-125 hover:z-10 transition-transform relative shrink-0"
-                  style={{ backgroundColor: col, outline: currentColor === col ? '2px solid #3b82f6' : 'none', outlineOffset: '1px' }}
-                />
+                <button key={col} title={col}
+                  onMouseDown={e=>{e.preventDefault();e.stopPropagation();}}
+                  onClick={e=>{e.preventDefault();e.stopPropagation();applyColor(col);}}
+                  className="w-full aspect-square rounded-sm border border-black/10 hover:scale-125 hover:z-10 transition-transform shrink-0"
+                  style={{ backgroundColor: col, outline: currentColor===col ? '2px solid #3b82f6' : 'none', outlineOffset: '1px' }} />
               ))}
+            </div>
+          </div>
+
+          {/* ── Row 5: Highlight / background colour ── */}
+          <div className="border-t border-border/30 mt-1 pt-1 flex items-center gap-1.5">
+            <div className="flex flex-col items-center gap-0.5 shrink-0">
+              <input type="color" value={currentHighlight === 'transparent' ? '#fef08a' : currentHighlight} title="Фон текста (маркер)"
+                onMouseDown={e=>{e.stopPropagation();saveRange();}} onChange={e=>applyHighlight(e.target.value)}
+                className="w-8 h-7 rounded cursor-pointer border border-border p-0.5 shrink-0" />
+              <span className="text-[8px] text-muted-foreground leading-none">маркер</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-0.5">
+              {EDITOR_HIGHLIGHT_COLORS.map(col => (
+                <button key={col} title={col === 'transparent' ? 'Без фона' : col}
+                  onMouseDown={e=>{e.preventDefault();e.stopPropagation();}}
+                  onClick={e=>{e.preventDefault();e.stopPropagation();applyHighlight(col);}}
+                  className="w-6 h-6 rounded border border-black/20 hover:scale-110 transition-transform shrink-0"
+                  style={{
+                    backgroundColor: col === 'transparent' ? 'transparent' : col,
+                    outline: currentHighlight===col ? '2px solid #3b82f6' : 'none',
+                    backgroundImage: col === 'transparent' ? 'repeating-linear-gradient(45deg,#ccc 0,#ccc 2px,#fff 0,#fff 50%)' : 'none',
+                    backgroundSize: '6px 6px',
+                  }} />
+              ))}
+              <span className="text-[9px] text-muted-foreground ml-1">Маркер текста</span>
             </div>
           </div>
         </div>
@@ -276,6 +450,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
     </>
   );
 }
+
 
 /** Render embedded extras inline */
 function RenderExtras({ extras, handleLink }: { extras?: WebsiteBlockExtra[]; handleLink?: (e: React.MouseEvent, href?: string) => void }) {
