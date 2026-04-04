@@ -130,12 +130,12 @@ const PROMPT_WEBSITE = `
 
 КРИТИЧНО: footer использует "copyright" (НЕ "text"), "companyName", "socialLinks" (НЕ "social"). contact использует "buttonText" (НЕ кнопку action).
 
-### globalStyles: {primaryColor,secondaryColor,accentColor,fontFamily("Inter"|"Roboto"|"Playfair Display"|"Montserrat"|"Poppins"|"Merriweather"),headingFont,backgroundColor,textColor,borderRadius,maxWidth}
-### block.styles: {padding,margin,fontSize,fontWeight,fontFamily,boxShadow,border,opacity,backgroundImage,backgroundSize,maxWidth,minHeight,textTransform,letterSpacing,lineHeight,borderRadius}
+### globalStyles: {primaryColor,secondaryColor,accentColor,fontFamily("Inter"|"Roboto"|"Open Sans"|"Lato"|"Montserrat"|"Poppins"|"Nunito"|"Raleway"|"Ubuntu"|"PT Sans"|"Manrope"|"DM Sans"|"Plus Jakarta Sans"|"Outfit"|"Space Grotesk"|"Barlow"|"IBM Plex Sans"|"Nunito Sans"|"Figtree"|"Lexend"|"Josefin Sans"|"Karla"|"Quicksand"|"Playfair Display"|"Merriweather"|"PT Serif"|"Lora"|"EB Garamond"|"Cormorant"|"Spectral"|"Libre Baskerville"|"Crimson Pro"|"Bitter"|"Bodoni Moda"|"Oswald"|"Russo One"|"Bebas Neue"|"Comfortaa"|"Anton"|"Teko"|"League Spartan"|"Roboto Flex"|"Fraunces"|"Literata"|"Dancing Script"|"Caveat"|"Great Vibes"|"Sacramento"|"Source Code Pro"|"JetBrains Mono"|"Fira Code"|"IBM Plex Mono"),headingFont,backgroundColor,textColor,borderRadius,maxWidth}
+### block.styles: {padding,margin,fontSize,fontWeight("100"|"200"|"300"|"400"|"500"|"600"|"700"|"800"|"900"),fontFamily,boxShadow,border,opacity,backgroundImage,backgroundSize,maxWidth,minHeight,textTransform,letterSpacing,lineHeight,wordSpacing,fontVariant("small-caps"|"normal"),borderRadius,textShadow,WebkitTextStroke("1px #000"|"2px #fff"|...)}
 
 ПРАВИЛА: navbar→hero→контент→footer, min 10-15 блоков (как на реальном сайте — длинная страница!), ВСЕГДА globalStyles+styles(padding,градиенты,тени), контент на языке запроса.
 ПАЛИТРЫ: Корпоративный(#2563eb/#f8fafc), Минимализм(#18181b/#fff), Фиолетовый(#7c3aed/#faf5ff), Тёмный(#a855f7/#0f0f23), Зелёный(#16a34a/#f0fdf4), Оранжевый(#ea580c/#fff7ed), Океан(#0891b2/#ecfeff)
-ШРИФТЫ: Playfair+Inter, Montserrat+OpenSans, Poppins+Roboto, Merriweather+Lato
+ШРИФТЫ: Playfair Display+Inter, Montserrat+Open Sans, Poppins+Roboto, Merriweather+Lato, DM Sans+Lora, Outfit+Spectral, League Spartan+Libre Baskerville, Space Grotesk+EB Garamond, Josefin Sans+Crimson Pro, Fraunces+Manrope
 МНОГОСТРАНИЧНЫЙ: pages:[{slug,title,blocks}], Navbar одинаковый на всех: href="/slug", Главная slug="home"
 ФОТО: структура→цвета→воссоздай КАЖДУЮ секцию отдельным блоком→bgColor/textColor близко к оригиналу
 КАСТОМНЫЕ БЛОКИ: newBlockTypes:[{blockType,label,icon,description}]`;

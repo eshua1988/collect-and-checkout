@@ -43,6 +43,20 @@ const EDITOR_FONT_GROUPS: { group: string; fonts: { label: string; value: string
     { label: 'Rubik', value: 'Rubik, sans-serif' },
     { label: 'Work Sans', value: "'Work Sans', sans-serif" },
     { label: 'Manrope', value: 'Manrope, sans-serif' },
+    { label: 'DM Sans', value: "'DM Sans', sans-serif" },
+    { label: 'Plus Jakarta Sans', value: "'Plus Jakarta Sans', sans-serif" },
+    { label: 'Outfit', value: 'Outfit, sans-serif' },
+    { label: 'Space Grotesk', value: "'Space Grotesk', sans-serif" },
+    { label: 'Barlow', value: 'Barlow, sans-serif' },
+    { label: 'IBM Plex Sans', value: "'IBM Plex Sans', sans-serif" },
+    { label: 'Nunito Sans', value: "'Nunito Sans', sans-serif" },
+    { label: 'Figtree', value: 'Figtree, sans-serif' },
+    { label: 'Lexend', value: 'Lexend, sans-serif' },
+    { label: 'Josefin Sans', value: "'Josefin Sans', sans-serif" },
+    { label: 'Karla', value: 'Karla, sans-serif' },
+    { label: 'Hind', value: 'Hind, sans-serif' },
+    { label: 'Cabin', value: 'Cabin, sans-serif' },
+    { label: 'Quicksand', value: 'Quicksand, sans-serif' },
   ]},
   { group: 'С засечками / Кириллица', fonts: [
     { label: 'Playfair Display', value: "'Playfair Display', serif" },
@@ -53,6 +67,13 @@ const EDITOR_FONT_GROUPS: { group: string; fonts: { label: string; value: string
     { label: 'EB Garamond', value: "'EB Garamond', serif" },
     { label: 'Cormorant', value: 'Cormorant, serif' },
     { label: 'Spectral', value: 'Spectral, serif' },
+    { label: 'Libre Baskerville', value: "'Libre Baskerville', serif" },
+    { label: 'Crimson Pro', value: "'Crimson Pro', serif" },
+    { label: 'Bitter', value: 'Bitter, serif' },
+    { label: 'Frank Ruhl Libre', value: "'Frank Ruhl Libre', serif" },
+    { label: 'Bodoni Moda', value: "'Bodoni Moda', serif" },
+    { label: 'Cardo', value: 'Cardo, serif' },
+    { label: 'GFS Didot', value: "'GFS Didot', serif" },
   ]},
   { group: 'Декоративные', fonts: [
     { label: 'Oswald', value: 'Oswald, sans-serif' },
@@ -67,6 +88,16 @@ const EDITOR_FONT_GROUPS: { group: string; fonts: { label: string; value: string
     { label: 'Bungee', value: 'Bungee, cursive' },
     { label: 'Lilita One', value: "'Lilita One', cursive" },
     { label: 'Abril Fatface', value: "'Abril Fatface', cursive" },
+    { label: 'Anton', value: 'Anton, sans-serif' },
+    { label: 'Titan One', value: "'Titan One', cursive" },
+    { label: 'Dela Gothic One', value: "'Dela Gothic One', cursive" },
+    { label: 'Graduate', value: 'Graduate, cursive' },
+    { label: 'Teko', value: 'Teko, sans-serif' },
+    { label: 'Black Ops One', value: "'Black Ops One', cursive" },
+    { label: 'Bangers', value: 'Bangers, cursive' },
+    { label: 'Exo', value: 'Exo, sans-serif' },
+    { label: 'Racing Sans One', value: "'Racing Sans One', cursive" },
+    { label: 'Fugaz One', value: "'Fugaz One', cursive" },
   ]},
   { group: 'Рукописные', fonts: [
     { label: 'Dancing Script', value: "'Dancing Script', cursive" },
@@ -77,6 +108,14 @@ const EDITOR_FONT_GROUPS: { group: string; fonts: { label: string; value: string
     { label: 'Kalam', value: 'Kalam, cursive' },
     { label: 'Architects Daughter', value: "'Architects Daughter', cursive" },
     { label: 'Comic Sans', value: "'Comic Sans MS', cursive" },
+    { label: 'Great Vibes', value: "'Great Vibes', cursive" },
+    { label: 'Sacramento', value: 'Sacramento, cursive' },
+    { label: 'Permanent Marker', value: "'Permanent Marker', cursive" },
+    { label: 'Handlee', value: 'Handlee, cursive' },
+    { label: 'Satisfy', value: 'Satisfy, cursive' },
+    { label: 'Yellowtail', value: 'Yellowtail, cursive' },
+    { label: 'Allura', value: 'Allura, cursive' },
+    { label: 'Cookie', value: 'Cookie, cursive' },
   ]},
   { group: 'Моноширинные', fonts: [
     { label: 'Source Code Pro', value: "'Source Code Pro', monospace" },
@@ -84,7 +123,63 @@ const EDITOR_FONT_GROUPS: { group: string; fonts: { label: string; value: string
     { label: 'Fira Code', value: "'Fira Code', monospace" },
     { label: 'Space Mono', value: "'Space Mono', monospace" },
     { label: 'Roboto Mono', value: "'Roboto Mono', monospace" },
+    { label: 'DM Mono', value: "'DM Mono', monospace" },
+    { label: 'Overpass Mono', value: "'Overpass Mono', monospace" },
+    { label: 'IBM Plex Mono', value: "'IBM Plex Mono', monospace" },
+    { label: 'Inconsolata', value: 'Inconsolata, monospace' },
   ]},
+  { group: 'Переменные шрифты (Variable)', fonts: [
+    { label: 'Roboto Flex', value: "'Roboto Flex', sans-serif" },
+    { label: 'Fraunces', value: 'Fraunces, serif' },
+    { label: 'Recursive', value: 'Recursive, sans-serif' },
+    { label: 'Literata', value: 'Literata, serif' },
+    { label: 'Encode Sans', value: "'Encode Sans', sans-serif" },
+    { label: 'League Spartan', value: "'League Spartan', sans-serif" },
+    { label: 'Chivo', value: 'Chivo, sans-serif' },
+    { label: 'Bricolage Grotesque', value: "'Bricolage Grotesque', sans-serif" },
+  ]},
+];
+
+/** Font weight presets */
+const EDITOR_FONT_WEIGHTS = [
+  { label: 'Thin 100', value: '100' },
+  { label: 'ExtraLight 200', value: '200' },
+  { label: 'Light 300', value: '300' },
+  { label: 'Regular 400', value: '400' },
+  { label: 'Medium 500', value: '500' },
+  { label: 'SemiBold 600', value: '600' },
+  { label: 'Bold 700', value: '700' },
+  { label: 'ExtraBold 800', value: '800' },
+  { label: 'Black 900', value: '900' },
+];
+
+/** Gradient text presets — uses background-clip: text */
+const EDITOR_GRADIENT_TEXT = [
+  { label: 'Нет', css: '' },
+  { label: 'Закат 🌅', css: 'linear-gradient(135deg,#f97316,#db2777,#a855f7)' },
+  { label: 'Океан 🌊', css: 'linear-gradient(135deg,#06b6d4,#2563eb,#6366f1)' },
+  { label: 'Лес 🌿', css: 'linear-gradient(135deg,#22c55e,#0891b2)' },
+  { label: 'Золото ✨', css: 'linear-gradient(135deg,#fbbf24,#f97316,#ef4444)' },
+  { label: 'Радуга 🌈', css: 'linear-gradient(90deg,#ef4444,#f97316,#fbbf24,#22c55e,#2563eb,#a855f7)' },
+  { label: 'Мрамор 🤍', css: 'linear-gradient(135deg,#e5e7eb,#6b7280,#1f2937)' },
+  { label: 'Неон 💜', css: 'linear-gradient(135deg,#22c55e,#06b6d4,#6366f1)' },
+  { label: 'Розовый 🌸', css: 'linear-gradient(135deg,#f43f5e,#a855f7)' },
+  { label: 'Кобальт', css: 'linear-gradient(135deg,#1e3a5f,#60a5fa)' },
+  { label: 'Огонь 🔥', css: 'linear-gradient(135deg,#991b1b,#dc2626,#f97316,#fbbf24)' },
+  { label: 'Перламутр', css: 'linear-gradient(135deg,#c4b5fd,#93c5fd,#6ee7b7)' },
+];
+
+/** Text stroke (outline) presets using -webkit-text-stroke */
+const EDITOR_TEXT_STROKE = [
+  { label: 'Нет', value: '' },
+  { label: '1px ⚫', value: '1px #000000' },
+  { label: '1px ⚪', value: '1px #ffffff' },
+  { label: '2px ⚫', value: '2px #000000' },
+  { label: '2px ⚪', value: '2px #ffffff' },
+  { label: '1px 🔵', value: '1px #3b82f6' },
+  { label: '1px 🔴', value: '1px #ef4444' },
+  { label: '2px ✨', value: '2px #f59e0b' },
+  { label: '3px ⚫', value: '3px #000000' },
 ];
 
 const EDITOR_SHADOWS = [
@@ -105,7 +200,13 @@ const EDITOR_SHADOWS = [
 ];
 
 const EDITOR_HIGHLIGHT_COLORS = [
-  'transparent','#fef08a','#bbf7d0','#bfdbfe','#fecaca','#e9d5ff','#fed7aa','#fce7f3','#ffffff','#000000',
+  'transparent',
+  // Стандартные маркеры
+  '#fef08a','#bbf7d0','#bfdbfe','#fecaca','#e9d5ff','#fed7aa','#fce7f3','#a7f3d0',
+  // Насыщенные
+  '#facc15','#4ade80','#60a5fa','#f87171','#c084fc','#fb923c','#f472b6','#34d399',
+  // Тёмные
+  '#000000','#1f2937','#b45309','#065f46','#1e40af','#7c3aed','#9f1239','#ffffff',
 ];
 
 const EDITOR_COLOR_PALETTE = [
@@ -132,16 +233,111 @@ const EDITOR_COLOR_PALETTE = [
 function loadEditorFonts() {
   const id = 'copilot-editor-gfonts';
   if (document.getElementById(id)) return;
+  // All Google Fonts used in EDITOR_FONT_GROUPS — loaded with full weight range for variable fonts
   const list = [
-    'Inter','Roboto','Open+Sans','Lato','Montserrat','Poppins','Nunito','Raleway',
-    'Ubuntu','Fira+Sans','Exo+2','PT+Sans','Noto+Sans','Source+Sans+3','Mulish','Rubik','Work+Sans','Manrope',
-    'Playfair+Display','Merriweather','PT+Serif','Lora','Noto+Serif','EB+Garamond','Cormorant','Spectral',
-    'Oswald','Russo+One','Bebas+Neue','Righteous','Lobster','Pacifico','Fredoka+One','Comfortaa',
-    'Press+Start+2P','Bungee','Lilita+One','Abril+Fatface',
-    'Dancing+Script','Caveat','Indie+Flower','Shadows+Into+Light','Patrick+Hand','Kalam','Architects+Daughter',
-    'Source+Code+Pro','JetBrains+Mono','Fira+Code','Space+Mono','Roboto+Mono',
+    'Inter:wght@100;200;300;400;500;600;700;800;900',
+    'Roboto:wght@100;300;400;500;700;900',
+    'Open+Sans:wght@300;400;500;600;700;800',
+    'Lato:wght@100;300;400;700;900',
+    'Montserrat:wght@100;200;300;400;500;600;700;800;900',
+    'Poppins:wght@100;200;300;400;500;600;700;800;900',
+    'Nunito:wght@200;300;400;500;600;700;800;900',
+    'Raleway:wght@100;200;300;400;500;600;700;800;900',
+    'Ubuntu:wght@300;400;500;700',
+    'Fira+Sans:wght@100;200;300;400;500;600;700;800;900',
+    'Exo+2:wght@100;200;300;400;500;600;700;800;900',
+    'PT+Sans:wght@400;700',
+    'Noto+Sans:wght@100;200;300;400;500;600;700;800;900',
+    'Source+Sans+3:wght@200;300;400;500;600;700;800;900',
+    'Mulish:wght@200;300;400;500;600;700;800;900',
+    'Rubik:wght@300;400;500;600;700;800;900',
+    'Work+Sans:wght@100;200;300;400;500;600;700;800;900',
+    'Manrope:wght@200;300;400;500;600;700;800',
+    'DM+Sans:wght@100;200;300;400;500;600;700;800;900',
+    'Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800',
+    'Outfit:wght@100;200;300;400;500;600;700;800;900',
+    'Space+Grotesk:wght@300;400;500;600;700',
+    'Barlow:wght@100;200;300;400;500;600;700;800;900',
+    'IBM+Plex+Sans:wght@100;200;300;400;500;600;700',
+    'Nunito+Sans:wght@200;300;400;500;600;700;800;900',
+    'Figtree:wght@300;400;500;600;700;800;900',
+    'Lexend:wght@100;200;300;400;500;600;700;800;900',
+    'Josefin+Sans:wght@100;200;300;400;500;600;700',
+    'Karla:wght@200;300;400;500;600;700;800',
+    'Hind:wght@300;400;500;600;700',
+    'Cabin:wght@400;500;600;700',
+    'Quicksand:wght@300;400;500;600;700',
+    'Playfair+Display:wght@400;500;600;700;800;900',
+    'Merriweather:wght@300;400;700;900',
+    'PT+Serif:wght@400;700',
+    'Lora:wght@400;500;600;700',
+    'Noto+Serif:wght@100;200;300;400;500;600;700;800;900',
+    'EB+Garamond:wght@400;500;600;700;800',
+    'Cormorant:wght@300;400;500;600;700',
+    'Spectral:wght@200;300;400;500;600;700;800',
+    'Libre+Baskerville:wght@400;700',
+    'Crimson+Pro:wght@200;300;400;500;600;700;800;900',
+    'Bitter:wght@100;200;300;400;500;600;700;800;900',
+    'Frank+Ruhl+Libre:wght@300;400;500;600;700;800;900',
+    'Bodoni+Moda:wght@400;500;600;700;800;900',
+    'Cardo:wght@400;700',
+    'GFS+Didot:wght@400',
+    'Oswald:wght@200;300;400;500;600;700',
+    'Russo+One:wght@400',
+    'Bebas+Neue:wght@400',
+    'Righteous:wght@400',
+    'Lobster:wght@400',
+    'Pacifico:wght@400',
+    'Fredoka+One:wght@400',
+    'Comfortaa:wght@300;400;500;600;700',
+    'Press+Start+2P:wght@400',
+    'Bungee:wght@400',
+    'Lilita+One:wght@400',
+    'Abril+Fatface:wght@400',
+    'Anton:wght@400',
+    'Titan+One:wght@400',
+    'Dela+Gothic+One:wght@400',
+    'Graduate:wght@400',
+    'Teko:wght@300;400;500;600;700',
+    'Black+Ops+One:wght@400',
+    'Bangers:wght@400',
+    'Exo:wght@100;200;300;400;500;600;700;800;900',
+    'Racing+Sans+One:wght@400',
+    'Fugaz+One:wght@400',
+    'Dancing+Script:wght@400;500;600;700',
+    'Caveat:wght@400;500;600;700',
+    'Indie+Flower:wght@400',
+    'Shadows+Into+Light:wght@400',
+    'Patrick+Hand:wght@400',
+    'Kalam:wght@300;400;700',
+    'Architects+Daughter:wght@400',
+    'Great+Vibes:wght@400',
+    'Sacramento:wght@400',
+    'Permanent+Marker:wght@400',
+    'Handlee:wght@400',
+    'Satisfy:wght@400',
+    'Yellowtail:wght@400',
+    'Allura:wght@400',
+    'Cookie:wght@400',
+    'Source+Code+Pro:wght@200;300;400;500;600;700;800;900',
+    'JetBrains+Mono:wght@100;200;300;400;500;600;700;800',
+    'Fira+Code:wght@300;400;500;600;700',
+    'Space+Mono:wght@400;700',
+    'Roboto+Mono:wght@100;200;300;400;500;600;700',
+    'DM+Mono:wght@300;400;500',
+    'Overpass+Mono:wght@300;400;500;600;700;800;900',
+    'IBM+Plex+Mono:wght@100;200;300;400;500;600;700',
+    'Inconsolata:wght@200;300;400;500;600;700;800;900',
+    'Roboto+Flex:wght@100;200;300;400;500;600;700;800;900',
+    'Fraunces:wght@100;200;300;400;500;600;700;800;900',
+    'Recursive:wght@300;400;500;600;700;800;900',
+    'Literata:wght@200;300;400;500;600;700;800;900',
+    'Encode+Sans:wght@100;200;300;400;500;600;700;800;900',
+    'League+Spartan:wght@100;200;300;400;500;600;700;800;900',
+    'Chivo:wght@100;200;300;400;500;600;700;800;900',
+    'Bricolage+Grotesque:wght@200;300;400;500;600;700;800',
   ];
-  const params = list.map(f => `family=${f}:wght@400;700`).join('&');
+  const params = list.map(f => `family=${f}`).join('&');
   const link = document.createElement('link');
   link.id = id; link.rel = 'stylesheet';
   link.href = `https://fonts.googleapis.com/css2?${params}&display=swap`;
@@ -201,7 +397,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
     const editorRect = editorRef.current.closest('[data-block-wrap]')?.getBoundingClientRect();
     if (editorRect) {
       setToolbarPos({
-        x: Math.max(270, Math.min(rect.left - editorRect.left + rect.width / 2, editorRect.width - 270)),
+        x: Math.max(310, Math.min(rect.left - editorRect.left + rect.width / 2, editorRect.width - 310)),
         y: rect.top - editorRect.top,
       });
     }
@@ -268,6 +464,51 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
     applySpanStyle('textShadow', shadow === 'none' ? '' : shadow);
   };
 
+  /** Apply gradient text using background-clip: text */
+  const applyGradientText = useCallback((gradient: string) => {
+    restoreRange();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) { editorRef.current?.focus(); return; }
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) { editorRef.current?.focus(); return; }
+    try {
+      const fragment = range.extractContents();
+      const span = document.createElement('span');
+      if (!gradient) {
+        // Remove gradient
+        span.style.backgroundImage = '';
+        (span.style as any).webkitBackgroundClip = '';
+        (span.style as any).webkitTextFillColor = '';
+        (span.style as any).backgroundClip = '';
+      } else {
+        span.style.backgroundImage = gradient;
+        (span.style as any).webkitBackgroundClip = 'text';
+        (span.style as any).webkitTextFillColor = 'transparent';
+        (span.style as any).backgroundClip = 'text';
+      }
+      span.appendChild(fragment);
+      range.insertNode(span);
+    } catch { /* ignore */ }
+    editorRef.current?.focus();
+  }, [restoreRange]);
+
+  /** Apply text stroke (outline) using -webkit-text-stroke */
+  const applyTextStroke = useCallback((stroke: string) => {
+    restoreRange();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) { editorRef.current?.focus(); return; }
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) { editorRef.current?.focus(); return; }
+    try {
+      const fragment = range.extractContents();
+      const span = document.createElement('span');
+      (span.style as any).WebkitTextStroke = stroke;
+      span.appendChild(fragment);
+      range.insertNode(span);
+    } catch { /* ignore */ }
+    editorRef.current?.focus();
+  }, [restoreRange]);
+
   const insertLink = () => {
     const url = window.prompt('Введите URL ссылки:', 'https://');
     if (url) cmd('createLink', url);
@@ -293,16 +534,21 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
         <div
           ref={toolbarRef}
           className="absolute z-50 bg-popover border rounded-xl shadow-2xl p-2"
-          style={{ left: toolbarPos.x, top: toolbarPos.y, transform: 'translateX(-50%) translateY(-105%)', width: '540px', maxWidth: '92vw' }}
+          style={{ left: toolbarPos.x, top: toolbarPos.y, transform: 'translateX(-50%) translateY(-105%)', width: '620px', maxWidth: '96vw' }}
           onClick={e => e.stopPropagation()}
           onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
         >
-          {/* ── Row 1: Block format · Font · Size · B/I/U/S · Undo/Redo · Remove ── */}
+          {/* ── Row 1: Block format · Font · Weight · Size · B/I/U/S/O · Undo/Redo · Remove ── */}
           <div className="flex flex-wrap items-center gap-0.5">
             <TB onClick={() => cmd('formatBlock', 'h1')} title="H1" className="font-extrabold text-[11px]">H1</TB>
             <TB onClick={() => cmd('formatBlock', 'h2')} title="H2" className="font-bold text-[11px]">H2</TB>
             <TB onClick={() => cmd('formatBlock', 'h3')} title="H3" className="font-semibold text-[11px]">H3</TB>
+            <TB onClick={() => cmd('formatBlock', 'h4')} title="H4" className="font-semibold text-[10px]">H4</TB>
+            <TB onClick={() => cmd('formatBlock', 'h5')} title="H5" className="text-[10px]">H5</TB>
+            <TB onClick={() => cmd('formatBlock', 'h6')} title="H6" className="text-[10px] text-muted-foreground">H6</TB>
             <TB onClick={() => cmd('formatBlock', 'p')} title="Параграф">¶</TB>
+            <TB onClick={() => cmd('formatBlock', 'blockquote')} title="Цитата" className="italic text-[10px]">❝</TB>
+            <TB onClick={() => cmd('formatBlock', 'pre')} title="Код/Preformatted" className="font-mono text-[9px]">&lt;/&gt;</TB>
             <div className="w-px h-5 bg-border mx-0.5" />
 
             {/* Font family — grouped with optgroup */}
@@ -314,6 +560,13 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
                   {g.fonts.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                 </optgroup>
               ))}
+            </select>
+
+            {/* Font weight */}
+            <select title="Насыщенность" onMouseDown={e => e.stopPropagation()} onChange={e => { if (e.target.value) applySpanStyle('fontWeight', e.target.value); }} defaultValue=""
+              className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer w-[90px]">
+              <option value="" disabled>Жирность</option>
+              {EDITOR_FONT_WEIGHTS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
             </select>
 
             {/* Font size px */}
@@ -328,6 +581,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
             <TB onClick={() => cmd('italic')} title="Курсив" className="italic">I</TB>
             <TB onClick={() => cmd('underline')} title="Подчёркнутый" className="underline">U</TB>
             <TB onClick={() => cmd('strikeThrough')} title="Зачёркнутый" className="line-through">S</TB>
+            <TB onClick={() => applySpanStyle('textDecoration', 'overline')} title="Надчёркнутый" className="text-[11px] [text-decoration:overline]">O</TB>
             <div className="w-px h-5 bg-border mx-0.5" />
 
             <TB onClick={() => cmd('undo')} title="Отменить">↩</TB>
@@ -336,7 +590,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
             <TB onClick={() => cmd('removeFormat')} title="Убрать форматирование" className="text-muted-foreground text-[10px]">✕</TB>
           </div>
 
-          {/* ── Row 2: Align · Lists · Indent · Super/Sub · Transform · Spacing · Link ── */}
+          {/* ── Row 2: Align · Lists · Indent · Super/Sub · Transform · Variant · Spacing · Link ── */}
           <div className="flex flex-wrap items-center gap-0.5 mt-0.5 pt-0.5 border-t border-border/30">
             <TB onClick={() => cmd('justifyLeft')} title="По левому краю">⬅</TB>
             <TB onClick={() => cmd('justifyCenter')} title="По центру">↔</TB>
@@ -354,6 +608,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
             <TB onClick={() => applySpanStyle('textTransform', 'uppercase')} title="ВСЕ ЗАГЛАВНЫЕ" className="font-semibold text-[10px]">AA</TB>
             <TB onClick={() => applySpanStyle('textTransform', 'capitalize')} title="Каждое Слово" className="text-[10px]">Aa</TB>
             <TB onClick={() => applySpanStyle('textTransform', 'lowercase')} title="все строчные" className="text-[10px]">aa</TB>
+            <TB onClick={() => applySpanStyle('fontVariant', 'small-caps')} title="Малые заглавные (Small Caps)" className="text-[9px]">Sc</TB>
             <TB onClick={() => applySpanStyle('textTransform', 'none')} title="Обычный" className="text-[9px] text-muted-foreground">—T</TB>
             <div className="w-px h-5 bg-border mx-0.5" />
             <TB onClick={insertLink} title="Вставить ссылку" className="text-[11px]">🔗</TB>
@@ -372,6 +627,13 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
               <button key={v} title={`Межстрочный: ${v}`} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={e=>{e.preventDefault();e.stopPropagation();applySpanStyle('lineHeight',v);}}
                 className="h-6 px-1 rounded text-[9px] hover:bg-muted border border-border/40">{l}</button>
             ))}
+            <div className="w-px h-5 bg-border mx-0.5" />
+            {/* Word spacing */}
+            <span className="text-[9px] text-muted-foreground shrink-0">W↔:</span>
+            {[{l:'—',v:'normal',t:'Норма'},{l:'+',v:'4px',t:'Шире'},{l:'++',v:'8px',t:'Широко'},{l:'+++',v:'16px',t:'Очень широко'}].map(({l,v,t}) => (
+              <button key={v} title={t} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={e=>{e.preventDefault();e.stopPropagation();applySpanStyle('wordSpacing',v);}}
+                className="h-6 px-1 rounded text-[9px] hover:bg-muted border border-border/40">{l}</button>
+            ))}
           </div>
 
           {/* ── Row 3: Text shadows ── */}
@@ -387,7 +649,34 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
             ))}
           </div>
 
-          {/* ── Row 4: Text colour ── */}
+          {/* ── Row 4: Gradient text + Text stroke ── */}
+          <div className="flex flex-wrap items-center gap-0.5 mt-0.5 pt-0.5 border-t border-border/30">
+            <span className="text-[9px] text-muted-foreground mr-0.5 shrink-0">Градиент:</span>
+            {EDITOR_GRADIENT_TEXT.map(g => (
+              <button key={g.css} title={g.label}
+                onMouseDown={e=>{e.preventDefault();e.stopPropagation();}}
+                onClick={e=>{e.preventDefault();e.stopPropagation();applyGradientText(g.css);}}
+                className="h-6 px-1.5 rounded text-[10px] hover:bg-muted border border-border/40 whitespace-nowrap font-semibold"
+                style={g.css ? {
+                  backgroundImage: g.css,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                } : {}}
+              >{g.label}</button>
+            ))}
+            <div className="w-px h-5 bg-border mx-0.5" />
+            <span className="text-[9px] text-muted-foreground shrink-0">Обводка:</span>
+            {EDITOR_TEXT_STROKE.map(s => (
+              <button key={s.value} title={s.label}
+                onMouseDown={e=>{e.preventDefault();e.stopPropagation();}}
+                onClick={e=>{e.preventDefault();e.stopPropagation();applyTextStroke(s.value);}}
+                className="h-6 px-1.5 rounded text-[10px] hover:bg-muted border border-border/40 whitespace-nowrap"
+              >{s.label}</button>
+            ))}
+          </div>
+
+          {/* ── Row 5: Text colour ── */}
           <div className="border-t border-border/50 mt-1 pt-1 flex items-start gap-1.5">
             <div className="flex flex-col items-center gap-0.5 shrink-0">
               <input type="color" value={currentColor} title="Цвет текста"
@@ -406,7 +695,7 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
             </div>
           </div>
 
-          {/* ── Row 5: Highlight / background colour ── */}
+          {/* ── Row 6: Highlight / background colour ── */}
           <div className="border-t border-border/30 mt-1 pt-1 flex items-center gap-1.5">
             <div className="flex flex-col items-center gap-0.5 shrink-0">
               <input type="color" value={currentHighlight === 'transparent' ? '#fef08a' : currentHighlight} title="Фон текста (маркер)"
@@ -414,12 +703,12 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
                 className="w-8 h-7 rounded cursor-pointer border border-border p-0.5 shrink-0" />
               <span className="text-[8px] text-muted-foreground leading-none">маркер</span>
             </div>
-            <div className="flex flex-wrap items-center gap-0.5">
+            <div className="grid gap-0.5" style={{ gridTemplateColumns: 'repeat(13, 1fr)' }}>
               {EDITOR_HIGHLIGHT_COLORS.map(col => (
                 <button key={col} title={col === 'transparent' ? 'Без фона' : col}
                   onMouseDown={e=>{e.preventDefault();e.stopPropagation();}}
                   onClick={e=>{e.preventDefault();e.stopPropagation();applyHighlight(col);}}
-                  className="w-6 h-6 rounded border border-black/20 hover:scale-110 transition-transform shrink-0"
+                  className="w-5 h-5 rounded border border-black/20 hover:scale-110 transition-transform shrink-0"
                   style={{
                     backgroundColor: col === 'transparent' ? 'transparent' : col,
                     outline: currentHighlight===col ? '2px solid #3b82f6' : 'none',
@@ -427,7 +716,6 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
                     backgroundSize: '6px 6px',
                   }} />
               ))}
-              <span className="text-[9px] text-muted-foreground ml-1">Маркер текста</span>
             </div>
           </div>
         </div>

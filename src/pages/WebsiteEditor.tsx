@@ -936,15 +936,56 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                       <div><Label className="text-xs">Шрифт</Label>
                         <select value={website.globalStyles?.fontFamily || ''} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, fontFamily: e.target.value } }))} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
                           <option value="">По умолчанию</option>
-                          <option value="Inter, sans-serif">Inter</option>
-                          <option value="'Roboto', sans-serif">Roboto</option>
-                          <option value="'Open Sans', sans-serif">Open Sans</option>
-                          <option value="'Montserrat', sans-serif">Montserrat</option>
-                          <option value="'Playfair Display', serif">Playfair Display</option>
-                          <option value="'Merriweather', serif">Merriweather</option>
-                          <option value="'Fira Code', monospace">Fira Code</option>
-                          <option value="Georgia, serif">Georgia</option>
-                          <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                          <optgroup label="Без засечек">
+                            <option value="Inter, sans-serif">Inter</option>
+                            <option value="Roboto, sans-serif">Roboto</option>
+                            <option value="'Open Sans', sans-serif">Open Sans</option>
+                            <option value="'Montserrat', sans-serif">Montserrat</option>
+                            <option value="Poppins, sans-serif">Poppins</option>
+                            <option value="'DM Sans', sans-serif">DM Sans</option>
+                            <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans</option>
+                            <option value="Outfit, sans-serif">Outfit</option>
+                            <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                            <option value="Manrope, sans-serif">Manrope</option>
+                            <option value="Nunito, sans-serif">Nunito</option>
+                            <option value="Raleway, sans-serif">Raleway</option>
+                            <option value="Rubik, sans-serif">Rubik</option>
+                            <option value="Lexend, sans-serif">Lexend</option>
+                            <option value="'Josefin Sans', sans-serif">Josefin Sans</option>
+                            <option value="Quicksand, sans-serif">Quicksand</option>
+                          </optgroup>
+                          <optgroup label="С засечками">
+                            <option value="'Playfair Display', serif">Playfair Display</option>
+                            <option value="Merriweather, serif">Merriweather</option>
+                            <option value="Lora, serif">Lora</option>
+                            <option value="'EB Garamond', serif">EB Garamond</option>
+                            <option value="Cormorant, serif">Cormorant</option>
+                            <option value="'Libre Baskerville', serif">Libre Baskerville</option>
+                            <option value="'Crimson Pro', serif">Crimson Pro</option>
+                            <option value="Bitter, serif">Bitter</option>
+                            <option value="'Bodoni Moda', serif">Bodoni Moda</option>
+                            <option value="Fraunces, serif">Fraunces</option>
+                            <option value="Georgia, serif">Georgia</option>
+                          </optgroup>
+                          <optgroup label="Декоративные">
+                            <option value="Oswald, sans-serif">Oswald</option>
+                            <option value="'Bebas Neue', cursive">Bebas Neue</option>
+                            <option value="'Russo One', sans-serif">Russo One</option>
+                            <option value="Anton, sans-serif">Anton</option>
+                            <option value="'League Spartan', sans-serif">League Spartan</option>
+                            <option value="Teko, sans-serif">Teko</option>
+                          </optgroup>
+                          <optgroup label="Рукописные">
+                            <option value="'Dancing Script', cursive">Dancing Script</option>
+                            <option value="'Great Vibes', cursive">Great Vibes</option>
+                            <option value="Sacramento, cursive">Sacramento</option>
+                            <option value="Caveat, cursive">Caveat</option>
+                          </optgroup>
+                          <optgroup label="Моноширинные">
+                            <option value="'Fira Code', monospace">Fira Code</option>
+                            <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                            <option value="'IBM Plex Mono', monospace">IBM Plex Mono</option>
+                          </optgroup>
                         </select>
                       </div>
                       <div><Label className="text-xs">Макс. ширина контента</Label><Input value={website.globalStyles?.maxWidth || ''} onChange={e => setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, maxWidth: e.target.value } }))} onBlur={e => { const t = e.target.value.trim(); if (t && /^\d+(\.\d+)?$/.test(t)) setWebsite(prev => ({ ...prev, globalStyles: { ...prev.globalStyles, maxWidth: t + 'px' } })); }} placeholder="1200px" className="mt-1 text-xs" /></div>
