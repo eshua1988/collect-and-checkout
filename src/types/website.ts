@@ -33,6 +33,11 @@ export type WebsiteBlockType =
   | 'comparison'
   | 'marquee'
   | 'quote'
+  | 'cards'
+  | 'carousel'
+  | 'product'
+  | 'linkList'
+  | 'searchBar'
   | (string & {});
 
 export interface WebsiteBlockExtra {

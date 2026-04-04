@@ -18,7 +18,8 @@ import {
   ChevronUp, ChevronDown, ChevronRight, Layers, ExternalLink, Smartphone, Monitor, Tablet,
   FileText, BarChart3, Award, Megaphone, GitBranch, Share2, Mail,
   Bell, PanelTop, ChevronsRight, ListChecks, Table2, MoveHorizontal,
-  Quote, MapPin, Columns3, ClipboardList, ArrowUpDown
+  Quote, MapPin, Columns3, ClipboardList, ArrowUpDown,
+  LayoutGrid, GalleryHorizontal, ShoppingBag, ListTree, Search
 } from 'lucide-react';
 
 const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactNode; defaultContent: Record<string, any> }[] = [
@@ -56,6 +57,11 @@ const BLOCK_PALETTE: { type: WebsiteBlockType; label: string; icon: React.ReactN
   { type: 'columns', label: 'Колонки', icon: <Columns3 className="w-4 h-4" />, defaultContent: { columns: [{ title: 'Колонка 1', text: 'Содержимое первой колонки' }, { title: 'Колонка 2', text: 'Содержимое второй колонки' }] } },
   { type: 'spacer', label: 'Отступ', icon: <ArrowUpDown className="w-4 h-4" />, defaultContent: { height: '60px' } },
   { type: 'form', label: 'Форма', icon: <ClipboardList className="w-4 h-4" />, defaultContent: { title: 'Оставьте заявку', fields: [{ label: 'Имя', type: 'text' }, { label: 'Email', type: 'email' }, { label: 'Сообщение', type: 'textarea' }], buttonText: 'Отправить', bgColor: '#f8fafc' } },
+  { type: 'cards', label: 'Карточки', icon: <LayoutGrid className="w-4 h-4" />, defaultContent: { title: 'Наши направления', columns: 3, items: [{ image: '', title: 'Карточка 1', desc: 'Описание карточки', badge: '', link: '#' }, { image: '', title: 'Карточка 2', desc: 'Описание карточки', badge: '', link: '#' }, { image: '', title: 'Карточка 3', desc: 'Описание карточки', badge: '', link: '#' }] } },
+  { type: 'carousel', label: 'Карусель', icon: <GalleryHorizontal className="w-4 h-4" />, defaultContent: { title: 'Популярное', items: [{ image: '', title: 'Слайд 1', desc: 'Описание', link: '#' }, { image: '', title: 'Слайд 2', desc: 'Описание', link: '#' }, { image: '', title: 'Слайд 3', desc: 'Описание', link: '#' }], autoplay: false } },
+  { type: 'product', label: 'Товар/Услуга', icon: <ShoppingBag className="w-4 h-4" />, defaultContent: { title: 'Название товара', images: [''], specs: [{ label: 'Характеристика', value: 'Значение' }], price: '0₽', priceNote: '', ctaText: 'Подробнее', ctaHref: '#', badge: '' } },
+  { type: 'linkList', label: 'Список ссылок', icon: <ListTree className="w-4 h-4" />, defaultContent: { title: 'Полезные ссылки', columns: 3, groups: [{ heading: 'Раздел 1', links: [{ label: 'Ссылка 1', href: '#' }, { label: 'Ссылка 2', href: '#' }] }, { heading: 'Раздел 2', links: [{ label: 'Ссылка 1', href: '#' }] }] } },
+  { type: 'searchBar', label: 'Поиск', icon: <Search className="w-4 h-4" />, defaultContent: { title: '', fields: [{ label: 'Поиск', placeholder: 'Введите запрос...', type: 'text' }], buttonText: 'Найти', bgColor: '#ffffff' } },
 ];
 
 type ViewMode = 'desktop' | 'tablet' | 'mobile';

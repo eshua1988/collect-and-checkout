@@ -1026,6 +1026,108 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         </footer>
       );
 
+    case 'cards':
+      return wrap(
+        <section className="py-12 px-8">
+          {c.title && <h2 className="text-2xl font-bold mb-8 text-center">{c.title}</h2>}
+          <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${c.columns || 3}, minmax(0, 1fr))` }}>
+            {(c.items || []).map((item: any, i: number) => (
+              <a key={i} href={item.link || '#'} onClick={(e) => handleLinkClick(e, item.link)} className="group rounded-xl overflow-hidden border bg-card shadow-sm hover:shadow-lg transition-shadow cursor-pointer">
+                {item.image && <div className="relative aspect-[4/3] overflow-hidden"><img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />{item.badge && <span className="absolute top-3 left-3 px-2 py-1 text-xs font-semibold rounded-md bg-primary text-primary-foreground">{item.badge}</span>}</div>}
+                <div className="p-4">
+                  {item.title && <h3 className="font-semibold mb-1">{item.title}</h3>}
+                  {item.desc && <p className="text-sm text-muted-foreground">{item.desc}</p>}
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+
+    case 'carousel':
+      return wrap(
+        <section className="py-12 px-8">
+          {c.title && <h2 className="text-2xl font-bold mb-8 text-center">{c.title}</h2>}
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin">
+            {(c.items || []).map((item: any, i: number) => (
+              <a key={i} href={item.link || '#'} onClick={(e) => handleLinkClick(e, item.link)} className="snap-start shrink-0 w-72 rounded-xl overflow-hidden border bg-card shadow-sm hover:shadow-lg transition-shadow cursor-pointer">
+                {item.image && <div className="aspect-[4/3] overflow-hidden"><img src={item.image} alt={item.title} className="w-full h-full object-cover" /></div>}
+                <div className="p-4">
+                  {item.title && <h3 className="font-semibold mb-1">{item.title}</h3>}
+                  {item.desc && <p className="text-sm text-muted-foreground">{item.desc}</p>}
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+
+    case 'product':
+      return wrap(
+        <section className="py-12 px-8">
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8 border rounded-2xl overflow-hidden bg-card shadow">
+            <div className="md:w-1/2 flex gap-2 overflow-x-auto p-4 snap-x snap-mandatory">
+              {(c.images || ['']).map((src: string, i: number) => (
+                <div key={i} className="snap-start shrink-0 w-full aspect-square rounded-xl overflow-hidden bg-muted">
+                  {src ? <img src={src} alt={c.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground">Нет фото</div>}
+                </div>
+              ))}
+            </div>
+            <div className="md:w-1/2 p-6 flex flex-col">
+              {c.badge && <span className="self-start mb-2 px-2 py-1 text-xs rounded-md bg-primary text-primary-foreground">{c.badge}</span>}
+              <h2 className="text-2xl font-bold mb-4">{c.title || 'Товар'}</h2>
+              {(c.specs || []).length > 0 && (
+                <div className="space-y-1 mb-4 text-sm">
+                  {(c.specs || []).map((s: any, i: number) => (
+                    <div key={i} className="flex justify-between border-b py-1"><span className="text-muted-foreground">{s.label}</span><span className="font-medium">{s.value}</span></div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-auto">
+                <div className="text-3xl font-bold mb-1">{c.price || ''}</div>
+                {c.priceNote && <div className="text-sm text-muted-foreground mb-3">{c.priceNote}</div>}
+                {c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} className="inline-block px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 cursor-pointer">{c.ctaText}</a>}
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'linkList':
+      return wrap(
+        <section className="py-12 px-8">
+          {c.title && <h2 className="text-2xl font-bold mb-8 text-center">{c.title}</h2>}
+          <div className="grid gap-8" style={{ gridTemplateColumns: `repeat(${c.columns || 3}, minmax(0, 1fr))` }}>
+            {(c.groups || []).map((group: any, i: number) => (
+              <div key={i}>
+                {group.heading && <h3 className="font-semibold mb-3">{group.heading}</h3>}
+                <ul className="space-y-1">
+                  {(group.links || []).map((link: any, j: number) => (
+                    <li key={j}><a href={link.href || '#'} onClick={(e) => handleLinkClick(e, link.href)} className="text-sm text-muted-foreground hover:text-foreground cursor-pointer">{link.label}</a></li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+
+    case 'searchBar':
+      return wrap(
+        <section className="py-8 px-8" style={{ backgroundColor: c.bgColor }}>
+          {c.title && <h2 className="text-xl font-bold mb-4 text-center">{c.title}</h2>}
+          <div className="flex flex-wrap items-end gap-3 max-w-4xl mx-auto">
+            {(c.fields || []).map((field: any, i: number) => (
+              <div key={i} className="flex-1 min-w-[160px]">
+                {field.label && <label className="block text-xs font-medium mb-1">{field.label}</label>}
+                <input type={field.type || 'text'} placeholder={field.placeholder || ''} className="w-full px-4 py-3 rounded-lg border bg-background text-sm" readOnly />
+              </div>
+            ))}
+            <button className="px-6 py-3 rounded-lg font-medium text-white" style={{ backgroundColor: gs?.primaryColor || '#2563eb' }}>{c.buttonText || 'Найти'}</button>
+          </div>
+        </section>
+      );
+
     default:
       // Generic rendering for custom AI-registered block types
       const cc = block.content || {} as any;
