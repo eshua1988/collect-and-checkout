@@ -2496,6 +2496,9 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
 
+  const hasPages = !!(pages && pages.length > 0);
+  const displayBlocks = blocks;
+
   // Sync with external currentPageSlug prop
   useEffect(() => {
     if (currentPageSlug) setActiveSlug(currentPageSlug);
@@ -2516,9 +2519,6 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
     document.querySelectorAll('[data-animate]').forEach(el => obs.observe(el));
     return () => obs.disconnect();
   }, [displayBlocks]);
-
-  const hasPages = !!(pages && pages.length > 0);
-  const displayBlocks = blocks;
 
   const handleNavigate = (slug: string) => {
     if (hasPages) {
