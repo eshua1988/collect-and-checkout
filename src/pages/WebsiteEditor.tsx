@@ -306,6 +306,18 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
     }
   }, [hasPages, currentPage]);
 
+  // Live content update (from inline text editor)
+  const updateBlockContent = useCallback((blockId: string, newContent: Record<string, any>) => {
+    if (hasPages && currentPage) {
+      setWebsite(prev => ({
+        ...prev,
+        pages: prev.pages!.map(p => p.slug === currentPage.slug ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, content: { ...b.content, ...newContent } } : b) } : p),
+      }));
+    } else {
+      setWebsite(prev => ({ ...prev, blocks: prev.blocks.map(b => b.id === blockId ? { ...b, content: { ...b.content, ...newContent } } : b) }));
+    }
+  }, [hasPages, currentPage]);
+
   const addPage = () => {
     const slug = `page-${Date.now()}`;
     const newPage: WebsitePage = {
@@ -1025,6 +1037,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                 if (block) { setEditingBlock(block); setActiveTab('settings'); }
               }}
               onBlockStyleUpdate={updateBlockStyles}
+              onBlockContentUpdate={updateBlockContent}
               onBlockPositionUpdate={updateBlockPosition}
               onDeleteBlock={deleteBlock}
               selectedBlockId={selectedBlockId}

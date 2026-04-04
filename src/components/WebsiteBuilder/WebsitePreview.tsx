@@ -1,6 +1,83 @@
 import { WebsiteBlock, WebsitePage, WebsiteBlockExtra, AppWebsite } from '@/types/website';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Type } from 'lucide-react';
 import { useEffect, useState, useRef, useCallback } from 'react';
+
+/** Inline rich text editor with floating color toolbar */
+function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: string; initialHtml: string; onSave: (html: string) => void; onClose: () => void }) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [showToolbar, setShowToolbar] = useState(false);
+  const [toolbarPos, setToolbarPos] = useState({ x: 0, y: 0 });
+  const [currentColor, setCurrentColor] = useState('#ff0000');
+
+  const checkSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !editorRef.current?.contains(sel.anchorNode)) {
+      setShowToolbar(false);
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const editorRect = editorRef.current.closest('[data-block-wrap]')?.getBoundingClientRect();
+    if (editorRect) {
+      setToolbarPos({ x: rect.left - editorRect.left + rect.width / 2, y: rect.top - editorRect.top - 44 });
+    }
+    setShowToolbar(true);
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('selectionchange', checkSelection);
+    return () => document.removeEventListener('selectionchange', checkSelection);
+  }, [checkSelection]);
+
+  const applyColor = (color: string) => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    document.execCommand('foreColor', false, color);
+    setCurrentColor(color);
+  };
+
+  const applyBold = () => document.execCommand('bold');
+  const applyItalic = () => document.execCommand('italic');
+  const applyUnderline = () => document.execCommand('underline');
+
+  const handleSave = () => {
+    if (editorRef.current) onSave(editorRef.current.innerHTML);
+    onClose();
+  };
+
+  return (
+    <>
+      {showToolbar && (
+        <div ref={toolbarRef} className="absolute z-50 flex items-center gap-1 bg-popover border rounded-lg shadow-lg px-2 py-1" style={{ left: toolbarPos.x, top: toolbarPos.y, transform: 'translateX(-50%)' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
+          <button onClick={applyBold} className="w-7 h-7 rounded font-bold hover:bg-muted text-xs">B</button>
+          <button onClick={applyItalic} className="w-7 h-7 rounded italic hover:bg-muted text-xs">I</button>
+          <button onClick={applyUnderline} className="w-7 h-7 rounded underline hover:bg-muted text-xs">U</button>
+          <div className="w-px h-5 bg-border mx-0.5" />
+          <input type="color" value={currentColor} onChange={e => applyColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0.5" title="Цвет текста" />
+          {['#ef4444','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#ffffff','#000000'].map(c => (
+            <button key={c} onClick={() => applyColor(c)} className="w-5 h-5 rounded-full border border-gray-300 shrink-0" style={{ backgroundColor: c }} />
+          ))}
+        </div>
+      )}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        className="outline-none min-h-[1em] cursor-text"
+        style={{ whiteSpace: 'pre-wrap' }}
+        dangerouslySetInnerHTML={{ __html: initialHtml }}
+        onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+      />
+      <div className="flex justify-end gap-1 mt-2 px-2 pb-2" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="px-3 py-1 text-xs rounded bg-muted hover:bg-muted/80">Отмена</button>
+        <button onClick={handleSave} className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/80">Сохранить</button>
+      </div>
+    </>
+  );
+}
 
 /** Render embedded extras inline */
 function RenderExtras({ extras, handleLink }: { extras?: WebsiteBlockExtra[]; handleLink?: (e: React.MouseEvent, href?: string) => void }) {
@@ -55,6 +132,7 @@ interface WebsitePreviewProps {
   onBlockClick?: (blockId: string) => void;
   onEditBlock?: (blockId: string) => void;
   onBlockStyleUpdate?: (blockId: string, styles: Record<string, string>) => void;
+  onBlockContentUpdate?: (blockId: string, content: Record<string, any>) => void;
   onBlockPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void;
   onDeleteBlock?: (blockId: string) => void;
   selectedBlockId?: string | null;
@@ -201,7 +279,7 @@ function NavLinkWithPreview({ link, pages, onNavigate, textColor, navBgColor }: 
   );
 }
 
-function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void, onEdit?: (id: string) => void, onDelete?: (id: string) => void) {
+function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void, onEdit?: (id: string) => void, onDelete?: (id: string) => void, onContentUpdate?: (blockId: string, content: Record<string, any>) => void, inlineEditId?: string | null, setInlineEditId?: (id: string | null) => void) {
   const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
   const isSelected = selectedId === block.id;
@@ -373,6 +451,12 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
             <div data-edit-btn className="px-2 py-0.5 text-xs rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/80" onClick={(e) => { e.stopPropagation(); onEdit?.(block.id); }}>
               ✏️
             </div>
+            {/* Inline text edit (T) button */}
+            {onContentUpdate && (
+              <div data-edit-btn className="px-1.5 py-0.5 text-xs rounded bg-indigo-500 text-white cursor-pointer hover:bg-indigo-600 font-bold" onClick={(e) => { e.stopPropagation(); setInlineEditId?.(inlineEditId === block.id ? null : block.id); }} title="Редактировать текст">
+                <Type className="w-3.5 h-3.5" />
+              </div>
+            )}
             {/* Delete button */}
             {onDelete && (
               <div data-edit-btn className="px-1.5 py-0.5 text-xs rounded bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/80" onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}>
@@ -408,6 +492,21 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           {/* Render extras at bottom of any block (except navbar which renders inline) */}
           {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
             <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
+          )}
+          {/* Rich text display */}
+          {c.richText && inlineEditId !== block.id && (
+            <div className="px-6 pb-4" dangerouslySetInnerHTML={{ __html: c.richText }} />
+          )}
+          {/* Inline text editor */}
+          {inlineEditId === block.id && onContentUpdate && (
+            <div className="px-6 pb-4 pt-2">
+              <InlineTextEditor
+                blockId={block.id}
+                initialHtml={c.richText || ''}
+                onSave={(html) => onContentUpdate(block.id, { richText: html })}
+                onClose={() => setInlineEditId?.(null)}
+              />
+            </div>
           )}
         </div>
         {/* Resize handles — only when block is selected and editable */}
@@ -1012,9 +1111,10 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   }
 }
 
-export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onEditBlock, onBlockStyleUpdate, onBlockPositionUpdate, onDeleteBlock, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
+export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onEditBlock, onBlockStyleUpdate, onBlockContentUpdate, onBlockPositionUpdate, onDeleteBlock, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
   // Determine which blocks to display: always use the blocks prop (already filtered by parent)
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
+  const [inlineEditId, setInlineEditId] = useState<string | null>(null);
 
   // Sync with external currentPageSlug prop
   useEffect(() => {
@@ -1053,8 +1153,8 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
 
   return (
     <div className="relative min-h-full" style={containerStyle} data-canvas>
-      {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock))}
-      {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock))}
+      {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock, onBlockContentUpdate, inlineEditId, setInlineEditId))}
+      {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock, onBlockContentUpdate, inlineEditId, setInlineEditId))}
     </div>
   );
 }
