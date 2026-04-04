@@ -382,16 +382,26 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           </div>
         )}
         <div style={visualStyle}>
-          {/* Overlay image — top position */}
-          {c.overlayImage && c.overlayPosition === 'top' && (
+          {/* Overlay image — top position (before content) */}
+          {c.overlayImage && (c.overlayPosition === 'top') && (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}>
               <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
             </div>
           )}
-          {node}
-          {/* Overlay image — bottom/left/right/center */}
-          {c.overlayImage && c.overlayPosition !== 'top' && (
-            <div style={{ display: 'flex', justifyContent: c.overlayPosition === 'left' ? 'flex-start' : c.overlayPosition === 'right' ? 'flex-end' : 'center', padding: '8px 16px' }}>
+          {/* Overlay image — left/right wraps content side-by-side */}
+          {c.overlayImage && (c.overlayPosition === 'left' || c.overlayPosition === 'right') ? (
+            <div style={{ display: 'flex', flexDirection: c.overlayPosition === 'left' ? 'row' : 'row-reverse', alignItems: 'center', gap: '16px' }}>
+              <div style={{ flexShrink: 0, maxWidth: c.overlayMaxWidth || '40%', padding: '8px' }}>
+                <img src={c.overlayImage} alt="" style={{ width: '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>{node}</div>
+            </div>
+          ) : (
+            <>{node}</>
+          )}
+          {/* Overlay image — bottom/center position (after content) */}
+          {c.overlayImage && (c.overlayPosition === 'bottom' || c.overlayPosition === 'center' || (!c.overlayPosition)) && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 16px' }}>
               <img src={c.overlayImage} alt="" style={{ maxWidth: c.overlayMaxWidth || '100%', borderRadius: c.overlayBorderRadius || '0', display: 'block' }} />
             </div>
           )}
