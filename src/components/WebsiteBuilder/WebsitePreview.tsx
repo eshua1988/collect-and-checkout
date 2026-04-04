@@ -2,13 +2,27 @@ import { WebsiteBlock, WebsitePage, WebsiteBlockExtra, AppWebsite } from '@/type
 import { Trash2, Type } from 'lucide-react';
 import { useEffect, useState, useRef, useCallback } from 'react';
 
-/** Inline rich text editor with floating color toolbar */
+/** Inline rich text editor with floating format toolbar */
 function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: string; initialHtml: string; onSave: (html: string) => void; onClose: () => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const savedRangeRef = useRef<Range | null>(null);
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPos, setToolbarPos] = useState({ x: 0, y: 0 });
-  const [currentColor, setCurrentColor] = useState('#ff0000');
+  const [currentColor, setCurrentColor] = useState('#ef4444');
+
+  const saveRange = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editorRef.current?.contains(sel.anchorNode)) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  }, []);
+
+  const restoreRange = useCallback(() => {
+    if (!savedRangeRef.current) return;
+    const sel = window.getSelection();
+    if (sel) { sel.removeAllRanges(); sel.addRange(savedRangeRef.current); }
+  }, []);
 
   const checkSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -16,64 +30,128 @@ function InlineTextEditor({ blockId, initialHtml, onSave, onClose }: { blockId: 
       setShowToolbar(false);
       return;
     }
+    saveRange();
     const range = sel.getRangeAt(0);
     const rect = range.getBoundingClientRect();
     const editorRect = editorRef.current.closest('[data-block-wrap]')?.getBoundingClientRect();
     if (editorRect) {
-      setToolbarPos({ x: rect.left - editorRect.left + rect.width / 2, y: rect.top - editorRect.top - 44 });
+      setToolbarPos({ x: rect.left - editorRect.left + rect.width / 2, y: rect.top - editorRect.top - 52 });
     }
     setShowToolbar(true);
-  }, []);
+  }, [saveRange]);
 
   useEffect(() => {
     document.addEventListener('selectionchange', checkSelection);
     return () => document.removeEventListener('selectionchange', checkSelection);
   }, [checkSelection]);
 
-  const applyColor = (color: string) => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return;
-    document.execCommand('foreColor', false, color);
-    setCurrentColor(color);
+  const cmd = (command: string, value?: string) => {
+    restoreRange();
+    document.execCommand(command, false, value);
+    editorRef.current?.focus();
   };
 
-  const applyBold = () => document.execCommand('bold');
-  const applyItalic = () => document.execCommand('italic');
-  const applyUnderline = () => document.execCommand('underline');
+  const applyColor = (color: string) => {
+    setCurrentColor(color);
+    cmd('foreColor', color);
+  };
 
   const handleSave = () => {
     if (editorRef.current) onSave(editorRef.current.innerHTML);
     onClose();
   };
 
+  const TB = ({ onClick, title, children, className = '' }: { onClick: () => void; title?: string; children: React.ReactNode; className?: string }) => (
+    <button
+      title={title}
+      onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+      onClick={e => { e.preventDefault(); e.stopPropagation(); onClick(); }}
+      className={`h-7 min-w-[28px] px-1 rounded hover:bg-muted text-xs flex items-center justify-center ${className}`}
+    >{children}</button>
+  );
+
   return (
     <>
       {showToolbar && (
-        <div ref={toolbarRef} className="absolute z-50 flex items-center gap-1 bg-popover border rounded-lg shadow-lg px-2 py-1" style={{ left: toolbarPos.x, top: toolbarPos.y, transform: 'translateX(-50%)' }} onClick={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
-          <button onClick={applyBold} className="w-7 h-7 rounded font-bold hover:bg-muted text-xs">B</button>
-          <button onClick={applyItalic} className="w-7 h-7 rounded italic hover:bg-muted text-xs">I</button>
-          <button onClick={applyUnderline} className="w-7 h-7 rounded underline hover:bg-muted text-xs">U</button>
+        <div
+          ref={toolbarRef}
+          className="absolute z-50 flex flex-wrap items-center gap-0.5 bg-popover border rounded-xl shadow-xl px-2 py-1.5 max-w-[420px]"
+          style={{ left: toolbarPos.x, top: Math.max(4, toolbarPos.y), transform: 'translateX(-50%)' }}
+          onClick={e => e.stopPropagation()}
+          onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+        >
+          {/* Heading / paragraph */}
+          <TB onClick={() => cmd('formatBlock', 'h1')} title="H1" className="font-extrabold">H1</TB>
+          <TB onClick={() => cmd('formatBlock', 'h2')} title="H2" className="font-bold">H2</TB>
+          <TB onClick={() => cmd('formatBlock', 'h3')} title="H3" className="font-semibold">H3</TB>
+          <TB onClick={() => cmd('formatBlock', 'p')} title="Параграф">¶</TB>
           <div className="w-px h-5 bg-border mx-0.5" />
-          <input type="color" value={currentColor} onChange={e => applyColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0.5" title="Цвет текста" />
-          {['#ef4444','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#ffffff','#000000'].map(c => (
-            <button key={c} onClick={() => applyColor(c)} className="w-5 h-5 rounded-full border border-gray-300 shrink-0" style={{ backgroundColor: c }} />
+          {/* Font size */}
+          <select
+            title="Размер шрифта"
+            onMouseDown={e => e.stopPropagation()}
+            onChange={e => { restoreRange(); document.execCommand('fontSize', false, e.target.value); editorRef.current?.focus(); }}
+            className="h-7 text-[11px] rounded border bg-background px-1 cursor-pointer"
+          >
+            <option value="">Размер</option>
+            <option value="1">Tiny</option>
+            <option value="2">Мелкий</option>
+            <option value="3">Обычный</option>
+            <option value="4">Крупный</option>
+            <option value="5">Большой</option>
+            <option value="6">Очень большой</option>
+            <option value="7">Огромный</option>
+          </select>
+          <div className="w-px h-5 bg-border mx-0.5" />
+          {/* Format */}
+          <TB onClick={() => cmd('bold')} title="Жирный" className="font-bold">B</TB>
+          <TB onClick={() => cmd('italic')} title="Курсив" className="italic">I</TB>
+          <TB onClick={() => cmd('underline')} title="Подчёркнутый" className="underline">U</TB>
+          <TB onClick={() => cmd('strikeThrough')} title="Зачёркнутый" className="line-through">S</TB>
+          <div className="w-px h-5 bg-border mx-0.5" />
+          {/* Align */}
+          <TB onClick={() => cmd('justifyLeft')} title="По левому краю">⬅</TB>
+          <TB onClick={() => cmd('justifyCenter')} title="По центру">↔</TB>
+          <TB onClick={() => cmd('justifyRight')} title="По правому краю">➡</TB>
+          <div className="w-px h-5 bg-border mx-0.5" />
+          {/* Color picker + presets */}
+          <input
+            type="color"
+            value={currentColor}
+            title="Цвет текста"
+            onMouseDown={e => { e.stopPropagation(); saveRange(); }}
+            onChange={e => applyColor(e.target.value)}
+            className="w-7 h-7 rounded cursor-pointer border p-0.5 shrink-0"
+          />
+          {['#ef4444','#f97316','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#ec4899','#ffffff','#1e293b'].map(col => (
+            <button
+              key={col}
+              title={col}
+              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+              onClick={e => { e.preventDefault(); e.stopPropagation(); applyColor(col); }}
+              className="w-5 h-5 rounded-full border border-gray-300 shrink-0 hover:scale-110 transition-transform"
+              style={{ backgroundColor: col }}
+            />
           ))}
+          <div className="w-px h-5 bg-border mx-0.5" />
+          <TB onClick={() => cmd('removeFormat')} title="Убрать форматирование" className="text-muted-foreground">✕</TB>
         </div>
       )}
       <div
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
-        className="outline-none min-h-[1em] cursor-text"
+        className="outline-none min-h-[2em] cursor-text rounded-lg border border-primary/30 bg-background/50 p-3 focus:border-primary focus:ring-1 focus:ring-primary"
         style={{ whiteSpace: 'pre-wrap' }}
         dangerouslySetInnerHTML={{ __html: initialHtml }}
         onClick={e => e.stopPropagation()}
         onMouseDown={e => e.stopPropagation()}
         onKeyDown={e => e.stopPropagation()}
+        onMouseUp={checkSelection}
       />
       <div className="flex justify-end gap-1 mt-2 px-2 pb-2" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="px-3 py-1 text-xs rounded bg-muted hover:bg-muted/80">Отмена</button>
-        <button onClick={handleSave} className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/80">Сохранить</button>
+        <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onClose(); }} className="px-3 py-1 text-xs rounded bg-muted hover:bg-muted/80">Отмена</button>
+        <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); handleSave(); }} className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground hover:bg-primary/80">Сохранить</button>
       </div>
     </>
   );
@@ -277,6 +355,21 @@ function NavLinkWithPreview({ link, pages, onNavigate, textColor, navBgColor }: 
       )}
     </div>
   );
+}
+
+/** Build initial HTML for the inline editor from existing block content fields */
+function getBlockInitialHtml(block: WebsiteBlock): string {
+  const c = block.content || {} as any;
+  if (c.richText) return c.richText;
+  const esc = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const parts: string[] = [];
+  if (c.title) parts.push(`<h2 style="font-size:1.5em;font-weight:700;margin-bottom:6px">${esc(c.title)}</h2>`);
+  if (c.subtitle && c.subtitle !== c.title) parts.push(`<p style="margin-bottom:6px;opacity:0.8">${esc(c.subtitle)}</p>`);
+  if (c.body) parts.push(`<p>${esc(c.body)}</p>`);
+  if (c.text && typeof c.text === 'string' && c.text !== c.title && c.text !== c.body) parts.push(`<p>${esc(c.text)}</p>`);
+  if (c.description && c.description !== c.subtitle && c.description !== c.body) parts.push(`<p style="margin-top:6px">${esc(c.description)}</p>`);
+  if (c.logo && !c.title) parts.push(`<strong>${esc(c.logo)}</strong>`);
+  return parts.length ? parts.join('') : '<p>Начните вводить текст...</p>';
 }
 
 function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void, onEdit?: (id: string) => void, onDelete?: (id: string) => void, onContentUpdate?: (blockId: string, content: Record<string, any>) => void, inlineEditId?: string | null, setInlineEditId?: (id: string | null) => void) {
@@ -493,16 +586,16 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
           {block.type !== 'navbar' && block.extras && block.extras.length > 0 && (
             <div className="px-6 pb-4"><RenderExtras extras={block.extras} handleLink={handleLinkClick} /></div>
           )}
-          {/* Rich text display */}
-          {c.richText && inlineEditId !== block.id && (
+          {/* Rich text display — skip for 'text' and 'hero' blocks which render richText internally */}
+          {c.richText && inlineEditId !== block.id && block.type !== 'text' && block.type !== 'hero' && (
             <div className="px-6 pb-4" dangerouslySetInnerHTML={{ __html: c.richText }} />
           )}
-          {/* Inline text editor */}
-          {inlineEditId === block.id && onContentUpdate && (
+          {/* Inline text editor — skip for 'text' and 'hero' blocks which embed the editor internally */}
+          {inlineEditId === block.id && onContentUpdate && block.type !== 'text' && block.type !== 'hero' && (
             <div className="px-6 pb-4 pt-2">
               <InlineTextEditor
                 blockId={block.id}
-                initialHtml={c.richText || ''}
+                initialHtml={getBlockInitialHtml(block)}
                 onSave={(html) => onContentUpdate(block.id, { richText: html })}
                 onClose={() => setInlineEditId?.(null)}
               />
@@ -560,10 +653,25 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
         <section style={{ backgroundColor: c.bgColor || gs?.backgroundColor || '#1e293b', color: c.textColor || gs?.textColor || '#fff', backgroundImage: c.heroImage ? `url(${c.heroImage})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }} className="py-20 px-8">
           {c.heroImage && <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${c.overlay ?? 0.4})` }} />}
           <div className={`max-w-4xl mx-auto text-${c.align || 'center'} relative z-10`}>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight" style={gs?.headingFont ? { fontFamily: gs.headingFont } : undefined}>{c.title || 'Заголовок'}</h1>
-            {c.subtitle && <p className="text-lg md:text-xl opacity-80 mb-8 max-w-2xl mx-auto">{c.subtitle}</p>}
-            {c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} style={gs?.accentColor ? { backgroundColor: gs.accentColor } : undefined} className="inline-block px-8 py-4 rounded-xl bg-white/20 hover:bg-white/30 font-semibold text-lg transition-colors cursor-pointer">{c.ctaText}</a>}
-            {(c.searchFields || []).length > 0 && (
+            {inlineEditId === block.id && onContentUpdate ? (
+              <div className="my-4">
+                <InlineTextEditor
+                  blockId={block.id}
+                  initialHtml={getBlockInitialHtml(block)}
+                  onSave={(html) => { onContentUpdate(block.id, { richText: html }); setInlineEditId?.(null); }}
+                  onClose={() => setInlineEditId?.(null)}
+                />
+              </div>
+            ) : c.richText ? (
+              <div dangerouslySetInnerHTML={{ __html: c.richText }} className="mb-6" />
+            ) : (
+              <>
+                <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight" style={gs?.headingFont ? { fontFamily: gs.headingFont } : undefined}>{c.title || 'Заголовок'}</h1>
+                {c.subtitle && <p className="text-lg md:text-xl opacity-80 mb-8 max-w-2xl mx-auto">{c.subtitle}</p>}
+              </>
+            )}
+            {inlineEditId !== block.id && c.ctaText && <a href={c.ctaHref || '#'} onClick={(e) => handleLinkClick(e, c.ctaHref)} style={gs?.accentColor ? { backgroundColor: gs.accentColor } : undefined} className="inline-block px-8 py-4 rounded-xl bg-white/20 hover:bg-white/30 font-semibold text-lg transition-colors cursor-pointer">{c.ctaText}</a>}
+            {inlineEditId !== block.id && (c.searchFields || []).length > 0 && (
               <div className="flex flex-wrap items-end gap-3 mt-8 max-w-3xl mx-auto bg-white/10 backdrop-blur-sm p-4 rounded-2xl">
                 {(c.searchFields || []).map((f: any, i: number) => (
                   <div key={i} className="flex-1 min-w-[140px]">
@@ -581,8 +689,21 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     case 'text':
       return wrap(
         <section className="py-12 px-8 max-w-4xl mx-auto">
-          {c.title && <h2 className={`text-3xl font-bold mb-4 text-${c.align || 'left'}`}>{c.title}</h2>}
-          <p className={`text-muted-foreground leading-relaxed text-${c.align || 'left'} whitespace-pre-wrap`}>{c.body || ''}</p>
+          {inlineEditId === block.id && onContentUpdate ? (
+            <InlineTextEditor
+              blockId={block.id}
+              initialHtml={getBlockInitialHtml(block)}
+              onSave={(html) => { onContentUpdate(block.id, { richText: html }); setInlineEditId?.(null); }}
+              onClose={() => setInlineEditId?.(null)}
+            />
+          ) : c.richText ? (
+            <div className={`text-${c.align || 'left'}`} dangerouslySetInnerHTML={{ __html: c.richText }} />
+          ) : (
+            <>
+              {c.title && <h2 className={`text-3xl font-bold mb-4 text-${c.align || 'left'}`}>{c.title}</h2>}
+              <p className={`text-muted-foreground leading-relaxed text-${c.align || 'left'} whitespace-pre-wrap`}>{c.body || ''}</p>
+            </>
+          )}
         </section>
       );
 
