@@ -957,24 +957,99 @@ ${wantsDiag ? `
       const msData = (req as any).__multiStepSite;
       console.log(`Multi-step website generation for ${msData.rootUrl}, ${msData.pageDataList.length} pages`);
 
+      // ── STEP 0: Site analysis — ask AI what it knows about this domain ──
+      // Especially important for SPA sites where scraping returned little content
+      const isContentSparse = msData.pageDataList.every((pd: any) => (pd.body || '').length < 300 && (pd.headings || '').length < 100);
+      let siteAnalysis = '';
+      if (isContentSparse) {
+        console.log('Content is sparse (likely SPA), running pre-analysis step...');
+        const analysisPrompt = `Ты эксперт по анализу сайтов. Сайт: ${msData.rootUrl}
+
+Используя свои знания об этом домене/бренде, верни ТОЛЬКО JSON (без \`\`\` и текста):
+{
+  "siteType": "church|business|music|portfolio|...",
+  "brand": "краткое описание бренда одним предложением",
+  "palette": {"bg": "#hex", "text": "#hex", "primary": "#hex", "accent": "#hex"},
+  "fonts": {"heading": "Font Name", "body": "Font Name"},
+  "pages": {
+    "home": {
+      "sections": ["announcement bar - текст", "navbar - логотип и пункты меню", "hero - заголовок и подзаголовок", "секция 3 - описание", "секция 4", "..."],
+      "cta": "текст главной кнопки CTA",
+      "colors": "описание цветовой схемы"
+    },
+    "worship": {
+      "sections": ["hero - название", "grid синглов", "grid альбомов", "видео секция", "footer"]
+    }
+  },
+  "navLinks": ["Пункт1", "Пункт2", "Пункт3"],
+  "style": "dark/cinematic/minimal/bright/colorful/...",
+  "keyContent": "5-10 ключевых текстов/цитат/слоганов с сайта"
+}
+
+Если не знаешь этот сайт — угадай по домену (vouschurch → церковь Майами, dark gold style, Rich & DawnCheré Wilkerson, "A Church For All People" и т.д.).`;
+        siteAnalysis = await callAI(analysisPrompt, availableProviders) || '';
+        console.log(`Site analysis result (${siteAnalysis.length} chars):`, siteAnalysis.slice(0, 200));
+      }
+
+      // Parse analysis if available
+      let analysisData: any = {};
+      if (siteAnalysis) {
+        try {
+          const clean = siteAnalysis.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+          const start = clean.indexOf('{'); const end = clean.lastIndexOf('}');
+          if (start >= 0 && end > start) analysisData = JSON.parse(clean.slice(start, end + 1));
+        } catch { console.error('Failed to parse analysis:', siteAnalysis.slice(0, 100)); }
+      }
+
+      // Enrich per-page data with analysis
+      const enrichedPages = msData.pageDataList.map((pd: any) => {
+        const pageAnalysis = analysisData.pages?.[pd.slug] || analysisData.pages?.['home'] || null;
+        const sectionsHint = pageAnalysis?.sections ? `\nИЗВЕСТНЫЕ СЕКЦИИ ЭТОЙ СТРАНИЦЫ:\n${pageAnalysis.sections.map((s: string, i: number) => `${i+1}. ${s}`).join('\n')}` : '';
+        const ctaHint = pageAnalysis?.cta ? `\nГлавный CTA: "${pageAnalysis.cta}"` : '';
+        const enrichedBody = sectionsHint || pd.body
+          ? `${pd.body || ''}${sectionsHint}${ctaHint}`
+          : pd.body;
+        return { ...pd, body: enrichedBody };
+      });
+
+      // Use analysis palette if scraping found no colors
+      const palette = analysisData.palette || {};
+      const analysisColors = Object.values(palette).filter(Boolean).join('; ');
+      const effectiveColors = (msData.colorsStr && msData.colorsStr.length > 5) ? msData.colorsStr : analysisColors || '#1e293b, #ffffff';
+      const effectiveFonts = analysisData.fonts ? `heading:"${analysisData.fonts.heading || 'Inter'}", body:"${analysisData.fonts.body || 'Inter'}"` : '';
+      const effectiveStyle = analysisData.style || 'corporate';
+      const keyContent = analysisData.keyContent || '';
+      const siteType = analysisData.siteType || 'website';
+
       const shuffled = [...availableProviders].sort(() => Math.random() - 0.5);
 
-      // Generate each page in parallel, each using a different sub-set of providers
-      const pagePromises = msData.pageDataList.map((pd: any, idx: number) => {
+      // ── STEP 1: Generate each page in parallel ──────────────────────
+      const pagePromises = enrichedPages.map((pd: any, idx: number) => {
         // Rotate providers: each page starts from a different position
         const rotated = [...shuffled.slice(idx % shuffled.length), ...shuffled.slice(0, idx % shuffled.length)];
         const isHome = pd.slug === "home";
+        const styleGuide = siteType === 'church'
+          ? `СТИЛЬ: тёмный кинематичный. ОБЯЗАТЕЛЬНЫЕ БЛОКИ: announcement(цветной бар) + navbar + videoBg(герой с YouTube) + bigQuote(миссия) + eventCards(события) + locations(расписание) + values(ценности с ▽) + splitHero(пасторы/сообщество) + features(направления) + cta(пожертвования) + footer. Используй типы: parallax,videoBg,bigQuote,eventCards,locations,values,splitHero,announcement`
+          : siteType === 'music'
+          ? `СТИЛЬ: тёмный музыкальный. ОБЯЗАТЕЛЬНЫЕ БЛОКИ: navbar + hero(альбом/сингл) + blogGrid(синглы) + blogGrid(альбомы) + embed(видео) + social(соцсети) + footer`
+          : `СТИЛЬ: ${effectiveStyle}. ВОСПРОИЗВОДИ все секции оригинала`;
+
         const pagePrompt = `Ты генератор JSON-блоков для конструктора сайтов. Верни ТОЛЬКО чистый JSON (без \`\`\` и без текста).
 Сайт: "${msData.siteTitle}" (${msData.rootUrl})
+Тип сайта: ${siteType}
 Язык: ${msData.siteLang}
-Цвета: ${msData.colorsStr}
+Цвета: ${effectiveColors}
+${effectiveFonts ? `Шрифты: ${effectiveFonts}` : ''}
+${keyContent ? `Ключевой контент/слоганы: ${keyContent}` : ''}
 
 Страница: "${pd.slug}" — ${pd.title}
 ${pd.metaDesc ? `Описание: ${pd.metaDesc}` : ""}
-${pd.headings ? `Заголовки: ${pd.headings}` : ""}
-${pd.body ? `Текст: ${pd.body}` : ""}
+${pd.headings ? `Заголовки с сайта: ${pd.headings}` : ""}
+${pd.body ? `Текст/секции: ${pd.body}` : ""}
 
-Стандартные типы блоков: navbar, hero, text, image, video, features, gallery, pricing, testimonials, team, faq, contact, countdown, button, footer, divider, html, stats, logos, cta, timeline, social, newsletter, banner, tabs, accordion, progress, comparison, marquee, quote, map, columns, spacer, form
+${styleGuide}
+
+Стандартные типы блоков: navbar, hero, text, image, video, features, gallery, pricing, testimonials, team, faq, contact, countdown, button, footer, divider, html, stats, logos, cta, timeline, social, newsletter, banner, tabs, accordion, progress, comparison, marquee, quote, map, columns, spacer, form, blogGrid, embed, parallax, videoBg, bigQuote, eventCards, locations, values, splitHero, announcement
 
 ## ВАЖНО: КАСТОМНЫЕ БЛОКИ
 Если на странице есть элемент которого НЕТ в стандартных типах (поиск, слайдер, каталог, фильтр, калькулятор, чат-виджет, карусель, лента новостей, корзина, бронирование и т.д.) — СОЗДАЙ кастомный блок!
@@ -985,10 +1060,10 @@ ${pd.body ? `Текст: ${pd.body}` : ""}
 
 Генерируй 10-15 блоков (страница должна быть ДЛИННАЯ, как на реальном сайте!):
 1. navbar: ${msData.navbarJson}
-${isHome ? `2. hero: {type:"hero",id:"...",content:{title:"(из H1)",subtitle:"(из описания)",ctaText:"...",ctaHref:"/about",bgColor:"...",textColor:"#fff",align:"center"},styles:{padding:"80px 24px"}}` : `2. hero с title="${pd.title}" и subtitle из описания`}
-3-12. Контентные блоки — используй РЕАЛЬНЫЙ текст! Воспроизведи ВСЕ секции оригинала: текстовые блоки, features, карточки, кнопки, CTA, цитаты, галереи, формы поиска/подписки и т.д. Если контент длинный — разбей на несколько text/features/cta блоков. Если есть нестандартный функционал → кастомный блок + newBlockTypes.
+${isHome && siteType === 'church' ? `2. announcement bar (bgColor:"#f5c842",textColor:"#0a0a0a") + videoBg с YouTube видео, title из H1, overlay:0.55, minHeight:"100vh"` : isHome ? `2. hero: {type:"hero",id:"hero1",content:{title:"(из H1 или title)",subtitle:"(из metaDesc)",ctaText:"...",ctaHref:"/about",bgColor:"${palette.bg || '#1e293b'}",textColor:"#fff",align:"center"},styles:{padding:"80px 24px"}}` : `2. hero/parallax с title="${pd.title}" и subtitle из описания`}
+3-12. Контентные блоки — используй РЕАЛЬНЫЙ текст из "Текст/секции" выше! Воспроизведи ВСЕ секции: текстовые блоки, features, карточки, bigQuote, CTA, цитаты, blogGrid (для сеток контента), embed (YouTube), eventCards (события), locations (адреса/расписание), values (ценности), social (соцсети). Если контент длинный — разбей на несколько блоков. Нестандартный функционал → кастомный блок + newBlockTypes.
 13-14. CTA или дополнительные секции
-15. footer: {type:"footer",id:"...",content:{companyName:"${msData.siteTitle.replace(/"/g, '')}",copyright:"© 2026",links:[]},styles:{padding:"24px",bgColor:"#1e293b",textColor:"#94a3b8"}}
+15. footer: {type:"footer",id:"ftr1",content:{companyName:"${msData.siteTitle.replace(/"/g, '')}",copyright:"© 2026",links:[],columns:[{title:"ССЫЛКИ",links:[]}]},styles:{padding:"24px",bgColor:"${palette.bg || '#1e293b'}",textColor:"#94a3b8"}}
 
 Кастомный блок ОБЯЗАТЕЛЬНО должен иметь МНОГО свойств в content для настройки:
 Пример searchBar: {type:"searchBar",id:"search1",content:{placeholder:"Поиск...",buttonText:"Найти",bgColor:"#f1f5f9",textColor:"#1e293b",borderColor:"#e2e8f0",maxWidth:"600px",iconPosition:"left"},styles:{padding:"16px 24px",bgColor:"#f8fafc",textColor:"#1e293b"}}
