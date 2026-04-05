@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+﻿import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -952,206 +952,312 @@ ${wantsDiag ? `
       return s;
     }
 
-    // ── MULTI-STEP WEBSITE GENERATION (parallel page-by-page) ─────────
+    // ── MULTI-STEP WEBSITE GENERATION (analysis → parallel groups → assemble) ──
     if (scrapedSiteContent === `__MULTISTEP_WEBSITE__`) {
       const msData = (req as any).__multiStepSite;
-      console.log(`Multi-step website generation for ${msData.rootUrl}, ${msData.pageDataList.length} pages`);
+      console.log(`Multi-step generation: ${msData.rootUrl}, ${msData.pageDataList.length} pages`);
 
-      // ── STEP 0: Site analysis — ask AI what it knows about this domain ──
-      // Especially important for SPA sites where scraping returned little content
-      const isContentSparse = msData.pageDataList.every((pd: any) => (pd.body || '').length < 300 && (pd.headings || '').length < 100);
-      let siteAnalysis = '';
-      if (isContentSparse) {
-        console.log('Content is sparse (likely SPA), running pre-analysis step...');
-        const analysisPrompt = `Ты эксперт по анализу сайтов. Сайт: ${msData.rootUrl}
+      // ── STEP 0: Deep Content Analysis ────────────────────────────────
+      // Always run — even if scraping returned data, AI enriches with own knowledge
+      const scrapedBodyText = msData.pageDataList.map((p: any) => p.body ? `[${p.slug}] ${p.body.slice(0, 600)}` : '').filter(Boolean).join('\n');
+      const analysisPrompt = `You are an expert website analyst. Site: ${msData.rootUrl}
+${scrapedBodyText ? `\nSCRAPED TEXT (may be incomplete if SPA):\n${scrapedBodyText}\n` : ''}
+Using your knowledge of this domain (and the scraped text above if available), return ONLY a JSON object. No markdown, no explanation.
 
-Используя свои знания об этом домене/бренде, верни ТОЛЬКО JSON (без \`\`\` и текста):
 {
-  "siteType": "church|business|music|portfolio|...",
-  "brand": "краткое описание бренда одним предложением",
-  "palette": {"bg": "#hex", "text": "#hex", "primary": "#hex", "accent": "#hex"},
-  "fonts": {"heading": "Font Name", "body": "Font Name"},
-  "pages": {
-    "home": {
-      "sections": ["announcement bar - текст", "navbar - логотип и пункты меню", "hero - заголовок и подзаголовок", "секция 3 - описание", "секция 4", "..."],
-      "cta": "текст главной кнопки CTA",
-      "colors": "описание цветовой схемы"
-    },
-    "worship": {
-      "sections": ["hero - название", "grid синглов", "grid альбомов", "видео секция", "footer"]
-    }
-  },
-  "navLinks": ["Пункт1", "Пункт2", "Пункт3"],
-  "style": "dark/cinematic/minimal/bright/colorful/...",
-  "keyContent": "5-10 ключевых текстов/цитат/слоганов с сайта"
+  "siteType": "church|business|music|restaurant|portfolio|ecommerce|blog|...",
+  "siteName": "exact brand name",
+  "brand": "2-3 sentence brand description",
+  "tagline": "main site slogan",
+  "palette": {"bg": "#0a0a0a", "text": "#ffffff", "primary": "#f5c842", "accent": "#f59e0b", "surface": "#111111"},
+  "fonts": {"heading": "Bebas Neue", "body": "Lato"},
+  "navLinks": ["Link1", "Link2", "Link3", "Link4", "Link5"],
+  "keyMessages": ["message 1", "message 2", "message 3", "message 4", "message 5"],
+  "ctaPrimary": {"text": "CTA button text", "href": "#"},
+  "ctaSecondary": {"text": "secondary CTA", "href": "#"},
+  "socialLinks": [{"platform": "instagram", "url": "https://..."}, {"platform": "youtube", "url": "https://..."}],
+  "copyright": "© 2026 Brand Name",
+  "sections": [
+    {"id": "s1", "name": "announcement", "blockType": "announcement", "content": "EXACT announcement bar text — event name, date, CTA"},
+    {"id": "s2", "name": "hero", "blockType": "videoBg", "content": "hero h1 title | subtitle | CTA text | YouTube URL if known"},
+    {"id": "s3", "name": "mission", "blockType": "bigQuote", "content": "EXACT mission statement quote — word for word"},
+    {"id": "s4", "name": "events", "blockType": "eventCards", "content": "Event1: title|date|desc. Event2: title|date|desc. Event3: title|date|desc"},
+    {"id": "s5", "name": "locations", "blockType": "locations", "content": "Location1: name|address|times. Location2: name|address|times. Online: URL|times"},
+    {"id": "s6", "name": "values", "blockType": "values", "content": "Value1: TITLE ▽ full description. Value2: TITLE ▽ desc. Value3..."},
+    {"id": "s7", "name": "community", "blockType": "splitHero", "content": "eyebrow | title | body text | ctaText | cta2Text"},
+    {"id": "s8", "name": "ministry", "blockType": "features", "content": "Item1: icon|title|desc. Item2: icon|title|desc. Item3: icon|title|desc. Item4: icon|title|desc"},
+    {"id": "s9", "name": "pastors", "blockType": "splitHero", "content": "eyebrow | pastor names | bio text | CTA text"},
+    {"id": "s10", "name": "give", "blockType": "cta", "content": "CTA title | subtitle | button text"}
+  ]
 }
 
-Если не знаешь этот сайт — угадай по домену (vouschurch → церковь Майами, dark gold style, Rich & DawnCheré Wilkerson, "A Church For All People" и т.д.).`;
-        siteAnalysis = await callAI(analysisPrompt, availableProviders) || '';
-        console.log(`Site analysis result (${siteAnalysis.length} chars):`, siteAnalysis.slice(0, 200));
-      }
+CRITICAL: Fill EVERY field with REAL content from this specific site. 
+- For vouschurch.com: Rich & DawnCheré Wilkerson, Miami FL, "A Church For All People", dark gold theme
+- For vouschurch.com/worship: VOUS Worship music ministry, singles/albums/music videos
+- For ANY site: use your training knowledge to fill real content, names, addresses, quotes`;
 
-      // Parse analysis if available
-      let analysisData: any = {};
-      if (siteAnalysis) {
+      const analysisRaw = await callAI(analysisPrompt, availableProviders);
+      console.log(`Analysis: ${analysisRaw?.length || 0} chars`);
+
+      let analysis: any = {};
+      if (analysisRaw) {
         try {
-          const clean = siteAnalysis.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-          const start = clean.indexOf('{'); const end = clean.lastIndexOf('}');
-          if (start >= 0 && end > start) analysisData = JSON.parse(clean.slice(start, end + 1));
-        } catch { console.error('Failed to parse analysis:', siteAnalysis.slice(0, 100)); }
+          const c = analysisRaw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+          const s = c.indexOf('{'); const e = c.lastIndexOf('}');
+          if (s >= 0 && e > s) analysis = JSON.parse(c.slice(s, e + 1));
+        } catch (err) { console.error('Analysis parse fail:', analysisRaw?.slice(0, 150)); }
       }
 
-      // Enrich per-page data with analysis
-      const enrichedPages = msData.pageDataList.map((pd: any) => {
-        const pageAnalysis = analysisData.pages?.[pd.slug] || analysisData.pages?.['home'] || null;
-        const sectionsHint = pageAnalysis?.sections ? `\nИЗВЕСТНЫЕ СЕКЦИИ ЭТОЙ СТРАНИЦЫ:\n${pageAnalysis.sections.map((s: string, i: number) => `${i+1}. ${s}`).join('\n')}` : '';
-        const ctaHint = pageAnalysis?.cta ? `\nГлавный CTA: "${pageAnalysis.cta}"` : '';
-        const enrichedBody = sectionsHint || pd.body
-          ? `${pd.body || ''}${sectionsHint}${ctaHint}`
-          : pd.body;
-        return { ...pd, body: enrichedBody };
-      });
+      // Extract palette & typography
+      const pal = analysis.palette || {};
+      const bgColor   = pal.bg       || '#0a0a0a';
+      const textColor = pal.text     || '#ffffff';
+      const primary   = pal.primary  || '#f5c842';
+      const surface   = pal.surface  || '#111111';
+      const headFont  = analysis.fonts?.heading || 'Inter';
+      const bodyFont  = analysis.fonts?.body    || 'Inter';
+      const siteType  = analysis.siteType  || 'website';
+      const siteName  = analysis.siteName  || msData.siteTitle;
+      const tagline   = analysis.tagline   || '';
+      const keyMsgs   = (analysis.keyMessages || []).join(' | ');
+      const ctaPrimary    = analysis.ctaPrimary    || { text: 'Get Started', href: '#' };
+      const ctaSecondary  = analysis.ctaSecondary  || { text: 'Learn More',  href: '#' };
+      const navLinks  = analysis.navLinks || msData.navLinksStr?.split(' | ') || ['Home'];
+      const copyright = analysis.copyright || `© 2026 ${siteName}`;
+      const socialLinks = analysis.socialLinks || [];
 
-      // Use analysis palette if scraping found no colors
-      const palette = analysisData.palette || {};
-      const analysisColors = Object.values(palette).filter(Boolean).join('; ');
-      const effectiveColors = (msData.colorsStr && msData.colorsStr.length > 5) ? msData.colorsStr : analysisColors || '#1e293b, #ffffff';
-      const effectiveFonts = analysisData.fonts ? `heading:"${analysisData.fonts.heading || 'Inter'}", body:"${analysisData.fonts.body || 'Inter'}"` : '';
-      const effectiveStyle = analysisData.style || 'corporate';
-      const keyContent = analysisData.keyContent || '';
-      const siteType = analysisData.siteType || 'website';
+      // Build prefilled navbar & footer blocks
+      const navItems = navLinks.slice(0, 7).map((lbl: string) => {
+        const slug = lbl.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        return `{"label":"${lbl.replace(/"/g,'')}","href":"/${slug}","mode":"navigate"}`;
+      }).join(',');
+      const socialJson = socialLinks.map((s: any) => `{"platform":"${s.platform}","url":"${s.url || '#'}"}`).join(',');
+
+      const navbarBlock = {
+        id: 'nav1', type: 'navbar',
+        content: {
+          logo: siteName, links: navLinks.slice(0,7).map((lbl: string) => ({
+            label: lbl, href: `/${lbl.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')}`, mode: 'navigate'
+          })),
+          ctaText: ctaPrimary.text, ctaHref: ctaPrimary.href,
+          bgColor, textColor, sticky: true,
+        },
+        styles: { fontFamily: headFont, letterSpacing: '0.08em', padding: '14px 24px' },
+      };
+      const footerBlock = {
+        id: 'ftr1', type: 'footer',
+        content: {
+          companyName: siteName,
+          description: (analysis.brand || '').slice(0,120),
+          copyright,
+          columns: [
+            { title: 'LINKS', links: navLinks.slice(0,4).map((l: string) => ({ label: l, href: `/${l.toLowerCase().replace(/\s+/g,'-')}` })) },
+            { title: 'CONNECT', links: [{ label: 'About', href: '/about' }, { label: 'Contact', href: '/contact' }] },
+          ],
+          socialLinks,
+          bgColor, textColor: '#666666', linkColor: textColor,
+        },
+        styles: { fontFamily: bodyFont, padding: '60px 32px' },
+      };
+
+      // ── Build section list from analysis ─────────────────────────────
+      const analysisSections: any[] = analysis.sections || [];
+
+      // If analysis gave no sections, build defaults by type
+      const defaultSections: any[] = siteType === 'church' ? [
+        { id:'s1', name:'announcement', blockType:'announcement', content:'Easter Service — Come celebrate with us! Sunday 10am & 12pm' },
+        { id:'s2', name:'hero',         blockType:'videoBg',      content: `${siteName} | ${tagline || 'A Church For All People'} | Visit Us | Watch Online` },
+        { id:'s3', name:'mission',      blockType:'bigQuote',     content: keyMsgs.split('|')[0] || 'Bringing those far from God close to Him.' },
+        { id:'s4', name:'events',       blockType:'eventCards',   content:'Easter Service: April 20|Join us for Easter. Baptism: May 4|Next step in your faith. Conference: June 1|Annual leadership conference.' },
+        { id:'s5', name:'locations',    blockType:'locations',    content:'Main Campus: 9:00+11:00+13:00|123 Main St. North Campus: 10:00+12:00|456 North Ave. Online: 10:00+12:00|youtube.com/live' },
+        { id:'s6', name:'values',       blockType:'values',       content:'JESUS ▽ OUR MESSAGE — Jesus is the center of all we do. PEOPLE ▽ OUR HEART — Our heart is for ALL people. GENEROSITY ▽ OUR PRIVILEGE — We give generously.' },
+        { id:'s7', name:'community',    blockType:'splitHero',    content:'COMMUNITY|How We BUILD Community|Small groups, serve teams, and Sunday services.|Join a Group|Serve' },
+        { id:'s8', name:'ministry',     blockType:'features',     content:'🙏 Sunday Services|Weekly worship gatherings. 👥 Small Groups|Community of 10-15. 🎯 Serve Teams|Find your calling. 👦 Kids Church|For ages 0-12.' },
+        { id:'s9', name:'pastors',      blockType:'splitHero',    content:`LEADERSHIP|${siteName} Pastors|Our church started with a small gathering. Today we are a large family united by love.|Meet the Team` },
+        { id:'s10',name:'give',         blockType:'cta',          content:'GENEROSITY IS OUR PRIVILEGE|God gave generously to us — our honor is to give back.|Give Now' },
+      ] : siteType === 'music' ? [
+        { id:'s1', name:'hero',         blockType:'parallax',  content:`${siteName} | ${tagline} | Listen Now | Watch Videos` },
+        { id:'s2', name:'newSingle',    blockType:'bigQuote',  content:keyMsgs.split('|')[0] || 'New Single Out Now' },
+        { id:'s3', name:'singles',      blockType:'blogGrid',  content:'Latest Singles: 3 items with cover art and stream links' },
+        { id:'s4', name:'albums',       blockType:'blogGrid',  content:'Albums: 4-6 albums with cover art, year, link' },
+        { id:'s5', name:'musicVideos',  blockType:'embed',     content:'Featured Music Video YouTube embed' },
+        { id:'s6', name:'moreLinks',    blockType:'features',  content:'🎵 Resources|Chords & lyrics. 👕 Merch|Official store. 🎤 Auditions|Join the team. 🎼 MultiTracks|For worship leaders.' },
+        { id:'s7', name:'lyricVideos',  blockType:'blogGrid',  content:'Lyric Videos: 4-6 items with thumbnails' },
+        { id:'s8', name:'social',       blockType:'social',    content:'Instagram | Apple Music | YouTube | Spotify' },
+      ] : [
+        { id:'s1', name:'hero',         blockType:'hero',      content:`${siteName} | ${tagline} | Get Started | Learn More` },
+        { id:'s2', name:'features',     blockType:'features',  content:'Feature 1|desc. Feature 2|desc. Feature 3|desc.' },
+        { id:'s3', name:'about',        blockType:'splitHero', content:`About | ${siteName} | ${analysis.brand || ''} | Contact` },
+        { id:'s4', name:'testimonials', blockType:'testimonials', content:'3 testimonials with name, role, text' },
+        { id:'s5', name:'cta',          blockType:'cta',       content:`${ctaPrimary.text} | ${tagline} | ${ctaPrimary.text}` },
+      ];
+
+      const sections = analysisSections.length >= 4 ? analysisSections : defaultSections;
+
+      // ── STEP 1: Divide sections into 4 parallel groups ───────────────
+      const groupCount = Math.min(4, sections.length);
+      const groupSize  = Math.ceil(sections.length / groupCount);
+      const groups: any[][] = [];
+      for (let i = 0; i < groupCount; i++) {
+        const slice = sections.slice(i * groupSize, (i + 1) * groupSize);
+        if (slice.length > 0) groups.push(slice);
+      }
+
+      // Shared analysis context injected into every group prompt
+      const ctx = `SITE: "${siteName}" (${msData.rootUrl})
+TYPE: ${siteType}
+TAGLINE: "${tagline}"
+BRAND: ${(analysis.brand || '').slice(0, 200)}
+KEY MESSAGES: ${keyMsgs}
+COLORS — bg:${bgColor} text:${textColor} primary:${primary} surface:${surface}
+FONTS — heading:"${headFont}" body:"${bodyFont}"
+PRIMARY CTA: "${ctaPrimary.text}" → ${ctaPrimary.href}
+SECONDARY CTA: "${ctaSecondary.text}" → ${ctaSecondary.href}`;
+
+      const styleGuide = siteType === 'church'
+        ? `BLOCK STYLE RULES:
+- announcement: bgColor:"${primary}",textColor:"${bgColor}",emoji:"✝️",closable:true — use REAL event text
+- videoBg: overlay:0.55,minHeight:"100vh",uppercase:true — use REAL h1 title from site
+- bigQuote: fontSize:"3.5rem",fontWeight:"700",bgColor:"${bgColor}",textColor:"${textColor}",openQuote:false,align:"center"
+- eventCards: bgColor:"${surface}",textColor:"${textColor}",columns:3 — categories: СОБЫТИЕ/КОНФЕРЕНЦИЯ/КРЕЩЕНИЕ
+- locations: bgColor:"#111111" — include real times like "9:00 + 11:00 + 13:00"
+- values: divider:"▽",showDragHint:true,bgColor:"${bgColor}",fontFamily:"${headFont}" — format: "TITLE ▽ SUBTITLE"
+- splitHero: contentBg:"#0f172a",eyebrow in caps,body 2-3 sentences
+- features: bgColor:"#0f172a",textColor:"${textColor}",4 items with emoji icon
+- cta: bgColor:"${primary}",textColor:"${bgColor}",align:"center",fontFamily:"${headFont}"
+- ALL blocks: add styles.animateIn ("fadeUp"|"fadeLeft"|"fadeRight") and animateDelay:100-300`
+        : siteType === 'music'
+        ? `BLOCK STYLE RULES:
+- parallax/hero: dark background, full-bleed, bold text
+- blogGrid posts: {image:"url",category:"SINGLE"|"ALBUM"|"VIDEO",title,excerpt,date,link}
+- embed: type:"youtube", height:500
+- social: include instagram/apple-music/youtube/spotify platforms
+- ALL blocks: bgColor:"${bgColor}",textColor:"${textColor}"`
+        : `Use colors bg:${bgColor} text:${textColor} primary:${primary}. Add animateIn to all blocks.`;
 
       const shuffled = [...availableProviders].sort(() => Math.random() - 0.5);
 
-      // ── STEP 1: Generate each page in parallel ──────────────────────
-      const pagePromises = enrichedPages.map((pd: any, idx: number) => {
-        // Rotate providers: each page starts from a different position
+      // ── STEP 2: Generate each group in parallel ──────────────────────
+      const groupPromises = groups.map((group, idx) => {
         const rotated = [...shuffled.slice(idx % shuffled.length), ...shuffled.slice(0, idx % shuffled.length)];
-        const isHome = pd.slug === "home";
-        const styleGuide = siteType === 'church'
-          ? `СТИЛЬ: тёмный кинематичный. ОБЯЗАТЕЛЬНЫЕ БЛОКИ: announcement(цветной бар) + navbar + videoBg(герой с YouTube) + bigQuote(миссия) + eventCards(события) + locations(расписание) + values(ценности с ▽) + splitHero(пасторы/сообщество) + features(направления) + cta(пожертвования) + footer. Используй типы: parallax,videoBg,bigQuote,eventCards,locations,values,splitHero,announcement`
-          : siteType === 'music'
-          ? `СТИЛЬ: тёмный музыкальный. ОБЯЗАТЕЛЬНЫЕ БЛОКИ: navbar + hero(альбом/сингл) + blogGrid(синглы) + blogGrid(альбомы) + embed(видео) + social(соцсети) + footer`
-          : `СТИЛЬ: ${effectiveStyle}. ВОСПРОИЗВОДИ все секции оригинала`;
+        const sectionList = group.map((s, i) =>
+          `${i+1}. id:"${s.id}" name:"${s.name}" blockType:"${s.blockType}"\n   CONTENT TO USE: "${s.content || 'generate from site knowledge'}"`
+        ).join('\n');
 
-        const pagePrompt = `Ты генератор JSON-блоков для конструктора сайтов. Верни ТОЛЬКО чистый JSON (без \`\`\` и без текста).
-Сайт: "${msData.siteTitle}" (${msData.rootUrl})
-Тип сайта: ${siteType}
-Язык: ${msData.siteLang}
-Цвета: ${effectiveColors}
-${effectiveFonts ? `Шрифты: ${effectiveFonts}` : ''}
-${keyContent ? `Ключевой контент/слоганы: ${keyContent}` : ''}
+        const groupPrompt = `You are a JSON block generator for a website builder. Return ONLY a valid JSON array of blocks. NO markdown, NO explanation, NO text.
 
-Страница: "${pd.slug}" — ${pd.title}
-${pd.metaDesc ? `Описание: ${pd.metaDesc}` : ""}
-${pd.headings ? `Заголовки с сайта: ${pd.headings}` : ""}
-${pd.body ? `Текст/секции: ${pd.body}` : ""}
+${ctx}
 
 ${styleGuide}
 
-Стандартные типы блоков: navbar, hero, text, image, video, features, gallery, pricing, testimonials, team, faq, contact, countdown, button, footer, divider, html, stats, logos, cta, timeline, social, newsletter, banner, tabs, accordion, progress, comparison, marquee, quote, map, columns, spacer, form, blogGrid, embed, parallax, videoBg, bigQuote, eventCards, locations, values, splitHero, announcement
+GENERATE THESE ${group.length} BLOCKS:
+${sectionList}
 
-## ВАЖНО: КАСТОМНЫЕ БЛОКИ
-Если на странице есть элемент которого НЕТ в стандартных типах (поиск, слайдер, каталог, фильтр, калькулятор, чат-виджет, карусель, лента новостей, корзина, бронирование и т.д.) — СОЗДАЙ кастомный блок!
-Также: если стандартный блок не покрывает весь функционал (напр. навбар с поиском, кнопка с таймером, форма с автозаполнением) — создай расширенную версию как кастомный тип.
+AVAILABLE STANDARD BLOCK TYPES: navbar, hero, text, features, gallery, pricing, testimonials, team, faq, contact, stats, logos, cta, timeline, social, newsletter, quote, map, columns, form, cards, blogGrid, embed, parallax, videoBg, bigQuote, eventCards, locations, values, splitHero, announcement, marquee, divider, tabs, accordion, imageText, steps, iconGrid, embed, social
 
-Верни JSON объект:
-{"blocks":[...массив блоков...], "newBlockTypes":[{"blockType":"searchBar","label":"Поиск","icon":"Search","description":"Полнотекстовый поиск по сайту"}]}
+RULES:
+1. Use the EXACT blockType specified for each section
+2. Fill content with REAL DATA from the CONTENT field above — NO placeholders like "..." or "Title here"
+3. Each block: {"id":"...","type":"blockType","content":{...full content...},"styles":{"padding":"...","bgColor":"...","textColor":"...","animateIn":"fadeUp"}}
+4. CONTENT field format hints:
+   - videoBg/parallax: {eyebrow,title,subtitle,ctaText,ctaHref,cta2Text?,cta2Href?,videoUrl?,bgImage?,overlay:0.55,minHeight:"100vh",uppercase:true}
+   - bigQuote: {text:"EXACT QUOTE",eyebrow,bgColor,textColor,fontSize:"3.5rem",fontWeight:"700",align:"center",openQuote:false,ctaText?,ctaHref?}
+   - announcement: {text:"EXACT TEXT",subtext?,emoji,ctaText,ctaHref,bgColor,textColor,closable:true}
+   - eventCards: {title,subtitle,bgColor,textColor,columns:3,items:[{category:"СОБЫТИЕ",title,desc,href,linkText:"Подробнее"}]}
+   - locations: {title,subtitle,bgColor,textColor,locations:[{name,times:"9:00 + 11:00",address,mapHref}]}
+   - values: {title,subtitle,bgColor,textColor,divider:"▽",showDragHint:true,items:[{title:"NAME ▽ SUBTITLE",desc:"full description"}]}
+   - splitHero: {eyebrow,title,body,ctaText,ctaHref,cta2Text?,cta2Href?,image:"https://placehold.co/800x600/111/fff?text=Photo",contentBg,textColor}
+   - features: {title,items:[{icon:"🎯",title,desc}],bgColor,textColor}
+   - cta: {title,subtitle,ctaText,ctaHref,bgColor,textColor,align:"center"}
+   - blogGrid: {title,subtitle,columns:3,bgColor,textColor,posts:[{image:"https://placehold.co/400x300/111/fff?text=Item",category,title,excerpt,date,link}]}
+   - embed: {url:"youtube URL",type:"youtube",height:500}
+   - social: {title,links:[{platform:"instagram",url:"..."},{platform:"youtube",url:"..."}]}
+   - testimonials: {title,items:[{name,role,text,rating:5}]}
+   - features items: min 4 items with real content
+   - eventCards items: min 3 events
+   - values items: min 5 values with full descriptions
+5. Use ACTUAL content from the site — real names, quotes, descriptions, location addresses
+6. placehold.co image format: https://placehold.co/WxH/BGHEX/TEXTHEX?text=Label (no # in hex!)
 
-Генерируй 10-15 блоков (страница должна быть ДЛИННАЯ, как на реальном сайте!):
-1. navbar: ${msData.navbarJson}
-${isHome && siteType === 'church' ? `2. announcement bar (bgColor:"#f5c842",textColor:"#0a0a0a") + videoBg с YouTube видео, title из H1, overlay:0.55, minHeight:"100vh"` : isHome ? `2. hero: {type:"hero",id:"hero1",content:{title:"(из H1 или title)",subtitle:"(из metaDesc)",ctaText:"...",ctaHref:"/about",bgColor:"${palette.bg || '#1e293b'}",textColor:"#fff",align:"center"},styles:{padding:"80px 24px"}}` : `2. hero/parallax с title="${pd.title}" и subtitle из описания`}
-3-12. Контентные блоки — используй РЕАЛЬНЫЙ текст из "Текст/секции" выше! Воспроизведи ВСЕ секции: текстовые блоки, features, карточки, bigQuote, CTA, цитаты, blogGrid (для сеток контента), embed (YouTube), eventCards (события), locations (адреса/расписание), values (ценности), social (соцсети). Если контент длинный — разбей на несколько блоков. Нестандартный функционал → кастомный блок + newBlockTypes.
-13-14. CTA или дополнительные секции
-15. footer: {type:"footer",id:"ftr1",content:{companyName:"${msData.siteTitle.replace(/"/g, '')}",copyright:"© 2026",links:[],columns:[{title:"ССЫЛКИ",links:[]}]},styles:{padding:"24px",bgColor:"${palette.bg || '#1e293b'}",textColor:"#94a3b8"}}
+Return ONLY: [{"id":"...","type":"...","content":{...},"styles":{...}}, ...]`;
 
-Кастомный блок ОБЯЗАТЕЛЬНО должен иметь МНОГО свойств в content для настройки:
-Пример searchBar: {type:"searchBar",id:"search1",content:{placeholder:"Поиск...",buttonText:"Найти",bgColor:"#f1f5f9",textColor:"#1e293b",borderColor:"#e2e8f0",maxWidth:"600px",iconPosition:"left"},styles:{padding:"16px 24px",bgColor:"#f8fafc",textColor:"#1e293b"}}
-Пример slider: {type:"slider",id:"slider1",content:{slides:[{title:"...",subtitle:"...",imageUrl:"...",ctaText:"...",ctaHref:"..."}],autoPlay:true,interval:5000,showDots:true,showArrows:true,bgColor:"#1e293b",textColor:"#fff"},styles:{padding:"0",bgColor:"#1e293b"}}
-КАЖДЫЙ кастомный блок: min 5-8 свойств в content (текст, цвета, размеры, опции) + styles:{padding,bgColor,textColor}!
-КАЖДЫЙ стандартный блок: {type,id(уникальный),content:{...все нужные свойства...},styles:{padding,bgColor,textColor}}
-newBlockTypes — ТОЛЬКО для типов не из стандартного списка. Если все стандартные — пустой [].
-Верни ТОЛЬКО: {"blocks":[...],"newBlockTypes":[...]}!`;
-
-        return callAI(pagePrompt, rotated).then(result => ({ slug: pd.slug, title: pd.title, result }));
+        return callAI(groupPrompt, rotated).then(result => ({ groupIdx: idx, result, secs: group }));
       });
 
-      const pageResults = await Promise.all(pagePromises);
-      console.log(`Pages generated: ${pageResults.filter(r => r.result).length}/${pageResults.length}`);
+      const groupResults = await Promise.all(groupPromises);
+      console.log(`Groups OK: ${groupResults.filter(r => r.result).length}/${groups.length}`);
 
-      // Parse results and assemble
-      const assembledPages: any[] = [];
-      const allNewBlockTypes: any[] = [];
-      for (const pr of pageResults) {
-        if (!pr.result) {
-          // Fallback: create minimal page
-          assembledPages.push({ slug: pr.slug, title: pr.title, blocks: [
-            JSON.parse(msData.navbarJson.replace(/(\w+):/g, '"$1":').replace(/'/g, '"')),
-            { type: "hero", id: `hero_${pr.slug}`, content: { title: pr.title, subtitle: "", bgColor: "#1e293b", textColor: "#fff", align: "center" }, styles: { padding: "60px 24px" } },
-            { type: "footer", id: `footer_${pr.slug}`, content: { companyName: msData.siteTitle, copyright: "© 2026", links: [] }, styles: { padding: "24px", bgColor: "#1e293b", textColor: "#94a3b8" } },
-          ]});
+      // ── STEP 3: Parse & assemble all blocks in order ─────────────────
+      const allBlocks: any[] = [navbarBlock]; // navbar always first
+
+      for (const gr of groupResults.sort((a, b) => a.groupIdx - b.groupIdx)) {
+        if (!gr.result) {
+          // Fallback: minimal text blocks
+          for (const sec of gr.secs) {
+            allBlocks.push({ id: sec.id, type: 'text',
+              content: { title: sec.name, body: sec.content || '' },
+              styles: { padding: '40px 24px', bgColor, textColor } });
+          }
           continue;
         }
-
         try {
-          // Extract JSON from response — supports {blocks:[], newBlockTypes:[]} or plain array
-          let jsonStr = pr.result.trim();
-          // Remove ```json ... ``` wrappers
-          jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-          // Try to find the JSON object or array
-          const objStart = jsonStr.indexOf("{");
-          const arrStart = jsonStr.indexOf("[");
-          // Prefer object format {blocks:[], newBlockTypes:[]}
-          if (objStart >= 0 && (arrStart < 0 || objStart < arrStart)) {
-            const objEnd = jsonStr.lastIndexOf("}");
-            if (objEnd > objStart) jsonStr = jsonStr.slice(objStart, objEnd + 1);
-          } else if (arrStart >= 0) {
-            const arrEnd = jsonStr.lastIndexOf("]");
-            if (arrEnd > arrStart) jsonStr = jsonStr.slice(arrStart, arrEnd + 1);
+          let js = gr.result.trim()
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/\s*```$/i, '')
+            .trim();
+          // Find array or object
+          const ai = js.indexOf('[');
+          const oi = js.indexOf('{');
+          let blocks: any[] = [];
+          if (ai >= 0 && (oi < 0 || ai <= oi)) {
+            const az = js.lastIndexOf(']');
+            blocks = JSON.parse(az > ai ? js.slice(ai, az + 1) : js);
+          } else if (oi >= 0) {
+            const oz = js.lastIndexOf('}');
+            const parsed = JSON.parse(js.slice(oi, oz + 1));
+            blocks = Array.isArray(parsed) ? parsed : (parsed.blocks || []);
           }
-          const parsed = JSON.parse(jsonStr);
-          // Support both {blocks:[], newBlockTypes:[]} and plain array
-          const blocks = Array.isArray(parsed) ? parsed : (parsed.blocks || []);
-          const pageCustomTypes = Array.isArray(parsed) ? [] : (parsed.newBlockTypes || []);
-          if (Array.isArray(blocks) && blocks.length > 0) {
-            const withIds = blocks.map((b: any, i: number) => ({ ...b, id: b.id || `${pr.slug}_b${i}` }));
-            assembledPages.push({ slug: pr.slug, title: pr.title, blocks: withIds });
-            // Collect custom block types
-            for (const ct of pageCustomTypes) {
-              if (ct.blockType && !allNewBlockTypes.find((t: any) => t.blockType === ct.blockType)) {
-                allNewBlockTypes.push(ct);
-              }
-            }
-          } else {
-            throw new Error("Not an array");
+          blocks.forEach((b: any, i: number) => {
+            allBlocks.push({ ...b, id: b.id || `g${gr.groupIdx}_b${i}` });
+          });
+        } catch (err) {
+          console.error(`Parse fail group ${gr.groupIdx}:`, String(err), gr.result?.slice(0, 120));
+          for (const sec of gr.secs) {
+            allBlocks.push({ id: sec.id, type: 'text',
+              content: { title: sec.name, body: sec.content || '' },
+              styles: { padding: '40px 24px', bgColor, textColor } });
           }
-        } catch (parseErr) {
-          console.error(`Failed to parse page ${pr.slug}:`, parseErr);
-          assembledPages.push({ slug: pr.slug, title: pr.title, blocks: [
-            { type: "hero", id: `hero_${pr.slug}`, content: { title: pr.title, subtitle: "", bgColor: "#1e293b", textColor: "#fff", align: "center" }, styles: { padding: "60px 24px" } },
-            { type: "footer", id: `footer_${pr.slug}`, content: { companyName: msData.siteTitle, copyright: "© 2026", links: [] }, styles: { padding: "24px", bgColor: "#1e293b", textColor: "#94a3b8" } },
-          ]});
         }
       }
 
-      // Build final CREATE_WEBSITE action
-      const totalBlocks = assembledPages.reduce((s, p) => s + p.blocks.length, 0);
-      const actionJson = JSON.stringify({
-        type: "CREATE_WEBSITE",
-        data: {
-          name: msData.siteTitle,
-          ...(allNewBlockTypes.length > 0 ? { newBlockTypes: allNewBlockTypes } : {}),
-          globalStyles: { primaryColor: msData.colorsStr?.split(";")[0]?.replace(/.*:\s*/, '').trim() || "#1e293b", backgroundColor: "#ffffff", textColor: "#1e293b", fontFamily: "Inter", borderRadius: "8px" },
-          pages: assembledPages,
-        }
+      allBlocks.push(footerBlock); // footer always last
+
+      // Deduplicate ids
+      const seenIds = new Set<string>();
+      const finalBlocks = allBlocks.filter(b => {
+        if (!b || seenIds.has(b.id)) return false;
+        seenIds.add(b.id);
+        return true;
       });
 
-      // Stream the assembled result as SSE
-      const customNote = allNewBlockTypes.length > 0 ? `\n🧩 Создано ${allNewBlockTypes.length} кастомных блоков: ${allNewBlockTypes.map((t: any) => t.label || t.blockType).join(", ")}` : "";
-      const responseText = `Создаю сайт "${msData.siteTitle}" по образцу ${msData.rootUrl}...\n\n✅ Сгенерировано ${assembledPages.length} страниц, ${totalBlocks} блоков (параллельная генерация).${customNote}\n\n\`\`\`action\n${actionJson}\n\`\`\``;
+      const globalStyles = {
+        fontFamily: bodyFont,
+        headingFont: headFont,
+        backgroundColor: bgColor,
+        textColor,
+        primaryColor: primary,
+        secondaryColor: surface,
+        borderRadius: '8px',
+      };
+
+      const actionJson = JSON.stringify({
+        type: 'CREATE_WEBSITE',
+        data: { name: siteName, globalStyles, blocks: finalBlocks },
+      });
+
+      const responseText = `Анализирую ${msData.rootUrl}...\n\n✅ Готово: **${finalBlocks.length} блоков** (${groups.length} параллельных потока, анализ + генерация).\n\`\`\`action\n${actionJson}\n\`\`\``;
       return makeSSE(responseText);
     }
-
     // ── DETECT BOT/FORM CREATION INTENT ───────────────────────────────
     const isBotCreation = !context?.botId && !context?.formId && !context?.websiteId
       && /созда|сделай|построй|разработай|генерир|напиши|придумай/i.test(lastMsgText)
