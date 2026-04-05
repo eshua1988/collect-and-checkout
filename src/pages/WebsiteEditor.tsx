@@ -823,6 +823,31 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs">⚡ Скорость (мс)</Label>
+                                  <select value={blockStyles.animateDuration || ''} onChange={e => setBlockStyle('animateDuration', e.target.value)} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
+                                    <option value="">650 (по умолч.)</option>
+                                    <option value="300">300 (быстро)</option>
+                                    <option value="500">500</option>
+                                    <option value="800">800</option>
+                                    <option value="1000">1000</option>
+                                    <option value="1500">1500 (медленно)</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <Label className="text-xs">🎬 Анимация выхода</Label>
+                                  <select value={blockStyles.animateOut || ''} onChange={e => setBlockStyle('animateOut', e.target.value)} className="w-full mt-1 h-8 text-xs rounded border bg-background px-2">
+                                    <option value="">Нет (остаётся)</option>
+                                    <option value="fadeUp">▲ Вверх</option>
+                                    <option value="fadeIn">◎ Исчезание</option>
+                                    <option value="fadeLeft">← Влево</option>
+                                    <option value="fadeRight">→ Вправо</option>
+                                    <option value="zoomIn">⊕ Уменьшение</option>
+                                    <option value="flipIn">↻ Переворот</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
                                 <div><Label className="text-xs">Размер шрифта</Label><Input value={blockStyles.fontSize || ''} onChange={e => setBlockStyle('fontSize', e.target.value)} onBlur={e => { const n = normPx(e.target.value); if (n !== e.target.value) setBlockStyle('fontSize', n); }} placeholder="16px" className="mt-1 text-xs" /></div>
                                 <div><Label className="text-xs">Прозрачность</Label><Input type="range" min="0" max="1" step="0.05" value={blockStyles.opacity || '1'} onChange={e => setBlockStyle('opacity', e.target.value)} className="mt-2" /></div>
                               </div>

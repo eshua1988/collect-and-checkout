@@ -1019,6 +1019,8 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   // Scroll-animation data attributes (not CSS — applied via data-* on wrapper div)
   const animateIn = bs.animateIn as string | undefined;
   const animateDelay = bs.animateDelay as string | undefined;
+  const animateDuration = bs.animateDuration as string | undefined;
+  const animateOut = bs.animateOut as string | undefined;
 
   /** Handle link click — intercept internal page links (e.g. /about) */
   const handleLinkClick = (e: React.MouseEvent, href?: string) => {
@@ -1148,7 +1150,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     if (margin) sizeStyle.margin = margin;
 
     return (
-      <div key={block.id} data-block-wrap data-block-id={block.id} {...(animateIn ? { 'data-animate': animateIn } : {})} {...(animateDelay ? { 'data-animate-delay': animateDelay } : {})} className={wrapperClass} style={{ ...sizeStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
+      <div key={block.id} data-block-wrap data-block-id={block.id} {...(animateIn ? { 'data-animate': animateIn } : {})} {...(animateDelay ? { 'data-animate-delay': animateDelay } : {})} {...(animateDuration ? { 'data-animate-duration': animateDuration } : {})} {...(animateOut ? { 'data-animate-out': animateOut } : {})} className={wrapperClass} style={{ ...sizeStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
         {onClick && (
           <div className={`absolute top-2 right-2 z-10 flex items-center gap-1 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
             {/* Move handle */}
@@ -2523,14 +2525,21 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
   // Inject scroll-animation CSS and set up IntersectionObserver
   useEffect(() => {
     const styleId = 'wbuilder-scroll-animations';
-    if (!document.getElementById(styleId)) {
-      const s = document.createElement('style');
-      s.id = styleId;
-      s.textContent = `[data-animate]{transition:opacity .65s ease,transform .65s ease;}[data-animate="fadeUp"]{opacity:0;transform:translateY(40px);}[data-animate="fadeIn"]{opacity:0;}[data-animate="fadeLeft"]{opacity:0;transform:translateX(-50px);}[data-animate="fadeRight"]{opacity:0;transform:translateX(50px);}[data-animate="zoomIn"]{opacity:0;transform:scale(0.8);}[data-animate="flipIn"]{opacity:0;transform:perspective(600px) rotateX(80deg);}[data-animate].anim-visible{opacity:1!important;transform:none!important;}[data-animate-delay="100"]{transition-delay:.1s;}[data-animate-delay="200"]{transition-delay:.2s;}[data-animate-delay="300"]{transition-delay:.3s;}[data-animate-delay="400"]{transition-delay:.4s;}[data-animate-delay="500"]{transition-delay:.5s;}`;
-      document.head.appendChild(s);
-    }
+    let s = document.getElementById(styleId) as HTMLStyleElement | null;
+      if (!s) { s = document.createElement('style'); s.id = styleId; document.head.appendChild(s); }
+      s.textContent = `[data-animate]{transition:opacity var(--anim-dur,.65s) ease,transform var(--anim-dur,.65s) ease;}[data-animate-duration="300"]{--anim-dur:.3s;}[data-animate-duration="500"]{--anim-dur:.5s;}[data-animate-duration="800"]{--anim-dur:.8s;}[data-animate-duration="1000"]{--anim-dur:1s;}[data-animate-duration="1500"]{--anim-dur:1.5s;}[data-animate="fadeUp"]{opacity:0;transform:translateY(40px);}[data-animate="fadeIn"]{opacity:0;}[data-animate="fadeLeft"]{opacity:0;transform:translateX(-50px);}[data-animate="fadeRight"]{opacity:0;transform:translateX(50px);}[data-animate="zoomIn"]{opacity:0;transform:scale(0.8);}[data-animate="flipIn"]{opacity:0;transform:perspective(600px) rotateX(80deg);}[data-animate].anim-visible{opacity:1!important;transform:none!important;}[data-animate].anim-exit{transition-delay:0s!important;}[data-animate-out="fadeUp"].anim-exit{opacity:0!important;transform:translateY(-40px)!important;}[data-animate-out="fadeIn"].anim-exit{opacity:0!important;}[data-animate-out="fadeLeft"].anim-exit{opacity:0!important;transform:translateX(-50px)!important;}[data-animate-out="fadeRight"].anim-exit{opacity:0!important;transform:translateX(50px)!important;}[data-animate-out="zoomIn"].anim-exit{opacity:0!important;transform:scale(0.8)!important;}[data-animate-out="flipIn"].anim-exit{opacity:0!important;transform:perspective(600px) rotateX(80deg)!important;}[data-animate-delay="100"]{transition-delay:.1s;}[data-animate-delay="200"]{transition-delay:.2s;}[data-animate-delay="300"]{transition-delay:.3s;}[data-animate-delay="400"]{transition-delay:.4s;}[data-animate-delay="500"]{transition-delay:.5s;}`;
     const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('anim-visible'); obs.unobserve(e.target); } });
+      entries.forEach(e => {
+        const hasOut = e.target.hasAttribute('data-animate-out');
+        if (e.isIntersecting) {
+          e.target.classList.remove('anim-exit');
+          e.target.classList.add('anim-visible');
+          if (!hasOut) obs.unobserve(e.target);
+        } else if (hasOut && e.target.classList.contains('anim-visible')) {
+          e.target.classList.remove('anim-visible');
+          e.target.classList.add('anim-exit');
+        }
+      });
     }, { threshold: 0.08 });
     document.querySelectorAll('[data-animate]').forEach(el => obs.observe(el));
     return () => obs.disconnect();
