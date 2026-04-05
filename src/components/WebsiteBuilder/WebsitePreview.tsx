@@ -986,6 +986,44 @@ function getBlockInitialHtml(block: WebsiteBlock): string {
   return parts.length ? parts.join('') : '<p>Начните вводить текст...</p>';
 }
 
+/** Slideshow background: cycles through multiple images with fade */
+function SlideshowBg({ urls, interval }: { urls: string[]; interval: number }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (urls.length <= 1) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % urls.length), interval * 1000);
+    return () => clearInterval(t);
+  }, [urls.length, interval]);
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+      {urls.map((url, i) => (
+        <div key={i} style={{ position: 'absolute', inset: 0, backgroundImage: `url(${url.trim()})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: i === idx ? 1 : 0, transition: 'opacity 0.9s ease' }} />
+      ))}
+    </div>
+  );
+}
+
+/** YouTube/video iframe as block background */
+function VideoBgLayer({ url }: { url: string }) {
+  const ytId = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\s?#]+)/)?.[1];
+  if (ytId) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <iframe src={`https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&showinfo=0&rel=0&disablekb=1`} allow="autoplay; encrypted-media" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '177.78vh', height: '100vh', minWidth: '100%', minHeight: '56.25vw', border: 'none' }} title="bg-video" />
+      </div>
+    );
+  }
+  // Native video (mp4/webm direct URL)
+  if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <video autoPlay muted loop playsInline style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', minWidth: '100%', minHeight: '100%', objectFit: 'cover', border: 'none' }} src={url} />
+      </div>
+    );
+  }
+  return null;
+}
+
 function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, selectedId?: string | null, onNavigate?: (slug: string) => void, gs?: GlobalStyles, pages?: WebsitePage[], onStyleUpdate?: (blockId: string, styles: Record<string, string>) => void, onPositionUpdate?: (blockId: string, pos: { x: number; y: number }) => void, onEdit?: (id: string) => void, onDelete?: (id: string) => void, onContentUpdate?: (blockId: string, content: Record<string, any>) => void, inlineEditId?: string | null, setInlineEditId?: (id: string | null) => void) {
   const c = block.content || {} as any;
   const bs = block.styles || {}; // block-level styles override
@@ -1149,6 +1187,12 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
     if (minHeight) sizeStyle.minHeight = minHeight;
     if (margin) sizeStyle.margin = margin;
     const hasBlockBgImage = !!blockBgImage;
+    // Video background and slideshow
+    const backgroundVideo = bs.backgroundVideo as string | undefined;
+    const backgroundSlideshow = bs.backgroundSlideshow as string | undefined;
+    const backgroundSlideshowInterval = Number(bs.backgroundSlideshowInterval || 5);
+    const slideshowUrls = backgroundSlideshow ? backgroundSlideshow.split('\n').map((u: string) => u.trim()).filter(Boolean) : [];
+    const hasSpecialBg = hasBlockBgImage || !!backgroundVideo || slideshowUrls.length > 0;
 
     return (
       <div key={block.id} data-block-wrap data-block-id={block.id} {...(animateIn ? { 'data-animate': animateIn } : {})} {...(animateDelay ? { 'data-animate-delay': animateDelay } : {})} {...(animateDuration ? { 'data-animate-duration': animateDuration } : {})} {...(animateOut ? { 'data-animate-out': animateOut } : {})} className={wrapperClass} style={{ ...sizeStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
@@ -1178,11 +1222,13 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
             )}
           </div>
         )}
-        <div style={{ ...visualStyle, ...(hasBlockBgImage ? { position: 'relative', overflow: 'hidden' } : {}) }}>
+        <div style={{ ...visualStyle, ...(hasSpecialBg ? { position: 'relative', overflow: 'hidden' } : {}) }}>
           {hasBlockBgImage && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: blockBgImage, backgroundSize: blockBgSize || 'cover', backgroundPosition: blockBgPos || 'center', backgroundRepeat: blockBgRepeat || 'no-repeat' }} />
           )}
-          <div style={hasBlockBgImage ? { position: 'relative', zIndex: 1 } : undefined}>
+          {backgroundVideo && <VideoBgLayer url={backgroundVideo} />}
+          {slideshowUrls.length > 0 && <SlideshowBg urls={slideshowUrls} interval={backgroundSlideshowInterval} />}
+          <div style={hasSpecialBg ? { position: 'relative', zIndex: 1 } : undefined}>
           {(() => {
             // When T-editor is open for non-text/hero blocks, REPLACE block content with the editor
             const isInlineEditing = inlineEditId === block.id && block.type !== 'text' && block.type !== 'hero';
