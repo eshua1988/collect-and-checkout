@@ -161,6 +161,17 @@ const PROMPT_WEBSITE = `
 ФОТО: структура→цвета→воссоздай КАЖДУЮ секцию отдельным блоком→bgColor/textColor близко к оригиналу
 КАСТОМНЫЕ БЛОКИ: newBlockTypes:[{blockType,label,icon,description}]
 
+-- ── КЛОНИРОВАНИЕ ИЗВЕСТНЫХ САЙТОВ ────────────────────────────────────────────
+Если пользователь прислал ссылку на SPA/React-сайт (fetch вернул пустой HTML), используй свои знания:
+
+**vouschurch.com** — мегацерковь Майами, Рич и ДawnCheré Уилкерсон. Тёмный стиль (#0a0a0a + золото #f59e0b).
+Секции: Navbar(Worship/Visit/Crews/Sermons/Give) → Announcement bar → Video hero (YouTube) → "A Church For All People" bigQuote → EventCards(Easter/Baptism/YoungAdults) → Locations(Brickell/Downtown/Coral Gables/Online) → Values(6 штук с ▽) → SplitHero(Community) → Features(Crews/GrowthTrack/VOUS Kids) → SplitHero(Пасторы Rich & DawnCheré) → CTA(Give) → Footer(3 columns)
+
+**vouschurch.com/worship** — VOUS Worship страница (Christian music ministry). Секции: Navbar → Announcement(NEW SINGLE) → hero bigQuote("JESUS IS HIS NAME") → Latest Singles(карточки альбомов, используй blogGrid с category:"SINGLE") → Albums grid(blogGrid с category:"ALBUM") → Music Videos(embed или cards) → More from VOUS(links: Resources/Merch/Auditions/MultiTracks) → Lyric Videos(blogGrid с category:"LYRIC VIDEO") → Social links(social block) → Footer. Палитра: тёмная (#0a0a0a + #ffffff + акцент #f59e0b). Соцсети: instagram/apple-music/youtube/spotify.
+Для WORSHIP/MUSIC страниц: используй blogGrid для сеток альбомов/синглов/видео, embed для YouTube плееров, eventCards для концертов/туров.
+
+Для **любого** известного сайта — воспроизводи РЕАЛЬНУЮ структуру и РЕАЛЬНЫЕ тексты/секции.
+
 -- ── ЭТАЛОННЫЙ ШАБЛОН: VOUS CHURCH STYLE (церковь/сообщество) ────────────────
 ШАБЛОН "vous-church" (id) — 12 блоков, тёмная цинематичная палитра (#0a0a0a + #f5c842 + #fff):
 1. announcement: пасхальная акция/событие, bgColor:#f5c842, textColor:#0a0a0a, closable:true
@@ -254,7 +265,8 @@ serve(async (req) => {
     const urlsInMessage = (lastMsgText.match(urlRegex) || [])
       .filter((u: string) => !u.includes('placehold.co') && !u.includes('youtube.com') && !u.includes('youtu.be'));
     if (urlsInMessage.length > 0) {
-      const fetchPageText = async (url: string): Promise<string> => {
+      const fetchPageText = async (url: string): Promise<{text: string; isSpa: boolean; domain: string}> => {
+        const domain = (() => { try { return new URL(url).hostname.replace('www.',''); } catch { return url; } })();
         try {
           const controller = new AbortController();
           const tid = setTimeout(() => controller.abort(), 9000);
@@ -263,7 +275,7 @@ serve(async (req) => {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' },
           });
           clearTimeout(tid);
-          if (!resp.ok) return '';
+          if (!resp.ok) return { text: '', isSpa: false, domain };
           const html = await resp.text();
           // Extract title
           const titleMatch = html.match(/<title[^>]*>([^<]{1,120})<\/title>/i);
@@ -271,6 +283,9 @@ serve(async (req) => {
           // Extract meta description
           const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']{1,300})["']/i);
           const desc = descMatch ? descMatch[1].trim() : '';
+          // Extract OG tags
+          const ogTitle = (html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{1,200})["']/i) || [])[1] || '';
+          const ogDesc = (html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']{1,400})["']/i) || [])[1] || '';
           // Strip scripts/styles/svg, then tags
           const clean = html
             .replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -280,34 +295,49 @@ serve(async (req) => {
             .replace(/<[^>]+>/g, ' ')
             .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
             .replace(/\s{2,}/g, ' ').trim();
+          const isSpa = clean.length < 400 && html.includes('<div id=');
           const snippet = clean.slice(0, 9000);
-          return `TITLE: ${title}\nDESCRIPTION: ${desc}\n\nCONTENT:\n${snippet}`;
+          const textContent = `TITLE: ${ogTitle || title}\nDESCRIPTION: ${ogDesc || desc}\n\nCONTENT:\n${snippet}`;
+          return { text: textContent, isSpa, domain };
         } catch {
-          return '';
+          return { text: '', isSpa: false, domain };
         }
       };
-      const fetched = await Promise.all(urlsInMessage.slice(0, 2).map(fetchPageText));
-      const valid = fetched.filter((c: string) => c.length > 150);
-      if (valid.length > 0) {
+      const fetchResults = await Promise.all(urlsInMessage.slice(0, 2).map(fetchPageText));
+      const goodResults = fetchResults.filter(r => r.text.length > 200 && !r.isSpa);
+      const spaResults = fetchResults.filter(r => r.isSpa || (r.text.length <= 200 && urlsInMessage.length > 0));
+      if (goodResults.length > 0) {
         systemContent += `
 
 ---
 ## 🌐 СТРАНИЦА ДЛЯ КЛОНИРОВАНИЯ (FETCH РЕЗУЛЬТАТ)
 
-Пользователь прислал ссылку. Ниже — извлечённый текст страницы.
-
-**ТВОЯ ЗАДАЧА:** Создай \`CREATE_WEBSITE\` с МИНИМУМ 12-15 блоков, точно воспроизводя:
+Пользователь хочет создать сайт-клон. Ниже — извлечённый текст страницы.
+**ЗАДАЧА:** CREATE_WEBSITE МИНИМУМ 12-15 блоков, точно воспроизводя:
 - Все секции, заголовки, тексты, кнопки с оригинала
-- Цветовую схему (если угадывается по тексту/названию)
+- Цветовую схему по тексту/бренду
 - Структуру навигации (все пункты меню)
-- Все блоки: hero, about, services/features, team, testimonials, pricing, FAQ, contact, footer
-- Логику бизнеса/организации (тип: магазин/церковь/ресторан/лендинг/агентство/...)
+- Все блоки: navbar, hero, about, services/features, team, testimonials, pricing, FAQ, contact, footer
+- Тип сайта (церковь → VOUS-стиль | бизнес → корпоративный | магазин → яркий)
+ИСПОЛЬЗУЙ контент из секции ниже — НЕ выдумывай.
 
-Если это ЦЕРКОВЬ / RELIGIOUS SITE → применяй VOUS-стиль (dark + videoBg/bigQuote/values/eventCards/locations)
-Если это БИЗНЕС/ЛЕНДИНГ → корпоративный/яркий стиль
-НЕ выдумывай — ИСПОЛЬЗУЙ именно тот контент, что в тексте ниже.
+${goodResults.map((r, i) => `### 📄 [${r.domain}] СТРАНИЦА ${i + 1}:\n\`\`\`\n${r.text}\n\`\`\``).join('\n\n')}`;
+      } else if (spaResults.length > 0) {
+        const domains = spaResults.map(r => r.domain).join(', ');
+        systemContent += `
 
-${valid.map((c: string, i: number) => `### 📄 СТРАНИЦА ${i + 1}:\n\`\`\`\n${c}\n\`\`\``).join('\n\n')}`;
+---
+## 🌐 КЛОНИРОВАНИЕ САЙТА: ${domains}
+
+Страница использует JavaScript-рендеринг (React/Vue SPA) — сервер получил пустой HTML. Используй свои знания об этом сайте.
+
+**ЗАДАЧА:** CREATE_WEBSITE МИНИМУМ 12-15 блоков на основе:
+1. Своих знаний об этом домене/бренде (${domains})
+2. Типа сайта (определи по домену: церковь/бизнес/музыка/новости/магазин/...)
+3. Типичной структуры таких сайтов
+
+Воспроизведи: навигацию, герой, все основные секции, footer — с реальными текстами/ценностями/контентом этого бренда.
+Если это vouschurch.com — применяй VOUS-стиль (dark cinematic, Bebas Neue, #0a0a0a + #f5c842).`;
       }
     }
 
