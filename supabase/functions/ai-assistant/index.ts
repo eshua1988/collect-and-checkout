@@ -14,7 +14,7 @@ const PROMPT_CORE = `Ты — AI-ассистент платформы FormBot S
 - Для создания/изменения — ВСЕГДА \`\`\`action блок. НИКОГДА JSON в обычном тексте.
 - СРАЗУ создавай, не спрашивая. Перед action — МАКСИМУМ 1-2 предложения.
 - JSON КОМПАКТНЫЙ без пробелов/отступов, весь action блок в ОДНОМ сообщении.
-- Фото сайта → СРАЗУ CREATE_WEBSITE. Ссылка → используй просканированные страницы.
+- Фото сайта → СРАЗУ CREATE_WEBSITE. Ссылка/URL → сервер уже скачал страницу — используй секцию "СТРАНИЦА ДЛЯ КЛОНИРОВАНИЯ" и СРАЗУ создай CREATE_WEBSITE воспроизводя ВСЕ секции оригинала.
 - Если нет нужного типа — ИЗОБРЕТИ кастомный через newNodeTypes/newBlockTypes/newFieldTypes. Добавляй полный функционал!
 - Если стандартный тип не покрывает нужный функционал — расширяй его доп. свойствами или создай улучшенную кастомную версию.
 - После создания — ВСЕГДА предлагай улучшения.
@@ -248,6 +248,68 @@ serve(async (req) => {
     const lastMsg = messages.filter((m: any) => m.role === "user").pop();
     const lastMsgText = lastMsg ? (typeof lastMsg.content === "string" ? lastMsg.content : Array.isArray(lastMsg.content) ? lastMsg.content.filter((c: any) => c.type === "text").map((c: any) => c.text).join(" ") : "") : "";
     const wantsDiag = /проверь|диагност|не работа|ошибк|почему|debug|fix|broken|issue/i.test(lastMsgText);
+
+    // --- URL page fetching: если пользователь прислал ссылку — скачиваем страницу ---
+    const urlRegex = /https?:\/\/[^\s"'<>()]+/gi;
+    const urlsInMessage = (lastMsgText.match(urlRegex) || [])
+      .filter((u: string) => !u.includes('placehold.co') && !u.includes('youtube.com') && !u.includes('youtu.be'));
+    if (urlsInMessage.length > 0) {
+      const fetchPageText = async (url: string): Promise<string> => {
+        try {
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 9000);
+          const resp = await fetch(url, {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' },
+          });
+          clearTimeout(tid);
+          if (!resp.ok) return '';
+          const html = await resp.text();
+          // Extract title
+          const titleMatch = html.match(/<title[^>]*>([^<]{1,120})<\/title>/i);
+          const title = titleMatch ? titleMatch[1].trim() : '';
+          // Extract meta description
+          const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']{1,300})["']/i);
+          const desc = descMatch ? descMatch[1].trim() : '';
+          // Strip scripts/styles/svg, then tags
+          const clean = html
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
+            .replace(/<svg[\s\S]*?<\/svg>/gi, '')
+            .replace(/<!--[\s\S]*?-->/g, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+            .replace(/\s{2,}/g, ' ').trim();
+          const snippet = clean.slice(0, 9000);
+          return `TITLE: ${title}\nDESCRIPTION: ${desc}\n\nCONTENT:\n${snippet}`;
+        } catch {
+          return '';
+        }
+      };
+      const fetched = await Promise.all(urlsInMessage.slice(0, 2).map(fetchPageText));
+      const valid = fetched.filter((c: string) => c.length > 150);
+      if (valid.length > 0) {
+        systemContent += `
+
+---
+## 🌐 СТРАНИЦА ДЛЯ КЛОНИРОВАНИЯ (FETCH РЕЗУЛЬТАТ)
+
+Пользователь прислал ссылку. Ниже — извлечённый текст страницы.
+
+**ТВОЯ ЗАДАЧА:** Создай \`CREATE_WEBSITE\` с МИНИМУМ 12-15 блоков, точно воспроизводя:
+- Все секции, заголовки, тексты, кнопки с оригинала
+- Цветовую схему (если угадывается по тексту/названию)
+- Структуру навигации (все пункты меню)
+- Все блоки: hero, about, services/features, team, testimonials, pricing, FAQ, contact, footer
+- Логику бизнеса/организации (тип: магазин/церковь/ресторан/лендинг/агентство/...)
+
+Если это ЦЕРКОВЬ / RELIGIOUS SITE → применяй VOUS-стиль (dark + videoBg/bigQuote/values/eventCards/locations)
+Если это БИЗНЕС/ЛЕНДИНГ → корпоративный/яркий стиль
+НЕ выдумывай — ИСПОЛЬЗУЙ именно тот контент, что в тексте ниже.
+
+${valid.map((c: string, i: number) => `### 📄 СТРАНИЦА ${i + 1}:\n\`\`\`\n${c}\n\`\`\``).join('\n\n')}`;
+      }
+    }
 
     // context.type can be "bot" (from bot editor page) or "bot_editor" (legacy)
     if (context?.type === "bot" || context?.type === "bot_editor") {
