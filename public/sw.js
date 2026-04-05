@@ -1,4 +1,4 @@
-const CACHE_NAME = 'formbot-v1';
+const CACHE_NAME = 'formbot-v2';
 const BASE = '/collect-and-checkout/';
 
 const PRECACHE = [
@@ -28,7 +28,13 @@ self.addEventListener('fetch', (event) => {
   // Network-first for navigation, cache-first for assets
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match(BASE + 'index.html'))
+      fetch(request)
+        .then(response => {
+          // If server returns 404 (SPA route unknown to server), serve index.html instead
+          if (!response.ok) return caches.match(BASE + 'index.html') || response;
+          return response;
+        })
+        .catch(() => caches.match(BASE + 'index.html'))
     );
   } else {
     event.respondWith(
