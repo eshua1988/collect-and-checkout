@@ -1255,7 +1255,8 @@ export function WebsiteBlockEditor({ block, onUpdate, onClose, inline }: Website
             <div className="flex items-center gap-2"><input type="checkbox" checked={content.closable !== false} onChange={e => set('closable', e.target.checked)} /><Label>Закрываемый</Label></div>
           </div>
         );
-        // Generic editor for custom AI-registered block types — edit all content properties dynamically
+
+      default:
         return (
           <div className="space-y-3">
             <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">

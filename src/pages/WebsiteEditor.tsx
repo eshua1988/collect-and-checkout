@@ -867,10 +867,9 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                                     <>
                                       <div className="flex gap-1">
                                         {[['', '✕ Нет'], ['image', '🖼 Фото'], ['slideshow', '🎞 Слайдшоу'], ['video', '▶ Видео']].map(([v, l]) => (
-                                          <button key={v} onClick={() => { clearBg(); }} className={`flex-1 text-[10px] py-1 rounded border transition-colors ${bgType === v ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted border-border'}`}
+                                        <button key={v} className={`flex-1 text-[10px] py-1 rounded border transition-colors ${bgType === v ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted border-border'}`}
                                             style={bgType === v ? {} : {}}
-                                            onClickCapture={e => { e.stopPropagation(); if (v !== bgType) clearBg(); }}
-                                            onClick={() => { if (v === bgType) clearBg(); }}
+                                            onClick={() => { clearBg(); if (v !== bgType) { /* type will be set via background controls */ } }}
                                           >{l}</button>
                                         ))}
                                       </div>
