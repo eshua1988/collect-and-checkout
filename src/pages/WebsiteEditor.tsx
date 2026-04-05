@@ -870,7 +870,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                                     <Input value={''} onChange={e => { if (e.target.value) setBlockStyle('backgroundImage', `url(${e.target.value})`); }} placeholder="URL..." className="text-xs h-8 flex-1" />
                                     <label className="h-8 px-2 flex items-center gap-1 text-xs rounded border bg-muted/50 hover:bg-muted cursor-pointer shrink-0">
                                       📁
-                                      <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => { setBlockStyle('backgroundImage', `url(${ev.target?.result})`); setBlockStyle('backgroundSize', 'cover'); setBlockStyle('backgroundPosition', 'center'); }; r.readAsDataURL(f); } e.target.value = ''; }} />
+                                      <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => { updateSelBlock({ styles: { ...blockStyles, backgroundImage: `url(${ev.target?.result})`, backgroundSize: 'cover', backgroundPosition: 'center' } }); }; r.readAsDataURL(f); } e.target.value = ''; }} />
                                     </label>
                                   </div>
                                 )}
