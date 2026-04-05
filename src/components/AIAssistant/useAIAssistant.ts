@@ -672,8 +672,21 @@ export function useAIAssistant(aiContext?: AIContext) {
           }
         }
         updatedSite = { ...existingSite, pages: mergedPages, updatedAt: now };
+      } else if (existingSite.pages && existingSite.pages.length > 0) {
+        // Pages-based site, but AI sent flat blocks[] — add to target page
+        const targetSlug = action.data.pageSlug || 'home';
+        const targetFound = existingSite.pages.some(p => p.slug === targetSlug);
+        updatedSite = {
+          ...existingSite,
+          pages: existingSite.pages.map((p, i) =>
+            (targetFound ? p.slug === targetSlug : i === 0)
+              ? { ...p, blocks: [...p.blocks, ...newBlocks] }
+              : p
+          ),
+          updatedAt: now,
+        };
       } else {
-        // Single-page: append blocks
+        // Truly single-page (no pages array): append to flat blocks
         updatedSite = { ...existingSite, blocks: [...existingSite.blocks, ...newBlocks], updatedAt: now };
       }
 
