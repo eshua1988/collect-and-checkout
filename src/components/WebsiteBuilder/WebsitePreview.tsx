@@ -1143,11 +1143,12 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
       : {};
 
     // Split: sizing on wrapper, visual styles on inner content wrapper
-    const { maxWidth, minHeight, margin, ...visualStyle } = blockStyle;
+    const { maxWidth, minHeight, margin, backgroundImage: blockBgImage, backgroundSize: blockBgSize, backgroundPosition: blockBgPos, backgroundRepeat: blockBgRepeat, ...visualStyle } = blockStyle;
     const sizeStyle: React.CSSProperties = {};
     if (maxWidth) sizeStyle.maxWidth = maxWidth;
     if (minHeight) sizeStyle.minHeight = minHeight;
     if (margin) sizeStyle.margin = margin;
+    const hasBlockBgImage = !!blockBgImage;
 
     return (
       <div key={block.id} data-block-wrap data-block-id={block.id} {...(animateIn ? { 'data-animate': animateIn } : {})} {...(animateDelay ? { 'data-animate-delay': animateDelay } : {})} {...(animateDuration ? { 'data-animate-duration': animateDuration } : {})} {...(animateOut ? { 'data-animate-out': animateOut } : {})} className={wrapperClass} style={{ ...sizeStyle, ...posStyle }} onClick={() => onClick?.(block.id)} onMouseDown={startMove}>
@@ -1177,7 +1178,11 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
             )}
           </div>
         )}
-        <div style={visualStyle}>
+        <div style={{ ...visualStyle, ...(hasBlockBgImage ? { position: 'relative', overflow: 'hidden' } : {}) }}>
+          {hasBlockBgImage && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: blockBgImage, backgroundSize: blockBgSize || 'cover', backgroundPosition: blockBgPos || 'center', backgroundRepeat: blockBgRepeat || 'no-repeat' }} />
+          )}
+          <div style={hasBlockBgImage ? { position: 'relative', zIndex: 1 } : undefined}>
           {(() => {
             // When T-editor is open for non-text/hero blocks, REPLACE block content with the editor
             const isInlineEditing = inlineEditId === block.id && block.type !== 'text' && block.type !== 'hero';
@@ -1234,6 +1239,7 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
               </>
             );
           })()}
+          </div>
         </div>
         {/* Resize handles — only when block is selected and editable */}
         {isSelected && onStyleUpdate && (
