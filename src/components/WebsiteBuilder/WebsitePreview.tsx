@@ -798,6 +798,11 @@ interface WebsitePreviewProps {
   onDeleteBlock?: (blockId: string) => void;
   selectedBlockId?: string | null;
   globalStyles?: GlobalStyles;
+  // Multi-language support
+  translations?: Record<string, Record<string, Record<string, any>>>;
+  currentLang?: string;
+  languages?: string[];
+  defaultLanguage?: string;
 }
 
 function CountdownTimer({ targetDate }: { targetDate: string }) {
@@ -2561,10 +2566,11 @@ function renderBlock(block: WebsiteBlock, onClick?: (id: string) => void, select
   }
 }
 
-export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onEditBlock, onBlockStyleUpdate, onBlockContentUpdate, onBlockPositionUpdate, onDeleteBlock, selectedBlockId, globalStyles: gs }: WebsitePreviewProps) {
+export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate, onBlockClick, onEditBlock, onBlockStyleUpdate, onBlockContentUpdate, onBlockPositionUpdate, onDeleteBlock, selectedBlockId, globalStyles: gs, translations, currentLang, languages, defaultLanguage }: WebsitePreviewProps) {
   // Determine which blocks to display: always use the blocks prop (already filtered by parent)
   const [activeSlug, setActiveSlug] = useState(currentPageSlug || 'home');
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
+  const [activeLang, setActiveLang] = useState(currentLang || defaultLanguage || '');
 
   const hasPages = !!(pages && pages.length > 0);
   const displayBlocks = blocks;
@@ -2573,6 +2579,31 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
   useEffect(() => {
     if (currentPageSlug) setActiveSlug(currentPageSlug);
   }, [currentPageSlug]);
+
+  // Sync with external currentLang prop
+  useEffect(() => {
+    if (currentLang !== undefined) setActiveLang(currentLang);
+  }, [currentLang]);
+
+  // Apply translations: return a block with translated content merged in
+  const withTranslation = (block: WebsiteBlock): WebsiteBlock => {
+    if (!activeLang || !translations) return block;
+    const langMap = translations[activeLang];
+    if (!langMap) return block;
+    const translated = langMap[block.id];
+    if (!translated) return block;
+    return { ...block, content: { ...block.content, ...translated } };
+  };
+
+  // Language switcher — only shown when >= 2 languages configured
+  const allLangs = languages && languages.length > 1 ? languages : null;
+  const LANG_FLAGS: Record<string, string> = {
+    ru: '🇷🇺', en: '🇬🇧', de: '🇩🇪', fr: '🇫🇷', es: '🇪🇸', it: '🇮🇹',
+    pt: '🇵🇹', zh: '🇨🇳', ja: '🇯🇵', ko: '🇰🇷', ar: '🇸🇦', uk: '🇺🇦',
+    pl: '🇵🇱', tr: '🇹🇷', nl: '🇳🇱', sv: '🇸🇪', fi: '🇫🇮', no: '🇳🇴',
+    da: '🇩🇰', cs: '🇨🇿', sk: '🇸🇰', ro: '🇷🇴', hu: '🇭🇺', he: '🇮🇱',
+    hi: '🇮🇳', id: '🇮🇩', vi: '🇻🇳', th: '🇹🇭',
+  };
 
   // Inject scroll-animation CSS and set up IntersectionObserver
   useEffect(() => {
@@ -2626,8 +2657,23 @@ export function WebsitePreview({ blocks, pages, currentPageSlug, onPageNavigate,
 
   return (
     <div className="relative min-h-full" style={containerStyle} data-canvas>
-      {flowBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock, onBlockContentUpdate, inlineEditId, setInlineEditId))}
-      {positionedBlocks.map(block => renderBlock(block, onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock, onBlockContentUpdate, inlineEditId, setInlineEditId))}
+      {/* Language switcher — shown only when multi-language is configured */}
+      {allLangs && (
+        <div className="sticky top-0 z-[100] flex items-center justify-end gap-1 px-3 py-1.5 bg-black/70 backdrop-blur-sm border-b border-white/10">
+          {allLangs.map(lang => (
+            <button
+              key={lang}
+              onClick={() => setActiveLang(lang === activeLang ? (defaultLanguage || '') : lang)}
+              className={`px-2 py-0.5 rounded text-xs font-semibold transition-all ${lang === activeLang ? 'bg-white text-black' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+              title={lang.toUpperCase()}
+            >
+              {LANG_FLAGS[lang] || ''} {lang.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      )}
+      {flowBlocks.map(block => renderBlock(withTranslation(block), onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock, onBlockContentUpdate, inlineEditId, setInlineEditId))}
+      {positionedBlocks.map(block => renderBlock(withTranslation(block), onBlockClick, selectedBlockId, handleNavigate, gs, pages, onBlockStyleUpdate, onBlockPositionUpdate, onEditBlock, onDeleteBlock, onBlockContentUpdate, inlineEditId, setInlineEditId))}
     </div>
   );
 }

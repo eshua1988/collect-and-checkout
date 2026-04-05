@@ -18,7 +18,7 @@ export interface ChatMessage {
 }
 
 export interface ParsedAction {
-  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS' | 'ADD_FORM_FIELDS' | 'REPLACE_FORM' | 'EDIT_FORM_FIELD' | 'REMOVE_FORM_FIELDS' | 'REPLACE_WEBSITE' | 'EDIT_WEBSITE_BLOCK' | 'REMOVE_WEBSITE_BLOCKS' | 'REGISTER_FIELD_TYPE' | 'REGISTER_BLOCK_TYPE';
+  type: 'CREATE_FORM' | 'CREATE_BOT' | 'CREATE_WEBSITE' | 'NAVIGATE_TO' | 'ADD_BOT_NODES' | 'REGISTER_NODE_TYPE' | 'REPLACE_BOT' | 'EDIT_BOT_NODE' | 'REMOVE_BOT_NODES' | 'ADD_WEBSITE_BLOCKS' | 'ADD_FORM_FIELDS' | 'REPLACE_FORM' | 'EDIT_FORM_FIELD' | 'REMOVE_FORM_FIELDS' | 'REPLACE_WEBSITE' | 'EDIT_WEBSITE_BLOCK' | 'REMOVE_WEBSITE_BLOCKS' | 'REGISTER_FIELD_TYPE' | 'REGISTER_BLOCK_TYPE' | 'TRANSLATE_WEBSITE';
   data: any;
   executed?: boolean;
 }
@@ -794,6 +794,37 @@ export function useAIAssistant(aiContext?: AIContext) {
         saveWebsite({ ...existingSite, blocks: existingSite.blocks.filter(b => !removeSet.has(b.id)), updatedAt: now });
       }
       toast.success(`Удалено ${removeIds.length} блоков из сайта "${existingSite.name}".`);
+      return targetSiteId;
+    }
+
+    // ── TRANSLATE WEBSITE (добавление/обновление переводов) ────────
+    if (action.type === 'TRANSLATE_WEBSITE') {
+      const targetSiteId = action.data.websiteId || (aiContext?.type === 'website' ? aiContext.websiteId : null);
+      if (!targetSiteId) { toast.error('Не указан ID сайта'); return; }
+      const existingSite = getWebsite(targetSiteId);
+      if (!existingSite) { toast.error('Сайт не найден'); return; }
+
+      // action.data.translations: { langCode: { blockId: { field: value } } }
+      const incoming: Record<string, Record<string, Record<string, any>>> = action.data.translations || {};
+      if (Object.keys(incoming).length === 0) { toast.error('Нет данных переводов'); return; }
+
+      const mergedTranslations: Record<string, Record<string, Record<string, any>>> = { ...(existingSite.translations || {}) };
+      let totalBlocks = 0;
+      for (const [lang, blockMap] of Object.entries(incoming)) {
+        if (!mergedTranslations[lang]) mergedTranslations[lang] = {};
+        for (const [blockId, fields] of Object.entries(blockMap)) {
+          mergedTranslations[lang][blockId] = { ...(mergedTranslations[lang][blockId] || {}), ...fields };
+          totalBlocks++;
+        }
+      }
+
+      const langs = Object.keys(incoming);
+      // Ensure website.languages includes the new ones
+      const existingLangs = existingSite.languages || [];
+      const updatedLangs = Array.from(new Set([...existingLangs, ...langs]));
+
+      saveWebsite({ ...existingSite, translations: mergedTranslations, languages: updatedLangs, updatedAt: now });
+      toast.success(`Переведено ${totalBlocks} блоков на языки: ${langs.join(', ')}`);
       return targetSiteId;
     }
 

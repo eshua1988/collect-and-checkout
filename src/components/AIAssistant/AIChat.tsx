@@ -61,6 +61,7 @@ const ACTION_LABELS: Record<string, { label: string; icon: React.ReactNode; colo
   REPLACE_WEBSITE:    { label: 'Обновить сайт',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/30 dark:text-amber-400' },
   EDIT_WEBSITE_BLOCK: { label: 'Изменить блок',        icon: <Wand2 className="w-3.5 h-3.5" />,        color: 'bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 border-cyan-500/30 dark:text-cyan-400' },
   REMOVE_WEBSITE_BLOCKS:{ label: 'Удалить блоки',      icon: <Trash2 className="w-3.5 h-3.5" />,       color: 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/30 dark:text-red-400' },
+  TRANSLATE_WEBSITE:  { label: 'Перевести сайт',       icon: <Globe className="w-3.5 h-3.5" />,        color: 'bg-teal-500/10 text-teal-600 hover:bg-teal-500/20 border-teal-500/30 dark:text-teal-400' },
 };
 
 // ── Tabbed suggestions by category ──────────────────────────────────────────
@@ -313,7 +314,7 @@ function MessageBubble({ msg, onExecuteAction, existingBots, existingWebsites, e
               const isBotCreate = action.type === 'CREATE_BOT';
               const isBotAction = isBotCreate || action.type === 'ADD_BOT_NODES' || action.type === 'REPLACE_BOT' || action.type === 'EDIT_BOT_NODE' || action.type === 'REMOVE_BOT_NODES';
               const isSiteCreate = action.type === 'CREATE_WEBSITE';
-              const isSiteAction = isSiteCreate || action.type === 'ADD_WEBSITE_BLOCKS' || action.type === 'REPLACE_WEBSITE' || action.type === 'EDIT_WEBSITE_BLOCK' || action.type === 'REMOVE_WEBSITE_BLOCKS';
+              const isSiteAction = isSiteCreate || action.type === 'ADD_WEBSITE_BLOCKS' || action.type === 'REPLACE_WEBSITE' || action.type === 'EDIT_WEBSITE_BLOCK' || action.type === 'REMOVE_WEBSITE_BLOCKS' || action.type === 'TRANSLATE_WEBSITE';
               const isFormCreate = action.type === 'CREATE_FORM';
               const isFormAction = isFormCreate || action.type === 'ADD_FORM_FIELDS' || action.type === 'REPLACE_FORM' || action.type === 'EDIT_FORM_FIELD' || action.type === 'REMOVE_FORM_FIELDS';
               const botName = action.data?.name || action.data?.description || '';

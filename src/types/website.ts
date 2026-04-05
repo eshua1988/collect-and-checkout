@@ -103,6 +103,11 @@ export interface AppWebsite {
     maxWidth?: string;
     minHeight?: string;
   };
+  // Multi-language support
+  languages?: string[];          // e.g. ['ru', 'en', 'de']
+  defaultLanguage?: string;      // e.g. 'ru'
+  translations?: Record<string, Record<string, Record<string, any>>>;
+  // translations[langCode][blockId] = { title, subtitle, body, ... }
   seoTitle?: string;
   seoDescription?: string;
   externalUrl?: string; // for editing external sites

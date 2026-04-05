@@ -35,6 +35,9 @@ export default function WebsiteView() {
         blocks={site.blocks}
         pages={hasPages ? site.pages : undefined}
         globalStyles={site.globalStyles}
+        translations={site.translations}
+        languages={site.languages}
+        defaultLanguage={site.defaultLanguage}
       />
     </>
   );

@@ -131,6 +131,11 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
   });
   const toggleSection = (key: string) => setOpenSections(prev => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); sessionStorage.setItem('ws_openSections', JSON.stringify([...n])); return n; });
 
+  // Multi-language preview
+  const [previewLang, setPreviewLang] = useState('');
+  const [newLangInput, setNewLangInput] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     isResizing.current = true;
@@ -1124,6 +1129,191 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
                   )}
                 </div>
 
+                {/* ─── Языки / Переводы ─── */}
+                <div className="border rounded-lg overflow-hidden">
+                  <button onClick={() => toggleSection('set-langs')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
+                    {openSections.has('set-langs') ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    🌐 Языки и переводы
+                  </button>
+                  {openSections.has('set-langs') && (
+                    <div className="p-3 space-y-3 border-t">
+                      {/* Current languages */}
+                      <div>
+                        <Label className="text-xs mb-1.5 block">Активные языки</Label>
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {(website.languages || []).map(lang => (
+                            <div key={lang} className="flex items-center gap-1">
+                              <button
+                                onClick={() => setPreviewLang(previewLang === lang ? '' : lang)}
+                                className={`px-2 py-0.5 text-xs rounded font-semibold border transition-all ${previewLang === lang ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:border-primary/40'}`}
+                                title={`Предпросмотр на ${lang.toUpperCase()}`}
+                              >
+                                {lang.toUpperCase()}
+                              </button>
+                              {lang !== website.defaultLanguage && (
+                                <button
+                                  onClick={() => {
+                                    const newLangs = (website.languages || []).filter(l => l !== lang);
+                                    const newTranslations = { ...website.translations };
+                                    delete newTranslations[lang];
+                                    setWebsite(prev => ({ ...prev, languages: newLangs, translations: newTranslations }));
+                                    if (previewLang === lang) setPreviewLang('');
+                                  }}
+                                  className="text-destructive hover:text-destructive/80 text-[10px] leading-none"
+                                  title={`Удалить язык ${lang}`}
+                                >✕</button>
+                              )}
+                              {lang === website.defaultLanguage && (
+                                <span className="text-[9px] text-muted-foreground">(осн.)</span>
+                              )}
+                            </div>
+                          ))}
+                          {(!website.languages || website.languages.length === 0) && (
+                            <span className="text-xs text-muted-foreground italic">Нет языков</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Add language */}
+                      <div>
+                        <Label className="text-xs mb-1 block">Добавить язык</Label>
+                        <div className="flex gap-1.5">
+                          <select
+                            value={newLangInput}
+                            onChange={e => setNewLangInput(e.target.value)}
+                            className="flex-1 h-7 text-xs rounded border bg-background px-1"
+                          >
+                            <option value="">Выбрать...</option>
+                            {[
+                              { code: 'en', label: '🇬🇧 English' }, { code: 'ru', label: '🇷🇺 Русский' },
+                              { code: 'de', label: '🇩🇪 Deutsch' }, { code: 'fr', label: '🇫🇷 Français' },
+                              { code: 'es', label: '🇪🇸 Español' }, { code: 'it', label: '🇮🇹 Italiano' },
+                              { code: 'pt', label: '🇵🇹 Português' }, { code: 'zh', label: '🇨🇳 中文' },
+                              { code: 'ja', label: '🇯🇵 日本語' }, { code: 'ko', label: '🇰🇷 한국어' },
+                              { code: 'ar', label: '🇸🇦 العربية' }, { code: 'uk', label: '🇺🇦 Українська' },
+                              { code: 'pl', label: '🇵🇱 Polski' }, { code: 'tr', label: '🇹🇷 Türkçe' },
+                              { code: 'nl', label: '🇳🇱 Nederlands' }, { code: 'sv', label: '🇸🇪 Svenska' },
+                              { code: 'hi', label: '🇮🇳 हिंदी' }, { code: 'he', label: '🇮🇱 עברית' },
+                            ].filter(l => !(website.languages || []).includes(l.code)).map(l => (
+                              <option key={l.code} value={l.code}>{l.label}</option>
+                            ))}
+                          </select>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs px-2"
+                            disabled={!newLangInput}
+                            onClick={() => {
+                              if (!newLangInput) return;
+                              const currentLangs = website.languages || [];
+                              if (currentLangs.includes(newLangInput)) { setNewLangInput(''); return; }
+                              const defaultLang = website.defaultLanguage || currentLangs[0] || '';
+                              setWebsite(prev => ({
+                                ...prev,
+                                languages: [...currentLangs, newLangInput],
+                                defaultLanguage: defaultLang || newLangInput,
+                              }));
+                              setNewLangInput('');
+                            }}
+                          >Добавить</Button>
+                        </div>
+                      </div>
+
+                      {/* Default language selector */}
+                      {(website.languages || []).length > 1 && (
+                        <div>
+                          <Label className="text-xs mb-1 block">Основной язык</Label>
+                          <select
+                            value={website.defaultLanguage || ''}
+                            onChange={e => setWebsite(prev => ({ ...prev, defaultLanguage: e.target.value }))}
+                            className="w-full h-7 text-xs rounded border bg-background px-1"
+                          >
+                            {(website.languages || []).map(lang => (
+                              <option key={lang} value={lang}>{lang.toUpperCase()}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* AI Translate button */}
+                      {(website.languages || []).length > 1 && (
+                        <div className="space-y-1.5">
+                          <Button
+                            size="sm"
+                            className="w-full text-xs"
+                            disabled={isTranslating}
+                            onClick={async () => {
+                              const nonDefaultLangs = (website.languages || []).filter(l => l !== (website.defaultLanguage || website.languages?.[0]));
+                              if (nonDefaultLangs.length === 0) { toast.info('Нет языков для перевода'); return; }
+
+                              // Collect all blocks from all pages
+                              type AllBlock = { id: string; type: string; content: Record<string, unknown> };
+                              const allBlocks: AllBlock[] = [];
+                              if (website.pages) {
+                                for (const page of website.pages) {
+                                  for (const b of page.blocks) {
+                                    allBlocks.push({ id: b.id, type: b.type, content: b.content || {} });
+                                  }
+                                }
+                              } else {
+                                for (const b of website.blocks) {
+                                  allBlocks.push({ id: b.id, type: b.type, content: b.content || {} });
+                                }
+                              }
+
+                              const prompt = `Переведи содержимое сайта на языки: ${nonDefaultLangs.join(', ')}.
+Основной язык: ${website.defaultLanguage || nonDefaultLangs[0] || 'auto'}.
+Сайт называется: "${website.name}".
+
+Переводи ТОЛЬКО текстовые поля (title, subtitle, body, text, eyebrow, ctaText, cta2Text, description, caption, buttonText, copyright, placeholder, acceptText, declineText, closeText, subtext, author, role, name, label — только когда это читаемый текст, не технический идентификатор).
+НЕ переводи: href, url, src, color, bgColor, textColor, type, align, height, width, icon, emoji, id, logo.
+Для items/posts/members/plans/locations/links/columns — переводи поля внутри каждого объекта.
+
+Блоки для перевода (id → type → content):
+${allBlocks.slice(0, 30).map(b => `Block ${b.id} (${b.type}): ${JSON.stringify(b.content).substring(0, 300)}`).join('\n')}
+
+Верни action:
+\`\`\`action
+{"type":"TRANSLATE_WEBSITE","data":{"websiteId":"${website.id}","translations":{"LANG_CODE":{"BLOCK_ID":{"field":"translated value"}}}}}
+\`\`\`
+Где LANG_CODE — код языка (${nonDefaultLangs.join(', ')}), BLOCK_ID — id блока.
+Переводи ВСЕ ${allBlocks.length} блоков на ВСЕ указанные языки.`;
+
+                              setIsTranslating(true);
+                              toast.info('AI переводит сайт...');
+
+                              // Dispatch to AI chat via custom event
+                              window.dispatchEvent(new CustomEvent('aiAssistantSendMessage', { detail: { text: prompt } }));
+                              setTimeout(() => setIsTranslating(false), 5000);
+                            }}
+                          >
+                            {isTranslating ? '⏳ Перевожу...' : `🌐 AI перевести сайт`}
+                          </Button>
+                          {previewLang && (
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+                              <span>Предпросмотр: <strong>{previewLang.toUpperCase()}</strong></span>
+                              <button onClick={() => setPreviewLang('')} className="hover:text-foreground">Сбросить</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Translation status */}
+                      {website.translations && Object.keys(website.translations).length > 0 && (
+                        <div className="space-y-1">
+                          <Label className="text-xs">Статус переводов</Label>
+                          {Object.entries(website.translations).map(([lang, blocks]) => (
+                            <div key={lang} className="flex items-center justify-between text-[11px] py-0.5">
+                              <span className="font-medium">{lang.toUpperCase()}</span>
+                              <span className="text-muted-foreground">{Object.keys(blocks).length} блоков переведено</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* ─── Проект ─── */}
                 <div className="border rounded-lg overflow-hidden">
                   <button onClick={() => toggleSection('set-project')} className="w-full flex items-center gap-2 p-2.5 text-left text-xs font-medium bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -1248,6 +1438,10 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
               onDeleteBlock={deleteBlock}
               selectedBlockId={selectedBlockId}
               globalStyles={website.globalStyles}
+              translations={website.translations}
+              currentLang={previewLang}
+              languages={website.languages}
+              defaultLanguage={website.defaultLanguage}
             />
             {activeBlocks.length === 0 && !dropIndicator && (
               <div className="flex flex-col items-center justify-center py-20 text-center px-8">
@@ -1280,7 +1474,7 @@ export default function WebsiteEditor({ websiteId }: WebsiteEditorProps) {
             <Button variant="ghost" onClick={() => setShowPreviewFull(false)}>✕ Закрыть</Button>
           </div>
           <div className="flex-1 overflow-auto">
-            <WebsitePreview blocks={activeBlocks} pages={hasPages ? website.pages : undefined} currentPageSlug={currentPageSlug} onPageNavigate={setCurrentPageSlug} globalStyles={website.globalStyles} />
+            <WebsitePreview blocks={activeBlocks} pages={hasPages ? website.pages : undefined} currentPageSlug={currentPageSlug} onPageNavigate={setCurrentPageSlug} globalStyles={website.globalStyles} translations={website.translations} currentLang={previewLang} languages={website.languages} defaultLanguage={website.defaultLanguage} />
           </div>
         </div>
       )}

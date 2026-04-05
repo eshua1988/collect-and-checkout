@@ -23,7 +23,7 @@ const PROMPT_CORE = `Ты — AI-ассистент платформы FormBot S
 ## КОМАНДЫ (всегда в \`\`\`action блоке):
 **Боты:** CREATE_BOT {name,newNodeTypes[],nodes[],edges[]}, ADD_BOT_NODES {botId,description,newNodeTypes[],nodes[],edges[]}, REPLACE_BOT {botId,name,newNodeTypes[],nodes[],edges[]}, EDIT_BOT_NODE {botId,nodeId,newData{}}, REMOVE_BOT_NODES {botId,nodeIds[]}
 **Формы:** CREATE_FORM {title,newFieldTypes[],theme{},fields[],completionMessage}, REPLACE_FORM {formId,title,newFieldTypes[],fields[]}, EDIT_FORM_FIELD {formId,fieldId,newData{}}, REMOVE_FORM_FIELDS {formId,fieldIds[]}
-**Сайты:** CREATE_WEBSITE {name,newBlockTypes[],globalStyles{},pages:[{slug,title,blocks[]}]}, ADD_WEBSITE_BLOCKS {websiteId?,pageSlug?,newBlockTypes[],blocks[]} (многостраничный: pages:[{slug,blocks[]}]), REPLACE_WEBSITE {websiteId,name,newBlockTypes[],pages[]}, EDIT_WEBSITE_BLOCK {websiteId,blockId,newContent{},pageSlug}, REMOVE_WEBSITE_BLOCKS {websiteId,blockIds[]}
+**Сайты:** CREATE_WEBSITE {name,newBlockTypes[],globalStyles{},pages:[{slug,title,blocks[]}]}, ADD_WEBSITE_BLOCKS {websiteId?,pageSlug?,newBlockTypes[],blocks[]} (многостраничный: pages:[{slug,blocks[]}]), REPLACE_WEBSITE {websiteId,name,newBlockTypes[],pages[]}, EDIT_WEBSITE_BLOCK {websiteId,blockId,newContent{},pageSlug}, REMOVE_WEBSITE_BLOCKS {websiteId,blockIds[]}, TRANSLATE_WEBSITE {websiteId,translations:{langCode:{blockId:{field:value}}}}
 NAVIGATE_TO: {path:"/bot/new"}
 
 Формат:
@@ -449,7 +449,8 @@ ${wantsDiag ? `
 Структура: нет navbar/footer/hero, <3 блоков, нет CTA. Контент: пустые title, features/pricing/testimonials без items. Навигация: href≠slug, страницы без navbar. Стили: нет globalStyles, плохой контраст, нет padding.
 Формат: 📋 нумерованный список, 🔴/🟡/🟢, 🔧 action блок.` : ''}
 
-### ПРАВИЛА: websiteId="${context.websiteId}", "улучши"→REPLACE_WEBSITE, "добавь"→ADD_WEBSITE_BLOCKS, "измени"→EDIT_WEBSITE_BLOCK, "удали"→REMOVE_WEBSITE_BLOCKS, НЕ создавай CREATE_WEBSITE когда есть websiteId.`;
+### ПРАВИЛА: websiteId="${context.websiteId}", "улучши"→REPLACE_WEBSITE, "добавь"→ADD_WEBSITE_BLOCKS, "измени"→EDIT_WEBSITE_BLOCK, "удали"→REMOVE_WEBSITE_BLOCKS, "переведи"→TRANSLATE_WEBSITE, НЕ создавай CREATE_WEBSITE когда есть websiteId.
+### TRANSLATE_WEBSITE: Переводи ВСЕ текстовые поля (title,subtitle,body,text,eyebrow,ctaText,cta2Text,description,caption,buttonText,copyright,subtext,author,role). Для items/posts/members — переводи каждый элемент массива. НЕ переводи href,url,src,color,bgColor,type,align,icon,emoji,id,logo.`;
     }
 
     // --- Multi-provider fallback chain ---
