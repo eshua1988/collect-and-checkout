@@ -160,6 +160,22 @@ const translations: Record<Language, Translations> = {
     'payment.complete': 'Оплата завершена!',
     'payment.completeDesc': 'Ваш платёж на сумму',
     'payment.wasProcessed': 'был обработан.',
+
+    // Document Converter
+    'converter.title': 'Конвертер документов',
+    'converter.subtitle': 'PDF, DOC, DOCX, Excel, изображения и другие форматы',
+    'converter.dropHere': 'Перетащите файл сюда',
+    'converter.orClick': 'или нажмите для выбора файла',
+    'converter.maxSize': 'Максимум 100 МБ · Поддержка шрифтов, изображений, таблиц и подписей',
+    'converter.selectFormat': 'Выберите формат',
+    'converter.convert': 'Конвертировать',
+    'converter.converting': 'Конвертация...',
+    'converter.downloadAgain': 'Скачать ещё раз',
+    'converter.success': 'Файл сконвертирован и скачан!',
+    'converter.successDetail': 'Файл успешно сконвертирован. Проверьте папку загрузок.',
+    'converter.error': 'Ошибка конвертации. Попробуйте другой формат.',
+    'converter.unsupportedFormat': 'Формат файла не поддерживается',
+    'converter.fileTooLarge': 'Файл слишком большой (максимум 100 МБ)',
   },
   en: {
     // Header
@@ -314,6 +330,22 @@ const translations: Record<Language, Translations> = {
     'payment.complete': 'Payment complete!',
     'payment.completeDesc': 'Your payment of',
     'payment.wasProcessed': 'has been processed.',
+
+    // Document Converter
+    'converter.title': 'Document Converter',
+    'converter.subtitle': 'PDF, DOC, DOCX, Excel, images and other formats',
+    'converter.dropHere': 'Drop a file here',
+    'converter.orClick': 'or click to select a file',
+    'converter.maxSize': 'Max 100 MB · Supports fonts, images, tables and signatures',
+    'converter.selectFormat': 'Select format',
+    'converter.convert': 'Convert',
+    'converter.converting': 'Converting...',
+    'converter.downloadAgain': 'Download again',
+    'converter.success': 'File converted and downloaded!',
+    'converter.successDetail': 'File successfully converted. Check your downloads folder.',
+    'converter.error': 'Conversion error. Try a different format.',
+    'converter.unsupportedFormat': 'File format is not supported',
+    'converter.fileTooLarge': 'File is too large (max 100 MB)',
   },
 };
 

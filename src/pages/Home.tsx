@@ -10,6 +10,7 @@ import { useWebsitesStorage } from '@/hooks/useWebsitesStorage';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SettingsPanel } from '@/components/SettingsPanel';
+import DocumentConverter from '@/components/DocumentConverter/DocumentConverter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -273,6 +274,13 @@ const Home = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* DOCUMENT CONVERTER — below forms */}
+        {tab === 'forms' && (
+          <div className="mt-6 sm:mt-8">
+            <DocumentConverter />
+          </div>
         )}
 
         {/* DOCS TAB */}
