@@ -113,10 +113,10 @@ function wrapHtml(bodyHtml: string): string {
 <style>
   body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; color: #222; }
   h1, h2, h3 { margin-top: 1.2em; }
-  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
-  th { background: #f5f5f5; font-weight: 600; }
-  img { max-width: 100%; height: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; page-break-inside: avoid; }
+  th, td { border: 1px solid #666; padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: #ddd; font-weight: 600; }
+  img { max-width: 100%; height: auto; display: block; margin: 0.5em 0; page-break-inside: avoid; }
   p { margin: 0.6em 0; }
 </style></head><body>${bodyHtml}</body></html>`;
 }
