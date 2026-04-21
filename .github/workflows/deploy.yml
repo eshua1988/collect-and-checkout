@@ -11,52 +11,26 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  # deploy-functions job disabled for FREE tier - requires Pro plan and DB password
-  # Uncomment below when ready to deploy Edge Functions
-  # deploy-functions:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Setup Supabase CLI
-  #       uses: supabase/setup-cli@v1
-  #       with:
-  #         version: latest
-  #     - name: Deploy Edge Functions
-  #       env:
-  #         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-  #       run: |
-  #         supabase functions deploy telegram-runner --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-  #         supabase functions deploy ai-assistant   --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-  #         supabase functions deploy bot-ai-chat    --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-  #         supabase functions deploy bot-translate  --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-  #         supabase functions deploy bot-lang-detect --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-  #     - name: Push DB migrations
-  #       env:
-  #         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-  #         SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-  #       run: |
-  #         supabase db push --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} --password ${{ secrets.SUPABASE_DB_PASSWORD }} || true
-
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build
+      - name: Build project
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -65,7 +39,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: dist
 
   deploy:
     environment:
