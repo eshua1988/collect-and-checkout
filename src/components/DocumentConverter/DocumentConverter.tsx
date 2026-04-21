@@ -103,25 +103,55 @@ async function docxToHtml(file: File): Promise<string> {
       ),
     }
   );
-  return wrapHtml(result.value);
+  
+  let html = result.value;
+  
+  // Remove service tables (Word generates hidden layout tables)
+  html = html.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, (match) => {
+    // Check if table contains mostly empty cells or is very simple
+    const cellCount = (match.match(/<(?:td|th)[^>]*>/gi) || []).length;
+    const textContent = match.replace(/<[^>]*>/g, '').trim();
+    // Remove if table is empty or has very few cells
+    if (cellCount < 4 || textContent.length < 10) {
+      return '';
+    }
+    return match;
+  });
+  
+  return wrapHtml(html);
 }
 
 function wrapHtml(bodyHtml: string): string {
+  // Clean up empty tags and normalize whitespace
+  let clean = bodyHtml
+    .replace(/<p><\/p>/g, '')
+    .replace(/<p>\s+<\/p>/g, '')
+    .replace(/<div><\/div>/g, '')
+    .replace(/<div>\s+<\/div>/g, '')
+    .replace(/>\s+</g, '><')
+    .trim();
+  
   return `<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8">
 <style>
-  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; color: #222; }
-  h1, h2, h3 { margin-top: 1.2em; }
+  * { margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, Arial, sans-serif; padding: 30px 40px; max-width: 850px; margin: 0 auto; line-height: 1.5; color: #333; background: #fff; }
+  h1 { font-size: 24px; margin: 0.8em 0 0.4em 0; font-weight: 700; }
+  h2 { font-size: 18px; margin: 0.8em 0 0.3em 0; font-weight: 700; }
+  h3 { font-size: 16px; margin: 0.6em 0 0.3em 0; font-weight: 700; }
+  p { margin: 0.4em 0; font-size: 14px; }
+  ul, ol { margin: 0.5em 0 0.5em 2em; }
+  li { margin: 0.2em 0; }
   table { border-collapse: collapse; width: 100%; margin: 1em 0; page-break-inside: avoid; }
-  th, td { border: 1px solid #666; padding: 8px 12px; text-align: left; vertical-align: top; }
-  th { background: #ddd; font-weight: 600; }
+  th, td { border: 1px solid #999; padding: 6px 10px; text-align: left; vertical-align: top; font-size: 13px; }
+  th { background: #f0f0f0; font-weight: 600; }
   img { max-width: 100%; height: auto; display: block; margin: 0.5em 0; page-break-inside: avoid; }
-  p { margin: 0.6em 0; }
-</style></head><body>${bodyHtml}</body></html>`;
+  br { display: none; }
+</style></head><body>${clean}</body></html>`;
 }
 
-async function htmlToRenderedCanvas(html: string, width = 800): Promise<HTMLCanvasElement> {
+async function htmlToRenderedCanvas(html: string, width = 850): Promise<HTMLCanvasElement> {
   const html2canvas = (await import('html2canvas')).default;
   const container = document.createElement('div');
   container.style.position = 'absolute';
@@ -129,8 +159,7 @@ async function htmlToRenderedCanvas(html: string, width = 800): Promise<HTMLCanv
   container.style.top = '0';
   container.style.width = width + 'px';
   container.style.background = '#fff';
-  container.style.padding = '40px';
-  container.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, Arial, sans-serif";
+  container.style.minHeight = 'auto'; // Don't force height
   container.innerHTML = html;
   document.body.appendChild(container);
 
@@ -149,14 +178,20 @@ async function htmlToRenderedCanvas(html: string, width = 800): Promise<HTMLCanv
     )
   );
 
+  // Get natural dimensions without forcing size
   const canvas = await html2canvas(container, {
-    scale: 2,
+    scale: 1.5, // Reduced from 2 for better performance
     useCORS: true,
     allowTaint: true,
     backgroundColor: '#ffffff',
     width,
     windowWidth: width,
+    ignoreElements: (el: Element) => {
+      // Skip empty elements
+      return el.textContent?.trim() === '' && el.children.length === 0;
+    },
   });
+  
   document.body.removeChild(container);
   return canvas;
 }
@@ -167,37 +202,67 @@ async function canvasToPdfBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   const pxToMm = 0.264583;
   const pageWidth = 210; // A4 mm
   const pageHeight = 297;
-  const margin = 10;
-  const contentWidth = pageWidth - 2 * margin;
-  const imgWidthMm = canvas.width * pxToMm / 2; // scale=2
-  const imgHeightMm = canvas.height * pxToMm / 2;
-  const ratio = contentWidth / imgWidthMm;
-  const scaledHeight = imgHeightMm * ratio;
-  const usableHeight = pageHeight - 2 * margin;
-
+  const marginTop = 10;
+  const marginBottom = 10;
+  const marginLeft = 10;
+  const marginRight = 10;
+  const contentWidth = pageWidth - marginLeft - marginRight;
+  const contentHeight = pageHeight - marginTop - marginBottom;
+  
+  // Calculate canvas dimensions in mm
+  const canvasWidthMm = canvas.width * pxToMm / 1.5; // scale was 1.5
+  const canvasHeightMm = canvas.height * pxToMm / 1.5;
+  
+  // Scale to fit content width, preserving aspect ratio
+  const scaleFactor = contentWidth / canvasWidthMm;
+  const scaledHeight = canvasHeightMm * scaleFactor;
+  
   const pdf = new jsPDF('p', 'mm', 'a4');
-  let yOffset = 0;
-  let page = 0;
+  let currentY = marginTop;
+  let pageNum = 0;
+  let canvasY = 0;
 
-  while (yOffset < scaledHeight) {
-    if (page > 0) pdf.addPage();
-    const srcY = (yOffset / ratio) / pxToMm * 2;
-    const srcH = Math.min((usableHeight / ratio) / pxToMm * 2, canvas.height - srcY);
-    if (srcH <= 0) break;
+  while (canvasY < canvas.height) {
+    // Add new page if not first page
+    if (pageNum > 0) {
+      pdf.addPage();
+      currentY = marginTop;
+    }
 
+    // Calculate how much canvas height fits on this page
+    const pixelsPerMm = 1.5; // scale factor
+    const remainingPageHeightMm = contentHeight;
+    const remainingCanvasPx = canvas.height - canvasY;
+    const canvasPxThatFits = remainingPageHeightMm / pxToMm * pixelsPerMm;
+    const canvasPxToCapture = Math.min(canvasPxThatFits, remainingCanvasPx);
+    
+    if (canvasPxToCapture <= 0) break;
+
+    // Create a slice of the canvas for this page
     const pageCanvas = document.createElement('canvas');
     pageCanvas.width = canvas.width;
-    pageCanvas.height = srcH;
+    pageCanvas.height = Math.ceil(canvasPxToCapture);
+    
     const ctx = pageCanvas.getContext('2d')!;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-    ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
+    ctx.drawImage(
+      canvas,
+      0, canvasY,
+      canvas.width, canvasPxToCapture,
+      0, 0,
+      canvas.width, canvasPxToCapture
+    );
 
-    const pageImg = pageCanvas.toDataURL('image/png');
-    const drawH = Math.min(usableHeight, scaledHeight - yOffset);
-    pdf.addImage(pageImg, 'PNG', margin, margin, contentWidth, drawH);
-    yOffset += usableHeight;
-    page++;
+    const pageImgData = pageCanvas.toDataURL('image/png');
+    
+    // Calculate the height this slice will be on the PDF page
+    const pageHeightMm = (canvasPxToCapture * pxToMm) / pixelsPerMm;
+    
+    pdf.addImage(pageImgData, 'PNG', marginLeft, currentY, contentWidth, pageHeightMm);
+    
+    canvasY += canvasPxToCapture;
+    pageNum++;
   }
 
   return pdf.output('blob');
