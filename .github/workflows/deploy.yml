@@ -1,7 +1,14 @@
 name: Build and Deploy
+# ⚠️ GitHub Actions billing issue - disabled for now
+# To re-enable: uncomment 'on' section below and push
 
 on:
   workflow_dispatch:
+
+# on:
+#   push:
+#     branches: [main]
+#   workflow_dispatch:
 
 permissions:
   contents: read
